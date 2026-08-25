@@ -1,0 +1,14 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- MOTOROLA Iconic Batwing M Circle -->
+    <path
+        android:fillColor="#001489"
+        android:pathData="M50,10 C27.9,10 10,27.9 10,50 C10,72.1 27.9,90 50,90 C72.1,90 90,72.1 90,50 C90,27.9 72.1,10 50,10 Z" />
+    <!-- White Batwing M -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M28,68 C30,48 37,35 44,35 C47,35 50,42 50,48 C50,42 53,35 56,35 C63,35 70,48 72,68 C68,52 61,43 56,43 C53,43 50,56 50,65 C50,56 47,43 44,43 C39,43 32,52 28,68 Z" />
+</vector>

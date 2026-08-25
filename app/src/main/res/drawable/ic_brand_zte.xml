@@ -1,0 +1,14 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- ZTE Blue Badge & Dynamic 'Z' -->
+    <path
+        android:fillColor="#008CD6"
+        android:pathData="M15,15 L85,15 A10,10 0 0 1 95,25 L95,85 A10,10 0 0 1 85,95 L15,95 A10,10 0 0 1 5,85 L5,25 A10,10 0 0 1 15,15 Z" />
+    <!-- White 'Z' Letter -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,32 L76,32 L76,42 L42,60 L76,60 L76,70 L24,70 L24,60 L58,42 L24,42 Z" />
+</vector>

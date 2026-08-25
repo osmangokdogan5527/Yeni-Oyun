@@ -1,0 +1,20 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- ASUS ROG (Republic of Gamers) Aggressive Eye Logo -->
+    <path
+        android:fillColor="#111827"
+        android:pathData="M15,15 L85,15 A10,10 0 0 1 95,25 L95,85 A10,10 0 0 1 85,95 L15,95 A10,10 0 0 1 5,85 L5,25 A10,10 0 0 1 15,15 Z" />
+    <!-- Red Gamer Eye Wing -->
+    <path
+        android:fillColor="#FF0033"
+        android:pathData="M22,35 L50,22 L82,45 L68,48 L50,34 L28,45 Z" />
+    <path
+        android:fillColor="#FF0033"
+        android:pathData="M28,52 L50,42 L76,55 L50,78 L38,65 L50,56 L38,56 Z" />
+    <path
+        android:fillColor="#FF0033"
+        android:pathData="M52,62 L70,55 L78,65 L54,82 Z" />
+</vector>

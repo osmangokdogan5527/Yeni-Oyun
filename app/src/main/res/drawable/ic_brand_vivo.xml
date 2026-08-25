@@ -1,0 +1,19 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- VIVO Blue Typography / Dynamic Glyph -->
+    <path
+        android:fillColor="#415FFF"
+        android:pathData="M10,25 L24,75 L38,25 L28,25 L24,55 L20,25 Z" />
+    <path
+        android:fillColor="#415FFF"
+        android:pathData="M42,32 L42,75 L50,75 L50,32 Z M42,22 L42,28 L50,28 L50,22 Z" />
+    <path
+        android:fillColor="#415FFF"
+        android:pathData="M54,25 L68,75 L82,25 L72,25 L68,55 L64,25 Z" />
+    <path
+        android:fillColor="#415FFF"
+        android:pathData="M90,32 C82,32 76,40 76,53 C76,66 82,75 90,75 C98,75 104,66 104,53 C104,40 98,32 90,32 Z M90,40 C94,40 96,45 96,53 C96,61 94,67 90,67 C86,67 84,61 84,53 C84,45 86,40 90,40 Z" />
+</vector>

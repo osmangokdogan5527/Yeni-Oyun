@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- SONY Professional Black Badge & SONY / Xperia Mark -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M15,15 L85,15 A10,10 0 0 1 95,25 L95,85 A10,10 0 0 1 85,95 L15,95 A10,10 0 0 1 5,85 L5,25 A10,10 0 0 1 15,15 Z" />
+    <!-- S Letter -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M16,42 C16,36 21,34 27,34 C33,34 38,36 38,41 L32,42 C32,38 30,37 27,37 C24,37 22,38 22,40 C22,44 38,42 38,53 C38,59 33,62 27,62 C20,62 16,59 16,53 L22,52 C22,56 24,58 27,58 C30,58 32,56 32,54 C32,49 16,51 16,42 Z" />
+    <!-- O Letter -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M48,34 C41,34 36,40 36,48 C36,56 41,62 48,62 C55,62 60,56 60,48 C60,40 55,34 48,34 Z M48,39 C52,39 54,43 54,48 C54,53 52,57 48,57 C44,57 42,53 42,48 C42,43 44,39 48,39 Z" />
+    <!-- N Letter -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M63,35 L69,35 L77,53 L77,35 L83,35 L83,61 L77,61 L69,43 L69,61 L63,61 Z" />
+</vector>

@@ -1,0 +1,14 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- REALME Yellow Box & 'r' Logo -->
+    <path
+        android:fillColor="#FFC915"
+        android:pathData="M15,15 L85,15 A10,10 0 0 1 95,25 L95,85 A10,10 0 0 1 85,95 L15,95 A10,10 0 0 1 5,85 L5,25 A10,10 0 0 1 15,15 Z" />
+    <!-- Dark 'r' letter -->
+    <path
+        android:fillColor="#111827"
+        android:pathData="M32,30 L45,30 L45,45 C48,34 58,30 68,34 L64,48 C55,44 45,48 45,58 L45,76 L32,76 Z" />
+</vector>

@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- TCL Red Box & TCL Mark -->
+    <path
+        android:fillColor="#ED1C24"
+        android:pathData="M15,15 L85,15 A10,10 0 0 1 95,25 L95,85 A10,10 0 0 1 85,95 L15,95 A10,10 0 0 1 5,85 L5,25 A10,10 0 0 1 15,15 Z" />
+    <!-- White T -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M18,36 L38,36 L38,44 L32,44 L32,68 L24,68 L24,44 L18,44 Z" />
+    <!-- White C -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M44,36 C54,36 58,42 58,46 L50,46 C50,44 48,43 44,43 C40,43 38,47 38,52 C38,57 40,61 44,61 C48,61 50,60 50,58 L58,58 C58,62 54,68 44,68 C34,68 30,60 30,52 C30,44 34,36 44,36 Z" />
+    <!-- White L -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M64,36 L72,36 L72,61 L84,61 L84,68 L64,68 Z" />
+</vector>

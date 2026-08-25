@@ -1,0 +1,31 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- HUAWEI Iconic Red Fan Petals -->
+    <!-- Center Petal -->
+    <path
+        android:fillColor="#CF0A2C"
+        android:pathData="M47,20 C47,15 53,15 53,20 C53,42 47,56 47,56 C47,56 47,42 47,20 Z" />
+    <!-- Left Inner Petal -->
+    <path
+        android:fillColor="#CF0A2C"
+        android:pathData="M38,24 C35,20 40,16 43,21 C49,38 48,56 48,56 C48,56 44,42 38,24 Z" />
+    <!-- Right Inner Petal -->
+    <path
+        android:fillColor="#CF0A2C"
+        android:pathData="M62,24 C65,20 60,16 57,21 C51,38 52,56 52,56 C52,56 56,42 62,24 Z" />
+    <!-- Left Outer Petal -->
+    <path
+        android:fillColor="#CF0A2C"
+        android:pathData="M28,32 C23,29 27,24 32,27 C42,40 48,57 48,57 C48,57 37,45 28,32 Z" />
+    <!-- Right Outer Petal -->
+    <path
+        android:fillColor="#CF0A2C"
+        android:pathData="M72,32 C77,29 73,24 68,27 C58,40 52,57 52,57 C52,57 63,45 72,32 Z" />
+    <!-- Bottom Arch -->
+    <path
+        android:fillColor="#CF0A2C"
+        android:pathData="M24,68 C35,76 65,76 76,68 L74,62 C65,69 35,69 26,62 Z" />
+</vector>

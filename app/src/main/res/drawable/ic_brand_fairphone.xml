@@ -1,0 +1,21 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- FAIRPHONE Eco Teal Circle & Modular Recycling Heart/Fair Emblem -->
+    <path
+        android:fillColor="#0084A8"
+        android:pathData="M15,15 L85,15 A10,10 0 0 1 95,25 L95,85 A10,10 0 0 1 85,95 L15,95 A10,10 0 0 1 5,85 L5,25 A10,10 0 0 1 15,15 Z" />
+    <!-- White Sustainable Leaf & Screw Modular Symbol -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M50,22 C64,22 75,33 75,47 C75,64 50,78 50,78 C50,78 25,64 25,47 C25,33 36,22 50,22 Z" />
+    <path
+        android:fillColor="#0084A8"
+        android:pathData="M50,34 C57,34 62,39 62,46 C62,55 50,64 50,64 C50,64 38,55 38,46 C38,39 43,34 50,34 Z" />
+    <!-- Green Sparkle -->
+    <path
+        android:fillColor="#22C55E"
+        android:pathData="M46,46 L54,46 L54,50 L46,50 Z M50,42 L50,54 L48,54 L48,42 Z" />
+</vector>

@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- NOTHING Glyph / Dot Matrix Minimalist Icon -->
+    <path
+        android:fillColor="#18181B"
+        android:pathData="M15,15 L85,15 A10,10 0 0 1 95,25 L95,85 A10,10 0 0 1 85,95 L15,95 A10,10 0 0 1 5,85 L5,25 A10,10 0 0 1 15,15 Z" />
+    <!-- White Glyph Light Curve -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M32,32 C32,24 68,24 68,32 C68,48 32,48 32,68 C32,76 68,76 68,68 L62,68 C62,72 38,72 38,68 C38,54 74,54 74,32 C74,20 26,20 26,32 Z" />
+    <!-- Red Recording LED Dot -->
+    <path
+        android:fillColor="#EF4444"
+        android:pathData="M72,26 A5,5 0 1,1 82,26 A5,5 0 1,1 72,26" />
+</vector>
