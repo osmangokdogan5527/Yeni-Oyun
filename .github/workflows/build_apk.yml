@@ -18,11 +18,13 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '9.3.1'
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-
-      - name: Make Gradle wrapper executable
-        run: chmod +x ./gradlew
 
       - name: Restore Keystore & Environment
         run: |
@@ -35,7 +37,7 @@ jobs:
           fi
 
       - name: Build Debug APK
-        run: ./gradlew :app:assembleDebug --stacktrace
+        run: gradle :app:assembleDebug --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
