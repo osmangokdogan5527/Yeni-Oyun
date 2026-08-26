@@ -1,3 +1,12 @@
+/**
+ * Uygulamanın giriş noktası ve ana navigasyon iskeleti.
+ *
+ * [MainActivity] tek bir Compose ekranı ([MainApp]) başlatır; sekmeler arası geçiş
+ * [AppScreen] enum'u ile yönetilir (Dashboard, Devices, Market, Benchmark, Software,
+ * PhoneBuilder, Research, Employees, News). Dashboard, cihaz listesi ve üst bar gibi
+ * paylaşılan bileşenler burada; Market/News/PhoneBuilder/Research/Software ekranlarının
+ * kendi mantığı ise ayrı dosyalarda (örn. MarketScreen.kt) tanımlıdır.
+ */
 package com.example
 
 import android.os.Bundle
@@ -14,9 +23,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
@@ -32,31 +38,30 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.PrecisionManufacturing
 import androidx.compose.material.icons.filled.Science
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.material.icons.filled.Save
+import com.example.ui.BenchmarkScreen
+import com.example.ui.SaveLoadDialog
 import com.example.ui.theme.Green500
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.Slate200
@@ -75,7 +80,7 @@ import com.example.viewmodel.GameState
 import com.example.viewmodel.GameViewModel
 
 enum class AppScreen {
-    Dashboard, Devices, Market, Software, PhoneBuilder, Research, Employees, News
+    Dashboard, Devices, Market, Benchmark, Software, PhoneBuilder, Research, Employees, News
 }
 
 class MainActivity : ComponentActivity() {
@@ -94,7 +99,8 @@ class MainActivity : ComponentActivity() {
 fun GameTopBar(
     state: GameState,
     onAdvanceTime: () -> Unit,
-    onOpenCompanyProfile: () -> Unit = {}
+    onOpenCompanyProfile: () -> Unit = {},
+    onOpenSaveLoad: () -> Unit = {}
 ) {
     val playerLogoDrawable = when (state.companyLogoId) {
         "ic_logo_diamond" -> R.drawable.ic_logo_diamond
@@ -175,14 +181,32 @@ fun GameTopBar(
                     }
                 }
 
-                Button(
-                    onClick = onAdvanceTime,
-                    modifier = Modifier.height(36.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    shape = RoundedCornerShape(18.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Text("İleri (1 Ay) ⏩", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    FilledTonalIconButton(
+                        onClick = onOpenSaveLoad,
+                        modifier = Modifier.size(36.dp),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Save,
+                            contentDescription = "Kayıt & Yükleme",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    Button(
+                        onClick = onAdvanceTime,
+                        modifier = Modifier.height(36.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        shape = RoundedCornerShape(18.dp)
+                    ) {
+                        Text("İleri (1 Ay) ⏩", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
 
@@ -217,7 +241,22 @@ fun GameTopBar(
 fun MainApp(viewModel: GameViewModel = viewModel()) {
     var currentScreen by remember { mutableStateOf(AppScreen.Dashboard) }
     var showEditCompanyDialog by remember { mutableStateOf(false) }
+    var showSaveLoadDialog by remember { mutableStateOf(false) }
     val state by viewModel.state.collectAsState()
+    val savedGames by viewModel.savedGamesState.collectAsState()
+
+    // Save & Load Dialog
+    if (showSaveLoadDialog) {
+        SaveLoadDialog(
+            currentState = state,
+            savedGames = savedGames,
+            onDismiss = { showSaveLoadDialog = false },
+            onSaveSlot = { slotId, name -> viewModel.manualSaveGame(slotId, name) },
+            onLoadSlot = { slotId -> viewModel.loadGame(slotId) },
+            onDeleteSlot = { slotId -> viewModel.deleteSave(slotId) },
+            onNewGame = { viewModel.startNewGame() }
+        )
+    }
 
     // Company Setup on First Launch or User Edit
     if (!state.isCompanySetupDone) {
@@ -246,6 +285,15 @@ fun MainApp(viewModel: GameViewModel = viewModel()) {
         )
     }
 
+    // Tech Expo Grand Awards Ceremony Modal
+    state.activeTechExpo?.let { expoEvent ->
+        TechExpoCeremonyDialog(
+            event = expoEvent,
+            playerBrandColorHex = state.companyBrandColorHex,
+            onDismiss = { viewModel.dismissTechExpo() }
+        )
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
@@ -254,7 +302,8 @@ fun MainApp(viewModel: GameViewModel = viewModel()) {
                 GameTopBar(
                     state = state,
                     onAdvanceTime = { viewModel.advanceTime() },
-                    onOpenCompanyProfile = { showEditCompanyDialog = true }
+                    onOpenCompanyProfile = { showEditCompanyDialog = true },
+                    onOpenSaveLoad = { showSaveLoadDialog = true }
                 )
             }
         },
@@ -279,11 +328,16 @@ fun MainApp(viewModel: GameViewModel = viewModel()) {
             AppScreen.Devices -> DevicesScreen(
                 viewModel = viewModel, 
                 modifier = Modifier.padding(innerPadding), 
-                onNewDevice = { currentScreen = AppScreen.PhoneBuilder }
+                onNewDevice = { currentScreen = AppScreen.PhoneBuilder },
+                onNavigateToBenchmark = { currentScreen = AppScreen.Benchmark }
             )
             AppScreen.Market -> MarketScreen(
                 state = state,
                 onNavigateToBuilder = { currentScreen = AppScreen.PhoneBuilder }
+            )
+            AppScreen.Benchmark -> BenchmarkScreen(
+                viewModel = viewModel,
+                modifier = Modifier.padding(innerPadding)
             )
             AppScreen.Software -> SoftwareScreen(
                 viewModel = viewModel,
@@ -328,10 +382,16 @@ fun MainApp(viewModel: GameViewModel = viewModel()) {
 }
 
 @Composable
-fun DevicesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel, onNewDevice: () -> Unit) {
+fun DevicesScreen(
+    modifier: Modifier = Modifier,
+    viewModel: GameViewModel,
+    onNewDevice: () -> Unit,
+    onNavigateToBenchmark: () -> Unit = {}
+) {
     val state by viewModel.state.collectAsState()
     var selectedModelForRestock by remember { mutableStateOf<ActiveModel?>(null) }
     var selectedModelForMarketing by remember { mutableStateOf<ActiveModel?>(null) }
+    var selectedModelForRecycle by remember { mutableStateOf<ActiveModel?>(null) }
     
     Column(
         modifier = modifier
@@ -631,11 +691,27 @@ fun DevicesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel, onNew
 
                             Spacer(modifier = Modifier.height(12.dp))
 
-                            // Action Buttons: Marketing & Restock
+                            // Action Buttons: Benchmark, Marketing & Restock
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
+                                OutlinedButton(
+                                    onClick = onNavigateToBenchmark,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(40.dp),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = Color(0xFFFF5722)
+                                    ),
+                                    border = BorderStroke(1.dp, Color(0xFFFFCCBC))
+                                ) {
+                                    Icon(Icons.Default.Speed, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("TEST ET", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                }
+
                                 OutlinedButton(
                                     onClick = { selectedModelForMarketing = model },
                                     modifier = Modifier
@@ -648,7 +724,7 @@ fun DevicesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel, onNew
                                 ) {
                                     Icon(Icons.Default.Campaign, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("PAZARLAMA", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    Text("PAZARLAMA", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                                 }
 
                                 OutlinedButton(
@@ -663,7 +739,26 @@ fun DevicesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel, onNew
                                 ) {
                                     Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("STOK YENİLE", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    Text("STOK", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+
+                            if (model.remainingStock > 0) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                val unitCost = viewModel.calculateProductionCost(model.specs)
+                                val refundEstimate = (unitCost * 0.50f * model.remainingStock).toLong()
+                                OutlinedButton(
+                                    onClick = { selectedModelForRecycle = model },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(36.dp),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = Color(0xFFD97706)
+                                    ),
+                                    border = BorderStroke(1.dp, Color(0xFFFDE68A))
+                                ) {
+                                    Text("♻️ KALAN STOKU GERİ DÖNÜŞTÜR (+$${"%,d".format(refundEstimate)})", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -698,6 +793,85 @@ fun DevicesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel, onNew
             }
         )
     }
+
+    selectedModelForRecycle?.let { targetModel ->
+        val unitCost = viewModel.calculateProductionCost(targetModel.specs)
+        RecycleStockDialog(
+            model = targetModel,
+            unitCost = unitCost,
+            onDismiss = { selectedModelForRecycle = null },
+            onConfirmRecycle = {
+                viewModel.recycleRemainingStock(targetModel.id)
+                selectedModelForRecycle = null
+            }
+        )
+    }
+}
+
+@Composable
+fun RecycleStockDialog(
+    model: ActiveModel,
+    unitCost: Int,
+    onDismiss: () -> Unit,
+    onConfirmRecycle: () -> Unit
+) {
+    val recyclePerUnit = (unitCost * 0.50f).toLong()
+    val totalRefund = recyclePerUnit * model.remainingStock.toLong()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("♻️ Kalan Stok Geri Dönüşümü", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    "${model.specs.name} modelinin elde kalan tüm stokları parçalarına ayrılarak geri dönüştürülecektir. Birim üretim maliyetinin yarı fiyatı (%50) şirket kasasına nakit olarak aktarılır.",
+                    fontSize = 13.sp,
+                    color = Slate600
+                )
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Elde Kalan Stok:", fontSize = 12.sp, color = Slate600)
+                            Text("${"%,d".format(model.remainingStock)} adet", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Slate900)
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Birim Üretim Maliyeti:", fontSize = 12.sp, color = Slate600)
+                            Text("$${unitCost}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Slate900)
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Geri İade Değeri (Adet Başı):", fontSize = 12.sp, color = Slate600)
+                            Text("$${recyclePerUnit} (%50)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFD97706))
+                        }
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = Slate200)
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Kasaya Aktarılacak Tutar:", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Slate900)
+                            Text("+$${"%,d".format(totalRefund)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Green500)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirmRecycle,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD97706))
+            ) {
+                Text("♻️ Geri Dönüştür (+$${"%,d".format(totalRefund)})", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Vazgeç", color = Slate600)
+            }
+        }
+    )
 }
 
 @Composable
@@ -1335,6 +1509,37 @@ fun ReportItem(report: com.example.viewmodel.MarketReport) {
                 fontSize = 14.sp,
                 lineHeight = 22.sp
             )
+
+            if (!report.aiReviewQuote.isNullOrBlank()) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = "🤖 Yapay Zeka Eleştirmen İncelemesi",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = report.aiReviewQuote,
+                            fontSize = 12.sp,
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            lineHeight = 16.sp
+                        )
+                    }
+                }
+            }
+
             if (report.unitsSold > 0 || report.profit != 0L || report.reviewScore > 0) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                 Row(
@@ -1379,6 +1584,7 @@ fun BottomNavigationBar(
             Triple(AppScreen.Dashboard, Icons.Default.Home, "Ana Sayfa"),
             Triple(AppScreen.Devices, Icons.Default.PhoneAndroid, "Cihazlar"),
             Triple(AppScreen.Market, Icons.AutoMirrored.Filled.TrendingUp, "Pazar"),
+            Triple(AppScreen.Benchmark, Icons.Default.Speed, "Test Lab"),
             Triple(AppScreen.Software, Icons.Default.Terminal, "Yazılım"),
             Triple(AppScreen.Research, Icons.Default.Science, "Ar-Ge"),
             Triple(AppScreen.Employees, Icons.Default.Group, "Personel"),

@@ -1,7 +1,11 @@
+/**
+ * Pazar (Market) ekranı: satılan telefon modellerinin performansı, pazar trendleri,
+ * rakip şirketler ve ödüller (awards) ile ilgili görselleştirmeleri içerir.
+ */
 package com.example
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -21,13 +25,17 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.theme.Slate300
+import com.example.ui.theme.Slate400
 import com.example.viewmodel.CompetitorCompany
 import com.example.viewmodel.GameState
 import com.example.viewmodel.MarketTrend
+import com.example.viewmodel.TechExpoEvent
 
 @Composable
 fun BrandLogo(
@@ -257,20 +265,26 @@ fun MarketScreen(
                     Tab(
                         selected = selectedTab == 0,
                         onClick = { selectedTab = 0 },
-                        text = { Text("Pazar Payı", fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal) },
-                        icon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                        text = { Text("Pazar Payı", fontSize = 11.sp, fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal) },
+                        icon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, modifier = Modifier.size(16.dp)) }
                     )
                     Tab(
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 },
-                        text = { Text("Rakip Analizi", fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) },
-                        icon = { Icon(Icons.Default.Business, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                        text = { Text("Rakipler", fontSize = 11.sp, fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) },
+                        icon = { Icon(Icons.Default.Business, contentDescription = null, modifier = Modifier.size(16.dp)) }
                     )
                     Tab(
                         selected = selectedTab == 2,
                         onClick = { selectedTab = 2 },
-                        text = { Text("Lansmanlar (${state.competitorReleases.size})", fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal) },
-                        icon = { Icon(Icons.Default.Notifications, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                        text = { Text("Lansman (${state.competitorReleases.size})", fontSize = 11.sp, fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal) },
+                        icon = { Icon(Icons.Default.Notifications, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    )
+                    Tab(
+                        selected = selectedTab == 3,
+                        onClick = { selectedTab = 3 },
+                        text = { Text("Ödüller 🏆", fontSize = 11.sp, fontWeight = if (selectedTab == 3) FontWeight.Bold else FontWeight.Normal) },
+                        icon = { Icon(Icons.Default.EmojiEvents, contentDescription = null, modifier = Modifier.size(16.dp)) }
                     )
                 }
             }
@@ -331,6 +345,57 @@ fun MarketScreen(
                     } else {
                         items(state.competitorReleases) { release ->
                             CompetitorReleaseRow(release = release)
+                        }
+                    }
+                }
+                3 -> {
+                    // Tech Expo & Büyük Ödüller Geçmişi
+                    item {
+                        TechExpoMarketTabHeader(state = state)
+                    }
+
+                    if (state.pastTechExpos.isEmpty()) {
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Icon(
+                                        Icons.Default.EmojiEvents,
+                                        contentDescription = null,
+                                        tint = Color(0xFFF59E0B),
+                                        modifier = Modifier.size(42.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        "Yıl Sonu Fuarı Henüz Gerçekleşmedi",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        "Her yılın 12. Ayında (Aralık) MWC veya Global Tech Expo fuarı düzenlenir ve 4 büyük kategoride ödüller sahiplerini bulur!",
+                                        fontSize = 12.sp,
+                                        textAlign = TextAlign.Center,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        items(state.pastTechExpos) { expo ->
+                            PastTechExpoCard(
+                                expo = expo,
+                                playerBrandColorHex = state.companyBrandColorHex
+                            )
                         }
                     }
                 }
@@ -923,6 +988,203 @@ fun CompetitorReleaseRow(release: com.example.viewmodel.CompetitorReleaseHistory
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun TechExpoMarketTabHeader(state: GameState) {
+    val totalPlayerAwards = state.pastTechExpos.sumOf { it.playerWonCount }
+    val monthsUntilNextExpo = 12 - state.month
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+        border = BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.4f))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("🏆", fontSize = 24.sp)
+                    Column {
+                        Text(
+                            text = "Yıllık Teknoloji Fuarı & Ödülleri",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = "Global Tech Expo & MWC",
+                            fontSize = 11.sp,
+                            color = Slate400
+                        )
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color(0xFF0F172A)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text("🎖️", fontSize = 12.sp)
+                        Text(
+                            text = "$totalPlayerAwards Ödül",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFF59E0B)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = Color(0xFF0F172A).copy(alpha = 0.7f),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (monthsUntilNextExpo == 0) "🔥 Fuar Bu Ay Düzenleniyor!" else "⏳ Sıradaki Fuar için Kalan Süre:",
+                        fontSize = 12.sp,
+                        color = if (monthsUntilNextExpo == 0) Color(0xFFF59E0B) else Slate300,
+                        fontWeight = if (monthsUntilNextExpo == 0) FontWeight.Bold else FontWeight.Normal
+                    )
+                    Text(
+                        text = if (monthsUntilNextExpo == 0) "12. Ay (Aralık)" else "$monthsUntilNextExpo Ay Kaldı",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF60A5FA)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PastTechExpoCard(
+    expo: TechExpoEvent,
+    playerBrandColorHex: Long
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "🌐 ${expo.expoName}",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "${expo.city} • ${expo.year}",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                if (expo.playerWonCount > 0) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFF10B981).copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            text = "🎉 ${expo.playerWonCount} Ödül Kazandınız!",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF10B981),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+            Spacer(modifier = Modifier.height(10.dp))
+
+            expo.awards.forEach { award ->
+                val isPlayer = award.winner.isPlayer
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (isPlayer) Color(0xFF10B981).copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                    border = if (isPlayer) BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.4f)) else null
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(award.category.iconEmoji, fontSize = 16.sp)
+                            Column {
+                                Text(
+                                    text = award.category.title,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "${award.winner.companyName} ${award.winner.modelName}",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isPlayer) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+
+                        Text(
+                            text = "${award.winner.score}/100",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             }
         }
     }

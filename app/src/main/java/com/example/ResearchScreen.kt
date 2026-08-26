@@ -1,3 +1,7 @@
+/**
+ * Araştırma (Research) ekranı: teknoloji ağacı, aktif Ar-Ge kuyruğu ve
+ * kilidi açılan teknolojilerin ([unlockedTech]) görüntülenmesini sağlar.
+ */
 package com.example
 
 import androidx.compose.foundation.background
@@ -145,15 +149,20 @@ val allTechNodes = listOf(
     TechNode("24-bit Kayıpsız Bluetooth Ses Entegrasyonu", "24-bit Kayıpsız Bluetooth Ses Entegrasyonu", "24-bit/192kHz kayıpsız kablosuz ses aktarımı.", 5500000, 2023, "Kamera & Ses"),
     TechNode("Yapay Zeka Ses Kalibrasyon Entegrasyonu", "Yapay Zeka Ses Kalibrasyon Entegrasyonu", "Ortam akustiğine göre kendini ayarlayan AI ses.", 7500000, 2025, "Kamera & Ses"),
 
-    // BAĞLANTI & KASA
-    TechNode("4G LTE & BT 4.0 Entegrasyonu", "4G LTE & BT 4.0 Entegrasyonu", "4G LTE yüksek hızlı mobil internet modu.", 300000, 2011, "Bağlantı & Kasa"),
-    TechNode("USB 3.0 & Nano-SIM Entegrasyonu", "USB 3.0 & Nano-SIM Entegrasyonu", "Hızlı kablolu aktarım ve Nano-SIM yuvası.", 600000, 2013, "Bağlantı & Kasa"),
-    TechNode("USB-C & Hibrit SIM Entegrasyonu", "USB-C & Hibrit SIM Entegrasyonu", "Çift yönlü USB-C ve microSD/SIM hibrit yuva.", 1100000, 2015, "Bağlantı & Kasa"),
-    TechNode("USB-C 3.1 & eSIM Entegrasyonu", "USB-C 3.1 & eSIM Entegrasyonu", "USB-C 3.1 ve dahili sanal eSIM çipi.", 1800000, 2017, "Bağlantı & Kasa"),
-    TechNode("5G Mobil Şebeke Entegrasyonu", "5G Mobil Şebeke Entegrasyonu", "Ultra yüksek hızlı 5G mmWave modem çipi.", 3200000, 2019, "Bağlantı & Kasa"),
-    TechNode("Wi-Fi 6E & Çift eSIM Entegrasyonu", "Wi-Fi 6E & Çift eSIM Entegrasyonu", "6GHz Wi-Fi 6E ve çift eSIM entegrasyonu.", 4800000, 2021, "Bağlantı & Kasa"),
-    TechNode("Thunderbolt 4 & Wi-Fi 7 Entegrasyonu", "Thunderbolt 4 & Wi-Fi 7 Entegrasyonu", "40Gbps Thunderbolt 4 ve Wi-Fi 7 çipi.", 6800000, 2023, "Bağlantı & Kasa"),
-    TechNode("Uydu İletişimi & BT 6.0 Entegrasyonu", "Uydu İletişimi & BT 6.0 Entegrasyonu", "Acil durum yörünge uydusu mesajlaşma modu.", 9500000, 2025, "Bağlantı & Kasa"),
+    // BAĞLANTI & PORT & KASA
+    TechNode("4G LTE Şebeke Entegrasyonu", "4G LTE Şebeke Entegrasyonu", "4G LTE yüksek hızlı mobil hücresel internet modu.", 300000, 2011, "Bağlantı & Kasa"),
+    TechNode("USB 3.0 & Yüksek Hızlı Port", "USB 3.0 & Yüksek Hızlı Port", "5Gbps hızlı kablolu veri aktarımı ve şarj bağlantı noktası.", 500000, 2013, "Bağlantı & Kasa"),
+    TechNode("USB-C Simetrik Port Mimarisi", "USB-C Simetrik Port Mimarisi", "Çift yönlü takılabilir modern USB-C şarj ve veri arayüzü.", 900000, 2015, "Bağlantı & Kasa"),
+    TechNode("Wi-Fi 5 (ac) & Çift Bant Kablosuz", "Wi-Fi 5 (ac) & Çift Bant Kablosuz", "5GHz frekans bandında gigabit kablosuz yerel ağ bağlantısı.", 800000, 2014, "Bağlantı & Kasa"),
+    TechNode("4G LTE Gelişmiş (Cat 6) Modem", "4G LTE Gelişmiş (Cat 6) Modem", "300 Mbps taşıyıcı birleştirme destekli hücresel modem.", 1200000, 2016, "Bağlantı & Kasa"),
+    TechNode("USB-C 3.1 & DisplayPort Çıkışı", "USB-C 3.1 & DisplayPort Çıkışı", "10Gbps USB-C 3.1 portu ve harici monitör video çıkışı.", 1600000, 2017, "Bağlantı & Kasa"),
+    TechNode("5G Sub-6 Mobil Şebeke", "5G Sub-6 Mobil Şebeke", "Yeni nesil 5G geniş kapsama alanı hücresel modem entegrasyonu.", 2800000, 2019, "Bağlantı & Kasa"),
+    TechNode("Wi-Fi 6 (ax) & Bluetooth 5.2", "Wi-Fi 6 (ax) & Bluetooth 5.2", "Düşük gecikmeli Wi-Fi 6 ve kararlı Bluetooth 5.2 kablosuz ağ.", 2200000, 2019, "Bağlantı & Kasa"),
+    TechNode("5G mmWave Ultra Hızlı Şebeke", "5G mmWave Ultra Hızlı Şebeke", "Ultra yüksek bant genişlikli milimetrik dalga 5G anten dizisi.", 4200000, 2020, "Bağlantı & Kasa"),
+    TechNode("Wi-Fi 6E & 6GHz Frekans Çipi", "Wi-Fi 6E & 6GHz Frekans Çipi", "6GHz bandını kullanan parazitsiz ultra akıcı Wi-Fi 6E.", 3800000, 2021, "Bağlantı & Kasa"),
+    TechNode("Thunderbolt 4 / USB4 Portu", "Thunderbolt 4 / USB4 Portu", "40Gbps profesyonel aktarım ve 8K görüntü aktarabilen evrensel port.", 5500000, 2023, "Bağlantı & Kasa"),
+    TechNode("Wi-Fi 7 & Bluetooth 5.4 MLO", "Wi-Fi 7 & Bluetooth 5.4 MLO", "Çoklu bağlantı işlemli (MLO) 30Gbps teorik Wi-Fi 7 kablosuz çip.", 6200000, 2024, "Bağlantı & Kasa"),
+    TechNode("Doğrudan Uydu Şebekesi & SOS", "Doğrudan Uydu Şebekesi & SOS", "Şebekesiz acil durumlarda alçak yörünge uydularına iki yönlü doğrudan bağlantı.", 8500000, 2025, "Bağlantı & Kasa"),
 
     TechNode("Alüminyum Kasa Entegrasyonu", "Alüminyum Kasa Entegrasyonu", "Hafif ve şık alüminyum gövde imalatı.", 400000, 2012, "Bağlantı & Kasa"),
     TechNode("Cam Arka Kapak Entegrasyonu", "Cam Arka Kapak Entegrasyonu", "Kablosuz şarja uygun premium cam arka kapak.", 800000, 2014, "Bağlantı & Kasa"),

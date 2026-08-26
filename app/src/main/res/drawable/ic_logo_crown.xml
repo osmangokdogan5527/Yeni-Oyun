@@ -1,12 +1,27 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="48dp"
-    android:height="48dp"
+    android:width="64dp"
+    android:height="64dp"
     android:viewportWidth="100"
     android:viewportHeight="100">
+    <!-- Outer Shield Crest -->
     <path
         android:fillColor="#FBBF24"
-        android:pathData="M18,34 L32,56 L50,22 L68,56 L82,34 L78,78 L22,78 Z" />
+        android:pathData="M50,8 L88,26 L88,58 C88,76 50,92 50,92 C50,92 12,76 12,58 L12,26 Z" />
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M50,14 L82,30 L82,56 C82,72 50,86 50,86 C50,86 18,72 18,56 L18,30 Z" />
+    <!-- Imperial Crown Peaks -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M18,30 m-4,0 a4,4 0 1,1 8,0 a4,4 0 1,1 -8,0 M50,18 m-4,0 a4,4 0 1,1 8,0 a4,4 0 1,1 -8,0 M82,30 m-4,0 a4,4 0 1,1 8,0 a4,4 0 1,1 -8,0" />
+        android:pathData="M26,62 L26,38 L38,48 L50,28 L62,48 L74,38 L74,62 Z" />
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M30,58 L30,44 L38,50 L50,36 L62,50 L70,44 L70,58 Z" />
+    <!-- Crown Jewels -->
+    <path
+        android:fillColor="#0284C7"
+        android:pathData="M50,54 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M50,28 m-2,0 a2,2 0 1,1 4,0 a2,2 0 1,1 -4,0" />
 </vector>

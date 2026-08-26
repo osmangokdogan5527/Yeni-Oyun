@@ -1,20 +1,24 @@
+/**
+ * Gemini API (generateContent) için Retrofit servis tanımı ve istemcisi.
+ *
+ * NOT: Bu servis şu an [com.example.viewmodel.GameViewModel] veya başka hiçbir
+ * yerden ÇAĞRILMIYOR — haberler, olaylar ve rakip AI'ı tamamen yerel (lokal) kodla
+ * üretiliyor. Eğer amacınız gerçekten Gemini destekli içerik üretmekse, bu servisi
+ * GameViewModel içinden çağırıp `GEMINI_API_KEY`'i (.env üzerinden) kullanacak şekilde
+ * bağlamanız gerekiyor; aksi halde bu dosya şu an ölü kod (dead code) durumunda.
+ */
 package com.example.api
 
-import com.example.BuildConfig
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import okhttp3.ResponseBody
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.POST
 import retrofit2.http.Query
-import retrofit2.http.Streaming
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 @Serializable
 data class GenerateContentRequest(

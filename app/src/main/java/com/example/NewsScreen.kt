@@ -1,3 +1,7 @@
+/**
+ * Haberler (News) ekranı: hem tarihsel (sabit) hem de oyun içi olaylara bağlı olarak
+ * üretilen haber makalelerinin ([NewsArticle]) listelendiği ekran.
+ */
 package com.example
 
 import androidx.compose.foundation.background
@@ -17,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.theme.Slate200
-import com.example.ui.theme.Slate400
 import com.example.ui.theme.Slate600
 import com.example.ui.theme.Slate800
 import com.example.ui.theme.Slate900
@@ -221,6 +224,22 @@ fun NewsItemCard(news: NewsArticle) {
                             shapeRadius = 4.dp
                         )
                     }
+
+                    if (news.isAiGenerated) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = "🤖 GEMINI AI",
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                    }
                 }
 
                 Text(
@@ -248,6 +267,32 @@ fun NewsItemCard(news: NewsArticle) {
                 color = Slate600,
                 lineHeight = 19.sp
             )
+
+            if (!news.reviewerQuote.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Text(
+                            text = "✍️ Basın & Eleştirmen Yorumu:",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = news.reviewerQuote,
+                            fontSize = 12.sp,
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            lineHeight = 16.sp
+                        )
+                    }
+                }
+            }
         }
     }
 }

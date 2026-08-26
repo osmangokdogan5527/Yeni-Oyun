@@ -1,12 +1,24 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="48dp"
-    android:height="48dp"
+    android:width="64dp"
+    android:height="64dp"
     android:viewportWidth="100"
     android:viewportHeight="100">
+    <!-- Outer Shield / Hex Prism -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M50,12 L84,50 L50,88 L16,50 Z" />
+        android:pathData="M50,8 L88,30 L88,70 L50,92 L12,70 L12,30 Z" />
+    <!-- Inner Deep Cut Diamond Facets -->
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M50,18 L80,35 L80,65 L50,82 L20,65 L20,35 Z" />
+    <!-- Center Brilliant Crystal Core -->
     <path
         android:fillColor="#60A5FA"
-        android:pathData="M50,30 L68,50 L50,70 L32,50 Z" />
+        android:pathData="M50,26 L72,42 L50,74 L28,42 Z" />
+    <path
+        android:fillColor="#93C5FD"
+        android:pathData="M50,26 L72,42 L50,50 Z" />
+    <path
+        android:fillColor="#3B82F6"
+        android:pathData="M50,50 L72,42 L50,74 Z" />
 </vector>

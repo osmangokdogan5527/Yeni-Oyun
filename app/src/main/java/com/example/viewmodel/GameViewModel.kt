@@ -1,18 +1,48 @@
+/**
+ * Oyunun ana durum yönetimi ve iş mantığı katmanı.
+ *
+ * Bu dosya şunları içerir:
+ * - [GameState] ve alt veri sınıfları (şirket, telefon modelleri, rakipler, Ar-Ge, yazılım vb.)
+ * - [GameViewModel]: aylık simülasyon adımını (satış, pazar, haberler, rakip AI) yürüten,
+ *   kayıt/yükleme (Room) işlemlerini yöneten ana ViewModel.
+ *
+ * Not: Dosya oldukça büyük (3000+ satır) — yeni özellik eklerken ilgili bölümü bulmak için
+ * "MARK:"tarzı yorum başlıkları veya IDE'nin yapı (structure) görünümünü kullanmanız önerilir.
+ * Uzun vadede bu dosyayı sorumluluk alanına göre (SaveRepository, MarketSimulation,
+ * CompetitorAI gibi) ayrı dosyalara bölmek okunabilirliği artırır.
+ */
 package com.example.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.api.AiGameService
+import com.example.data.AppDatabase
+import com.example.data.GameSaveEntity
+import com.example.data.GameSaveRepository
+import com.example.model.BenchmarkScore
+import com.example.util.BenchmarkCalculator
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlin.random.Random
 
+@Serializable
 enum class EmployeeType {
     ENGINEER,       // Mühendis ($8,000/ay): Teknolojik yıpranmayı düşürür ve taban kaliteyi artırır.
     QA_INSPECTOR,   // QA Uzmanı ($5,000/ay): Cihaz eleştirmen ve test puanına doğrudan +2 puan ekler.
     ASSEMBLY_WORKER // Üretim İşçisi ($3,000/ay): Birim cihaz üretim maliyetini düşürür (%25'e kadar).
 }
 
+@Serializable
 enum class CampaignType(
     val title: String,
     val cost: Long,
@@ -25,11 +55,13 @@ enum class CampaignType(
     TV_COMMERCIAL("TV Reklam Kampanyası", 400000L, 6, 80, "6 Ay boyunca +%80 satış talebi artışı")
 }
 
+@Serializable
 data class ActiveCampaign(
     val type: CampaignType,
     val remainingMonths: Int
 )
 
+@Serializable
 enum class OsType(
     val title: String,
     val subtitle: String,
@@ -68,6 +100,7 @@ enum class OsType(
     )
 }
 
+@Serializable
 enum class OsFocus(
     val title: String,
     val icon: String,
@@ -106,6 +139,7 @@ enum class OsFocus(
     )
 }
 
+@Serializable
 enum class UpdateGuarantee(
     val years: Int,
     val title: String,
@@ -118,6 +152,7 @@ enum class UpdateGuarantee(
     SEVEN_YEARS(7, "7 Yıl Lider Amiral Gemisi Desteği", 150000L, 20)
 }
 
+@Serializable
 enum class OsLicenseType(
     val title: String, 
     val badge: String, 
@@ -147,12 +182,14 @@ enum class OsLicenseType(
     )
 }
 
+@Serializable
 enum class StoreCommissionRate(val percent: Int, val label: String, val marketLoyaltyBonus: Float) {
     DEVELOPER_FRIENDLY(15, "%15 Geliştirici Dostu (Yüksek Büyüme)", 1.25f),
     BALANCED(20, "%20 Dengeli Pazar Standardı", 1.0f),
     MAXIMUM_PROFIT(30, "%30 Maksimum Kâr Marjı", 0.85f)
 }
 
+@Serializable
 enum class OsModuleType(
     val id: String,
     val title: String,
@@ -204,6 +241,7 @@ enum class OsModuleType(
     )
 }
 
+@Serializable
 data class CompetitorOsInfo(
     val id: String,
     val name: String,
@@ -221,6 +259,7 @@ data class CompetitorOsInfo(
     val brandColorHex: Long
 )
 
+@Serializable
 enum class ModelTier(
     val title: String, 
     val badge: String, 
@@ -230,11 +269,12 @@ enum class ModelTier(
     val description: String
 ) {
     STANDARD("Standart", "📱", 1.0f, 1.0f, 0, "Dengeli ana akım model. Fiyat/performans kitlesine hitap eder."),
-    PRO("Pro", "💎", 1.35f, 1.20f, 6, "Gelişmiş amiral gemisi. Yüksek marj ve teknoloji meraklıları için üstün donanım."),
-    ULTRA("Ultra / Pro Max", "👑", 1.75f, 1.45f, 12, "En üst seviye amiral gemisi. Zirve prestij, en yüksek fiyat tavanı ve talep çekiciliği."),
-    LITE("Lite / SE", "🏷️", 0.75f, 0.85f, -2, "Bütçe dostu giriş seviyesi. Düşük fiyat, yüksek satış hacmi.")
+    PRO("Pro", "💎", 1.35f, 1.0f, 0, "Gelişmiş amiral gemisi. Yüksek marj ve teknoloji meraklıları için üstün donanım."),
+    ULTRA("Ultra / Pro Max", "👑", 1.75f, 1.0f, 0, "En üst seviye amiral gemisi. Zirve prestij, en yüksek fiyat tavanı ve talep çekiciliği."),
+    LITE("Lite / SE", "🏷️", 0.75f, 1.0f, 0, "Bütçe dostu giriş seviyesi. Düşük fiyat, yüksek satış hacmi.")
 }
 
+@Serializable
 data class CustomOsState(
     val name: String = "Stok Açık Kaynak Android",
     val version: String = "1.0",
@@ -277,6 +317,7 @@ data class CustomOsState(
     val overallTechScore: Int get() = (optimizationScore * 0.4f + (kernelLevel + aiLevel + securityLevel + cloudLevel + appStoreLevel) * 4f).toInt().coerceIn(10, 100)
 }
 
+@Serializable
 data class PhoneSpecs(
     val name: String,
     val seriesName: String = "",
@@ -294,6 +335,9 @@ data class PhoneSpecs(
     val batteryCapacity: String,
     val batteryType: String,
     val connectivity: String,
+    val cellularNetwork: String = "3G HSPA+",
+    val chargingPort: String = "Micro-USB",
+    val wirelessConnectivity: String = "Wi-Fi 4 & BT 2.1",
     val audio: String,
     val glass: String,
     val price: Int,
@@ -319,6 +363,7 @@ data class PhoneSpecs(
     val ram: String get() = "$ramCapacity $ramType"
 }
 
+@Serializable
 data class ActiveModel(
     val id: String,
     val specs: PhoneSpecs,
@@ -332,7 +377,8 @@ data class ActiveModel(
     val launchMonth: Int,
     val isExtendedNewsSent: Boolean = false,
     val activeCampaign: ActiveCampaign? = null,
-    val matchesTrend: Boolean = false
+    val matchesTrend: Boolean = false,
+    val benchmarkScore: BenchmarkScore? = null
 ) {
     val maxMonthsOnMarket: Int
         get() = if (reviewScore >= 60) 24 else 12
@@ -341,6 +387,7 @@ data class ActiveModel(
         get() = remainingStock <= 0 || monthsOnMarket >= maxMonthsOnMarket
 }
 
+@Serializable
 enum class TrendCategory(val title: String, val icon: String, val tip: String) {
     HIGH_REFRESH_DISPLAY("Yüksek Yenileme Hızlı Ekran", "⚡", "120Hz/144Hz/240Hz ekran veya Oyuncu tarzı kullanın."),
     CAMERA_PRO("Gelişmiş Kamera & Özçekim", "📸", "Çift, Üçlü veya Periskop/200MP kamera seçin."),
@@ -351,6 +398,7 @@ enum class TrendCategory(val title: String, val icon: String, val tip: String) {
     FAST_CONNECTIVITY("5G & Hızlı Bağlantı", "📶", "5G, Wi-Fi 6E/7 veya Uydu bağlantısı seçin.")
 }
 
+@Serializable
 data class MarketTrend(
     val id: String,
     val title: String,
@@ -361,6 +409,7 @@ data class MarketTrend(
     val totalDurationMonths: Int = 4
 )
 
+@Serializable
 data class CompetitorCompany(
     val id: String,
     val name: String, // "Armut", "Samsong", "Xiaomeme", "Gugıl"
@@ -377,6 +426,7 @@ data class CompetitorCompany(
     val weaknessText: String
 )
 
+@Serializable
 data class CompetitorReleaseHistory(
     val id: String,
     val companyName: String,
@@ -389,23 +439,30 @@ data class CompetitorReleaseHistory(
     val headline: String
 )
 
+@Serializable
 data class NewsArticle(
     val id: String,
     val title: String,
     val text: String,
     val category: String, // "Sektör", "Teknoloji", "Pazar", "Şirket"
     val year: Int,
-    val month: Int
+    val month: Int,
+    val isAiGenerated: Boolean = false,
+    val reviewerQuote: String? = null
 )
 
+@Serializable
 data class MarketReport(
     val title: String,
     val text: String,
     val profit: Long,
     val unitsSold: Int,
-    val reviewScore: Int
+    val reviewScore: Int,
+    val aiReviewQuote: String? = null,
+    val isAiGenerated: Boolean = false
 )
 
+@Serializable
 data class OfficeTier(
     val level: Int,
     val name: String,
@@ -421,6 +478,7 @@ val OFFICE_TIERS = listOf(
     OfficeTier(4, "Akıllı Gökdelen Kampüsü", 500, 600000L, 12000000L)
 )
 
+@Serializable
 data class FactoryTier(
     val level: Int,
     val name: String,
@@ -437,6 +495,7 @@ val FACTORY_TIERS = listOf(
     FactoryTier(3, "Mega Akıllı Robotik Fabrika", 300, 35f, 500000L, 20000000L)
 )
 
+@Serializable
 data class ActiveResearch(
     val techId: String,
     val techName: String,
@@ -445,6 +504,7 @@ data class ActiveResearch(
     val cost: Long
 )
 
+@Serializable
 data class GameState(
     val reports: List<MarketReport> = emptyList(),
     val budget: Long = 4500000,
@@ -787,7 +847,9 @@ data class GameState(
     val competitorReleases: List<CompetitorReleaseHistory> = emptyList(),
     val playerMarketSharePercent: Float = 0f,
     val totalMarketMonthlyVolume: Int = 800000,
-    val customOs: CustomOsState = CustomOsState()
+    val customOs: CustomOsState = CustomOsState(),
+    val activeTechExpo: TechExpoEvent? = null,
+    val pastTechExpos: List<TechExpoEvent> = emptyList()
 ) {
     val currentOfficeTier: OfficeTier
         get() = OFFICE_TIERS.firstOrNull { it.level == officeLevel } ?: OFFICE_TIERS.first()
@@ -829,7 +891,22 @@ data class GameState(
         get() = engineers * 2
 }
 
-class GameViewModel : ViewModel() {
+class GameViewModel(application: Application) : AndroidViewModel(application) {
+    private val database = AppDatabase.getDatabase(application)
+    private val saveRepository = GameSaveRepository(database.gameSaveDao())
+
+    val savedGamesState: StateFlow<List<GameSaveEntity>> = saveRepository.allSaves.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000L),
+        initialValue = emptyList()
+    )
+
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+        isLenient = true
+    }
+
     private val _state = MutableStateFlow(GameState())
     val state: StateFlow<GameState> = _state.asStateFlow()
 
@@ -847,6 +924,113 @@ class GameViewModel : ViewModel() {
             ),
             newsList = initialNews
         )}
+
+        // Attempt to auto-load slot 0 if exists
+        viewModelScope.launch(Dispatchers.IO) {
+            val autoSave = saveRepository.getSave(0)
+            if (autoSave != null) {
+                try {
+                    val loaded = json.decodeFromString<GameState>(autoSave.gameStateJson)
+                    _state.value = loaded
+                } catch (e: Exception) {
+                    // Fall back to default
+                }
+            }
+        }
+    }
+
+    fun autoSaveGame() {
+        val current = _state.value
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val jsonString = json.encodeToString(current)
+                saveRepository.saveGame(
+                    GameSaveEntity(
+                        slotId = 0,
+                        slotName = "Otomatik Kayıt",
+                        companyName = current.companyName,
+                        year = current.year,
+                        month = current.month,
+                        budget = current.budget,
+                        reputation = current.reputation,
+                        modelCount = current.activeModels.size,
+                        lastSavedTimestamp = System.currentTimeMillis(),
+                        gameStateJson = jsonString
+                    )
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun manualSaveGame(slotId: Int, slotName: String = "Kayıt Slotu $slotId") {
+        val current = _state.value
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val jsonString = json.encodeToString(current)
+                saveRepository.saveGame(
+                    GameSaveEntity(
+                        slotId = slotId,
+                        slotName = slotName,
+                        companyName = current.companyName,
+                        year = current.year,
+                        month = current.month,
+                        budget = current.budget,
+                        reputation = current.reputation,
+                        modelCount = current.activeModels.size,
+                        lastSavedTimestamp = System.currentTimeMillis(),
+                        gameStateJson = jsonString
+                    )
+                )
+                _state.update { it.copy(noticeMessage = "Oyun başarıyla kaydedildi ($slotName).") }
+            } catch (e: Exception) {
+                _state.update { it.copy(noticeMessage = "Kayıt sırasında hata oluştu: ${e.message}") }
+            }
+        }
+    }
+
+    fun loadGame(slotId: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val entity = saveRepository.getSave(slotId)
+                if (entity != null) {
+                    val loaded = json.decodeFromString<GameState>(entity.gameStateJson)
+                    _state.value = loaded
+                    _state.update { it.copy(noticeMessage = "${entity.slotName} başarıyla yüklendi!") }
+                } else {
+                    _state.update { it.copy(noticeMessage = "Kayıt dosyası bulunamadı.") }
+                }
+            } catch (e: Exception) {
+                _state.update { it.copy(noticeMessage = "Kayıt yüklenirken hata oluştu: ${e.message}") }
+            }
+        }
+    }
+
+    fun deleteSave(slotId: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            saveRepository.deleteSave(slotId)
+        }
+    }
+
+    fun startNewGame(freshCompanyName: String = "Apex Mobile") {
+        val initialNews = getHistoricalNewsForYearMonth(2010, 1)
+        val freshState = GameState(
+            companyName = freshCompanyName,
+            isCompanySetupDone = false,
+            reports = listOf(
+                MarketReport(
+                    title = "Yeni Şirket Kuruldu",
+                    text = "Yeni bir yolculuk başlıyor! İlk akıllı telefonunuzu üretmek için şirketinizi kurun.",
+                    profit = 0,
+                    unitsSold = 0,
+                    reviewScore = 0
+                )
+            ),
+            newsList = initialNews
+        )
+        _state.value = freshState
+        autoSaveGame()
     }
 
     private fun getHistoricalNewsForYearMonth(year: Int, month: Int): List<NewsArticle> {
@@ -1193,16 +1377,31 @@ class GameViewModel : ViewModel() {
                     else -> 1.0f
                 }
 
-                val demandFactor = qualityFactor * repFactor * priceElasticityFactor * seriesLoyaltyFactor * tierDemandFactor * campaignFactor * trendFactor * colorFactor * designFactor * osSynergyFactor
+                // Lifecycle Sales Curve Factor:
+                // Months 1-2: Slow warm-up / early adopters (0.35x -> 0.65x)
+                // Months 3-6: Massive peak / viral boom / mainstream frenzy (2.2x -> 1.8x)
+                // Months 7+: Sharp drop-off / market saturation (0.25x -> 0.08x)
+                val lifecycleSalesCurve = when (newMonths) {
+                    1 -> 0.35f
+                    2 -> 0.65f
+                    3 -> 2.20f
+                    4 -> 2.40f
+                    5 -> 2.00f
+                    6 -> 1.50f
+                    7 -> 0.70f
+                    8 -> 0.40f
+                    9 -> 0.25f
+                    10 -> 0.15f
+                    11 -> 0.10f
+                    12 -> 0.05f
+                    else -> 0.04f // 2nd year if extended
+                }
+
+                val demandFactor = qualityFactor * repFactor * priceElasticityFactor * seriesLoyaltyFactor * tierDemandFactor * campaignFactor * trendFactor * colorFactor * designFactor * osSynergyFactor * lifecycleSalesCurve
                 
                 // Monthly units sold
-                var unitsSoldThisMonth = (baseMonthlyBatch * demandFactor).toInt().coerceIn(1, model.remainingStock)
-                
-                // Clear out remaining stock in final month
-                if (newMonths == model.maxMonthsOnMarket) {
-                    val clearanceTarget = (model.remainingStock * (model.reviewScore / 100.0f)).toInt()
-                    unitsSoldThisMonth = unitsSoldThisMonth.coerceAtLeast(clearanceTarget).coerceAtMost(model.remainingStock)
-                }
+                val calculatedUnits = (baseMonthlyBatch * demandFactor).toInt().coerceAtLeast(1)
+                val unitsSoldThisMonth = calculatedUnits.coerceAtMost(model.remainingStock)
                 
                 val revenueThisMonth = unitsSoldThisMonth.toLong() * model.specs.price
                 
@@ -1617,11 +1816,42 @@ class GameViewModel : ViewModel() {
             reviewScore = 0
         )
 
+        val isYearEndExpo = (newMonth == 12)
+        var triggeredExpoEvent: TechExpoEvent? = null
+        var expoPrizeTotal = 0L
+        var expoRepGain = 0
+
+        if (isYearEndExpo) {
+            val expo = generateTechExpo(
+                year = newYear,
+                playerModels = updatedActiveModels,
+                playerCompanyName = currentState.companyName,
+                playerBrandColorHex = currentState.companyBrandColorHex,
+                competitors = updatedCompetitors
+            )
+            triggeredExpoEvent = expo
+            expoPrizeTotal = expo.totalPrizeWon
+            expoRepGain = expo.reputationGained
+
+            newNewsList.add(
+                0,
+                NewsArticle(
+                    id = "expo_news_${newYear}_12",
+                    title = "🌐 ${expo.expoName.uppercase()} ÖDÜLLERİ AÇIKLANDI!",
+                    text = "${expo.city} şehrinde düzenlenen küresel teknoloji fuarında ${currentState.companyName} şirketi ${expo.playerWonCount} prestijli ödül kazandı! ($${"%,d".format(expoPrizeTotal)} ödül havuzu & +${expoRepGain} İtibar)",
+                    category = "Sektör",
+                    year = newYear,
+                    month = 12
+                )
+            )
+        }
+
         _state.update {
             it.copy(
                 month = newMonth,
                 year = newYear,
-                budget = it.budget + netIncome - autoStartResearchCost,
+                budget = it.budget + netIncome - autoStartResearchCost + expoPrizeTotal,
+                reputation = (it.reputation + expoRepGain).coerceIn(0, 100),
                 monthlyIncome = totalCombinedRevenue,
                 customOs = updatedCustomOs,
                 activeModels = updatedActiveModels,
@@ -1635,8 +1865,37 @@ class GameViewModel : ViewModel() {
                 competitorReleases = updatedCompetitorReleases,
                 playerMarketSharePercent = playerSharePercent,
                 totalMarketMonthlyVolume = totalMarketVolume,
+                activeTechExpo = triggeredExpoEvent,
+                pastTechExpos = if (triggeredExpoEvent != null) listOf(triggeredExpoEvent) + it.pastTechExpos else it.pastTechExpos,
                 techLevel = if (updatedUnlockedTech.size >= 15) "Yapay Zeka" else if (updatedUnlockedTech.size >= 5) "İleri Düzey" else "Giriş"
             )
+        }
+
+        autoSaveGame()
+
+        // Periodically fetch dynamic AI news (every 3 months)
+        if (newMonth % 3 == 0) {
+            viewModelScope.launch {
+                val trendTitle = updatedTrend?.title ?: "Yeni Nesil Akıllı Telefonlar"
+                val compNames = updatedCompetitors.map { it.name }
+                val aiNews = AiGameService.generateDynamicNews(newYear, newMonth, trendTitle, compNames)
+                if (aiNews != null) {
+                    val (title, text) = aiNews
+                    val dynamicArticle = NewsArticle(
+                        id = "ai_news_${newYear}_${newMonth}_${Random.nextInt(100, 999)}",
+                        title = title,
+                        text = text,
+                        category = "Teknoloji",
+                        year = newYear,
+                        month = newMonth,
+                        isAiGenerated = true
+                    )
+                    _state.update { current ->
+                        current.copy(newsList = listOf(dynamicArticle) + current.newsList)
+                    }
+                    autoSaveGame()
+                }
+            }
         }
     }
 
@@ -1796,6 +2055,7 @@ class GameViewModel : ViewModel() {
                 )
             )
         }
+        autoSaveGame()
     }
 
     fun manufacturePhone(specs: PhoneSpecs) {
@@ -1874,6 +2134,11 @@ class GameViewModel : ViewModel() {
 
         val finalSpecs = specs.copy(matchesTrend = isTrendMatched, unitCost = productionCost)
 
+        val computedBenchmark = BenchmarkCalculator.calculateScore(
+            specs = finalSpecs,
+            osOptimization = currentState.customOs.overallTechScore
+        )
+
         val newActiveModel = ActiveModel(
             id = "${specs.name}_${currentState.year}_${currentState.month}_${Random.nextInt(1000, 9999)}",
             specs = finalSpecs,
@@ -1885,7 +2150,8 @@ class GameViewModel : ViewModel() {
             reviewScore = reviewScore,
             launchYear = currentState.year,
             launchMonth = currentState.month,
-            matchesTrend = isTrendMatched
+            matchesTrend = isTrendMatched,
+            benchmarkScore = computedBenchmark
         )
 
         val launchNews = NewsArticle(
@@ -1915,6 +2181,34 @@ class GameViewModel : ViewModel() {
                 reports = it.reports + report,
                 newsList = it.newsList + launchNews
             )
+        }
+
+        autoSaveGame()
+
+        // Generate dynamic AI Critic Review asynchronously
+        viewModelScope.launch {
+            val (aiQuote, isAi) = AiGameService.generatePhoneReview(
+                specs = finalSpecs,
+                companyName = currentState.companyName,
+                year = currentState.year,
+                reviewScore = reviewScore,
+                trend = currentState.currentTrend
+            )
+
+            _state.update { current ->
+                val updatedReports = current.reports.map { rep ->
+                    if (rep.title == "${specs.name} Üretimi Başladı") {
+                        rep.copy(aiReviewQuote = aiQuote, isAiGenerated = isAi)
+                    } else rep
+                }
+                val updatedNews = current.newsList.map { news ->
+                    if (news.id == "news_launch_${newActiveModel.id}") {
+                        news.copy(reviewerQuote = aiQuote, isAiGenerated = isAi)
+                    } else news
+                }
+                current.copy(reports = updatedReports, newsList = updatedNews)
+            }
+            autoSaveGame()
         }
     }
 
@@ -2034,17 +2328,37 @@ class GameViewModel : ViewModel() {
             else -> 10
         }
 
-        // Connectivity
+        // Connectivity (Cellular, Port, Wireless)
         cost += when {
-            specs.connectivity.contains("Uydu") -> 110
-            specs.connectivity.contains("Wi-Fi 7") || specs.connectivity.contains("Thunderbolt") -> 80
-            specs.connectivity.contains("Wi-Fi 6E") -> 65
-            specs.connectivity.contains("5G") -> 50
-            specs.connectivity.contains("3.1") -> 35
-            specs.connectivity.contains("USB-C") -> 25
-            specs.connectivity.contains("USB 3.0") -> 20
-            specs.connectivity.contains("4G") -> 15
-            else -> 5
+            specs.cellularNetwork.contains("Uydu") -> 45
+            specs.cellularNetwork.contains("5G mmWave") -> 30
+            specs.cellularNetwork.contains("5G Sub-6") -> 22
+            specs.cellularNetwork.contains("4G LTE Cat 6") -> 14
+            specs.cellularNetwork.contains("4G LTE") -> 10
+            specs.cellularNetwork.contains("3G HSPA+") -> 5
+            specs.cellularNetwork.contains("3G") -> 3
+            else -> 2
+        }
+
+        cost += when {
+            specs.chargingPort.contains("Thunderbolt 4") -> 35
+            specs.chargingPort.contains("USB-C 3.2") -> 22
+            specs.chargingPort.contains("USB-C 3.1") -> 15
+            specs.chargingPort.contains("USB-C 2.0") -> 10
+            specs.chargingPort.contains("USB 3.0 Micro-B") -> 8
+            specs.chargingPort.contains("Micro-USB") -> 3
+            specs.chargingPort.contains("Mini-USB") -> 2
+            else -> 2
+        }
+
+        cost += when {
+            specs.wirelessConnectivity.contains("Wi-Fi 7") -> 30
+            specs.wirelessConnectivity.contains("Wi-Fi 6E") -> 20
+            specs.wirelessConnectivity.contains("Wi-Fi 6") -> 14
+            specs.wirelessConnectivity.contains("Wi-Fi 5 (ac)") -> 9
+            specs.wirelessConnectivity.contains("Wi-Fi 4 (n)") -> 5
+            specs.wirelessConnectivity.contains("Wi-Fi 4 & BT 2.1") -> 3
+            else -> 2
         }
 
         // Audio
@@ -2152,6 +2466,56 @@ class GameViewModel : ViewModel() {
                 activeModels = updatedModels,
                 newsList = it.newsList + restockNews,
                 reports = it.reports + report
+            )
+        }
+    }
+
+    fun recycleRemainingStock(modelId: String) {
+        val currentState = _state.value
+        val model = currentState.activeModels.find { it.id == modelId } ?: return
+        if (model.remainingStock <= 0) return
+
+        val unitCost = calculateProductionCost(model.specs)
+        // Geri dönüşüm değeri: birim maliyetin %50'si (yarı fiyatı)
+        val recyclePerUnit = (unitCost * 0.50f).toLong()
+        val totalRefund = recyclePerUnit * model.remainingStock.toLong()
+        val recycledQty = model.remainingStock
+
+        val updatedModels = currentState.activeModels.map {
+            if (it.id == modelId) {
+                it.copy(
+                    remainingStock = 0,
+                    monthsOnMarket = it.maxMonthsOnMarket // Mark as completed
+                )
+            } else {
+                it
+            }
+        }
+
+        val recycleNews = NewsArticle(
+            id = "news_recycle_${modelId}_${currentState.year}_${currentState.month}_${Random.nextInt(100, 999)}",
+            title = "♻️ GERİ DÖNÜŞÜM & TASFİYE: ${model.specs.name}",
+            text = "${model.specs.name} modelinin elde kalan ${"%,d".format(recycledQty)} adet stoku parça geri kazanımına gönderildi. Üretim maliyetinin yarısı (%50) karşılığında $${"%,d".format(totalRefund)} bütçeye iade edildi.",
+            category = "Şirket",
+            year = currentState.year,
+            month = currentState.month
+        )
+
+        val report = MarketReport(
+            title = "${model.specs.name} Stokları Geri Dönüştürüldü",
+            text = "Elde kalan ${"%,d".format(recycledQty)} adet ${model.specs.name} cihazı birim başı $${recyclePerUnit} (%50 maliyet) üzerinden geri dönüştürüldü ve şirkete $${"%,d".format(totalRefund)} nakit girişi sağlandı.",
+            profit = totalRefund,
+            unitsSold = 0,
+            reviewScore = model.reviewScore
+        )
+
+        _state.update {
+            it.copy(
+                budget = it.budget + totalRefund,
+                activeModels = updatedModels,
+                newsList = it.newsList + recycleNews,
+                reports = it.reports + report,
+                noticeMessage = "♻️ ${"%,d".format(recycledQty)} adet cihaz geri dönüştürüldü! $${"%,d".format(totalRefund)} bütçeye aktarıldı."
             )
         }
     }
@@ -2629,6 +2993,141 @@ class GameViewModel : ViewModel() {
                 noticeMessage = "Geliştirici Fonuna $${"%,d".format(amount)} aktarıldı! (+$addedApps yeni uygulama mağazaya katıldı)"
             )
         }
+    }
+
+    fun dismissTechExpo() {
+        _state.update { it.copy(activeTechExpo = null) }
+    }
+
+    private fun generateTechExpo(
+        year: Int,
+        playerModels: List<ActiveModel>,
+        playerCompanyName: String,
+        playerBrandColorHex: Long,
+        competitors: List<CompetitorCompany>
+    ): TechExpoEvent {
+        val expoNames = listOf(
+            "MWC (Mobile World Congress)" to "Barselona, İspanya",
+            "CES (Consumer Electronics Show)" to "Las Vegas, ABD",
+            "IFA Tech Global" to "Berlin, Almanya",
+            "Computex World Expo" to "Taipei, Tayvan"
+        )
+        val selectedExpo = expoNames[(year + 3) % expoNames.size]
+
+        // Pool of all eligible competitor phones for this year
+        val competitorNominees = competitors.map { comp ->
+            AwardNominee(
+                modelName = comp.currentTopModel,
+                companyName = comp.name,
+                isPlayer = false,
+                logoEmoji = comp.logoEmoji,
+                brandColorHex = comp.brandColorHex,
+                score = comp.currentModelScore,
+                price = comp.currentModelPrice,
+                highlightText = "${comp.name}, ${comp.currentTopModel} modeliyle ${comp.strategyType} alanında jüriden takdir topladı."
+            )
+        }
+
+        // Player nominees from active models
+        val playerNominees = playerModels.map { model ->
+            AwardNominee(
+                modelName = model.specs.name,
+                companyName = playerCompanyName,
+                isPlayer = true,
+                logoEmoji = "📱",
+                brandColorHex = playerBrandColorHex,
+                score = model.reviewScore,
+                price = model.specs.price,
+                highlightText = "${playerCompanyName} imzalı ${model.specs.name}, yenilikçi tasarımı (${model.specs.material}) ve ${model.specs.osType} işletim sistemiyle fuarda büyük sükse yaptı."
+            )
+        }
+
+        val allNominees = competitorNominees + playerNominees
+
+        val awardResults = mutableListOf<AwardResult>()
+        var playerWonCount = 0
+        var totalPrizeWon = 0L
+        var reputationGained = 0
+
+        // 1. FLAGSHIP OF THE YEAR (Highest overall score)
+        val flagshipNominees = allNominees.sortedByDescending { it.score }.take(4)
+        val flagshipWinner = flagshipNominees.firstOrNull() ?: competitorNominees.first()
+        if (flagshipWinner.isPlayer) {
+            playerWonCount++
+            totalPrizeWon += AwardCategory.FLAGSHIP_OF_THE_YEAR.prizeMoney
+            reputationGained += AwardCategory.FLAGSHIP_OF_THE_YEAR.reputationBonus
+        }
+        awardResults.add(
+            AwardResult(
+                category = AwardCategory.FLAGSHIP_OF_THE_YEAR,
+                winner = flagshipWinner,
+                nominees = flagshipNominees,
+                ceremonyReview = "${flagshipWinner.companyName} üretimi ${flagshipWinner.modelName}, olağanüstü ${flagshipWinner.score}/100 inceleme puanı ve tavizsiz donanımıyla ${year} Yılının En İyi Amiral Gemisi seçildi!"
+            )
+        )
+
+        // 2. VALUE CHAMPION (Best score / price ratio)
+        val valueNominees = allNominees.sortedByDescending { (it.score.toFloat() / it.price.coerceAtLeast(100).toFloat()) * 1000f }.take(4)
+        val valueWinner = valueNominees.firstOrNull() ?: competitorNominees.first()
+        if (valueWinner.isPlayer) {
+            playerWonCount++
+            totalPrizeWon += AwardCategory.VALUE_CHAMPION.prizeMoney
+            reputationGained += AwardCategory.VALUE_CHAMPION.reputationBonus
+        }
+        awardResults.add(
+            AwardResult(
+                category = AwardCategory.VALUE_CHAMPION,
+                winner = valueWinner,
+                nominees = valueNominees,
+                ceremonyReview = "${valueWinner.companyName} tarafından sunulan ${valueWinner.modelName}, $${valueWinner.price} fiyat etiketine karşılık sunduğu ${valueWinner.score} puanlık üstün deneyimle Fiyat/Performans Tacını kazandı!"
+            )
+        )
+
+        // 3. INNOVATION AWARD (Favoring high tech score or special features)
+        val innovationNominees = allNominees.shuffled().sortedByDescending {
+            it.score + if (it.isPlayer) 5 else Random.nextInt(-3, 4)
+        }.take(4)
+        val innovationWinner = innovationNominees.firstOrNull() ?: competitorNominees.first()
+        if (innovationWinner.isPlayer) {
+            playerWonCount++
+            totalPrizeWon += AwardCategory.INNOVATION_AWARD.prizeMoney
+            reputationGained += AwardCategory.INNOVATION_AWARD.reputationBonus
+        }
+        awardResults.add(
+            AwardResult(
+                category = AwardCategory.INNOVATION_AWARD,
+                winner = innovationWinner,
+                nominees = innovationNominees,
+                ceremonyReview = "${innovationWinner.companyName} ${innovationWinner.modelName}, endüstri standartlarını aşan cesur inovasyonları ve mühendislik başarısıyla Yılın İnovasyonu Ödülüne layık görüldü!"
+            )
+        )
+
+        // 4. BEST DESIGN AWARD
+        val designNominees = allNominees.shuffled().take(4).sortedByDescending { it.score }
+        val designWinner = designNominees.firstOrNull() ?: competitorNominees.first()
+        if (designWinner.isPlayer) {
+            playerWonCount++
+            totalPrizeWon += AwardCategory.BEST_DESIGN.prizeMoney
+            reputationGained += AwardCategory.BEST_DESIGN.reputationBonus
+        }
+        awardResults.add(
+            AwardResult(
+                category = AwardCategory.BEST_DESIGN,
+                winner = designWinner,
+                nominees = designNominees,
+                ceremonyReview = "${designWinner.companyName} tasarımı ${designWinner.modelName}, kusursuz malzeme kalitesi, ince çerçeveleri ve ergonomisiyle En İyi Endüstriyel Tasarım Ödülünü kazandı!"
+            )
+        )
+
+        return TechExpoEvent(
+            year = year,
+            expoName = selectedExpo.first,
+            city = selectedExpo.second,
+            awards = awardResults,
+            playerWonCount = playerWonCount,
+            totalPrizeWon = totalPrizeWon,
+            reputationGained = reputationGained
+        )
     }
 
     val rivalOperatingSystems: List<CompetitorOsInfo> = listOf(
