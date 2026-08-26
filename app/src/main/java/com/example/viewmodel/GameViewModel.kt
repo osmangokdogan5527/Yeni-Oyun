@@ -33,6 +33,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlin.math.roundToInt
 import kotlin.random.Random
 
 @Serializable
@@ -378,7 +379,11 @@ data class ActiveModel(
     val isExtendedNewsSent: Boolean = false,
     val activeCampaign: ActiveCampaign? = null,
     val matchesTrend: Boolean = false,
-    val benchmarkScore: BenchmarkScore? = null
+    val benchmarkScore: BenchmarkScore? = null,
+    val recallRiskPercent: Int = 0,
+    val isRecalled: Boolean = false,
+    val recalledYear: Int? = null,
+    val recalledMonth: Int? = null
 ) {
     val maxMonthsOnMarket: Int
         get() = if (reviewScore >= 60) 24 else 12
@@ -1283,6 +1288,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         var totalMonthlyRevenue = 0L
         var totalMonthlyUnitsSold = 0
+        var totalRecallCost = 0L
+        var totalRecallReputationPenalty = 0
         val newNewsList = currentState.newsList.toMutableList()
         val finishedModelsNews = mutableListOf<NewsArticle>()
 
@@ -1451,7 +1458,27 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
 
-                updatedModel
+                // Geri Çağırma (Recall) Kontrolü: İlk 3 ay boyunca, üretim anında
+                // hesaplanan riske göre modelin geri çağrılıp çağrılmayacağı kontrol edilir.
+                val (modelAfterRecallCheck, recallOutcome) = checkForRecall(updatedModel, newYear, newMonth)
+                if (recallOutcome != null) {
+                    totalRecallCost += recallOutcome.compensationCost
+                    totalRecallReputationPenalty += recallOutcome.reputationPenalty
+                    finishedModelsNews.add(
+                        NewsArticle(
+                            id = "news_recall_${modelAfterRecallCheck.id}",
+                            title = "⚠️ GERİ ÇAĞIRMA: ${modelAfterRecallCheck.specs.name} Piyasadan Çekildi!",
+                            text = "${modelAfterRecallCheck.specs.name} modelinde tespit edilen üretim kusurları nedeniyle cihaz geri çağrıldı. " +
+                                "Müşteri tazminatları ve kalan stoğun imhası $${"%,d".format(recallOutcome.compensationCost)} maliyet oluşturdu, " +
+                                "itibarınız ${recallOutcome.reputationPenalty} puan düştü.",
+                            category = "Şirket",
+                            year = newYear,
+                            month = newMonth
+                        )
+                    )
+                }
+
+                modelAfterRecallCheck
             } else {
                 model
             }
@@ -1850,8 +1877,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             it.copy(
                 month = newMonth,
                 year = newYear,
-                budget = it.budget + netIncome - autoStartResearchCost + expoPrizeTotal,
-                reputation = (it.reputation + expoRepGain).coerceIn(0, 100),
+                budget = it.budget + netIncome - autoStartResearchCost + expoPrizeTotal - totalRecallCost,
+                reputation = (it.reputation + expoRepGain - totalRecallReputationPenalty).coerceIn(0, 100),
                 monthlyIncome = totalCombinedRevenue,
                 customOs = updatedCustomOs,
                 activeModels = updatedActiveModels,
@@ -2118,6 +2145,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         val reviewScore = (baseQuality + qaFactor + zeroQaPenalty + currentState.qaScoreBonus + designBonus + osBonus + specs.tier.reviewBonus + Random.nextInt(-3, 4)).coerceIn(10, 100)
 
+        // Geri Çağırma (Recall) Riski: Düşük QA harcaması ve düşük inceleme puanı
+        // riski artırır. İyi test edilmiş, yüksek puanlı telefonlar neredeyse hiç
+        // geri çağrılmaz; ucuza kaçılan, aceleye getirilmiş modeller risklidir.
+        val recallRiskPercent = calculateRecallRisk(qaPerUnit = qaPerUnit, reviewScore = reviewScore)
+
         val techComment = when {
             techPenalty == 0 -> "Teknolojisi, tasarımı ve yazılımı çağın ötesinde!"
             techPenalty < 10 -> "Donanımı ve yazılımı günümüz standartlarına uygun."
@@ -2151,7 +2183,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             launchYear = currentState.year,
             launchMonth = currentState.month,
             matchesTrend = isTrendMatched,
-            benchmarkScore = computedBenchmark
+            benchmarkScore = computedBenchmark,
+            recallRiskPercent = recallRiskPercent
         )
 
         val launchNews = NewsArticle(
@@ -2412,6 +2445,60 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val discountMultiplier = 1.0f - (_state.value.unitCostDiscountPercent / 100.0f)
         return (cost * discountMultiplier).toInt().coerceAtLeast(5)
     }
+
+    /**
+     * Bir modelin üretim anındaki geri çağırma (recall) riskini (%2-%55) hesaplar.
+     * Birim başına QA harcaması ve nihai inceleme puanı ne kadar yüksekse, risk o
+     * kadar düşer. Bu risk, [advanceTime] içinde modelin piyasadaki ilk 3 ayında
+     * kontrol edilir — bkz. [checkForRecall].
+     */
+    private fun calculateRecallRisk(qaPerUnit: Float, reviewScore: Int): Int {
+        val qaProtection = (qaPerUnit * 3f).coerceAtMost(40f)
+        val reviewProtection = ((reviewScore - 40).coerceAtLeast(0) * 0.6f).coerceAtMost(35f)
+        val baseRisk = 55f
+        return (baseRisk - qaProtection - reviewProtection).roundToInt().coerceIn(2, 55)
+    }
+
+    /**
+     * Piyasadaki bir modelin bu ay geri çağrılıp çağrılmayacağını belirler.
+     * Sadece ilk 3 ayda kontrol edilir (üretim hataları genelde erken ortaya çıkar);
+     * [ActiveModel.recallRiskPercent] üç aya yayılmış aylık bir tehlike oranına
+     * çevrilir. Tetiklenirse, tazminat maliyeti ve itibar cezasıyla birlikte
+     * geri çağrılmış modeli döndürür; aksi halde modeli olduğu gibi döndürür.
+     */
+    private fun checkForRecall(model: ActiveModel, year: Int, month: Int): Pair<ActiveModel, RecallOutcome?> {
+        if (model.isRecalled || model.recallRiskPercent <= 0 || model.monthsOnMarket > 3) {
+            return model to null
+        }
+
+        val monthlyHazardPercent = model.recallRiskPercent / 3f
+        if (Random.nextFloat() * 100f >= monthlyHazardPercent) {
+            return model to null
+        }
+
+        val compensationCost = (model.totalSold.toLong() * model.specs.unitCost) +
+            (model.remainingStock.toLong() * (model.specs.unitCost / 2))
+        val reputationPenalty = (((70 - model.reviewScore).coerceAtLeast(15)) / 3).coerceIn(3, 15)
+
+        val recalledModel = model.copy(
+            remainingStock = 0,
+            isRecalled = true,
+            recalledYear = year,
+            recalledMonth = month
+        )
+
+        return recalledModel to RecallOutcome(
+            model = recalledModel,
+            compensationCost = compensationCost,
+            reputationPenalty = reputationPenalty
+        )
+    }
+
+    private data class RecallOutcome(
+        val model: ActiveModel,
+        val compensationCost: Long,
+        val reputationPenalty: Int
+    )
 
     fun remanufactureModel(modelId: String, additionalQuantity: Int) {
         val currentState = _state.value

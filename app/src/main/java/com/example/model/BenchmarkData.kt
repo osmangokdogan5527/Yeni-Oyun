@@ -4,28 +4,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class BenchmarkScore(
-    val cpuScore: Int,
-    val gpuScore: Int,
-    val memScore: Int,
-    val uxScore: Int,
-    val totalAntutuScore: Int,
-    
-    // DXOMARK Camera Breakdown
-    val photoScore: Int,
-    val videoScore: Int,
-    val zoomScore: Int,
-    val nightScore: Int,
-    val totalDxomarkScore: Int,
-    
-    // Geekbench Style Single / Multi Core
-    val geekbenchSingle: Int,
-    val geekbenchMulti: Int,
-    
-    // Battery & Thermal Test
-    val screenOnTimeHours: Float,
-    val peakTempCelsius: Float,
-    val thermalThrottlingPercent: Int,
-    val durabilityScore: Int
+    val performanceScore: Int = 0,
+    val displayScore: Int = 0,
+    val cameraScore: Int = 0,
+    val batteryScore: Int = 0,
+    val softwareScore: Int = 0,
+    val overallScore: Int = 0
 )
 
 @Serializable
@@ -39,13 +23,13 @@ data class LeaderboardEntry(
     val releaseYear: Int,
     val price: Int,
     val tierTitle: String,
-    val antutuScore: Int,
-    val dxomarkScore: Int,
-    val geekbenchSingle: Int,
-    val geekbenchMulti: Int,
-    val batteryLifeHours: Float,
-    val peakTempCelsius: Float,
-    val socName: String,
-    val cameraSummary: String,
-    val verdict: String
+    val antutuScore: Int = 0,
+    val dxomarkScore: Int = 0,
+    val geekbenchSingle: Int = 0,
+    val geekbenchMulti: Int = 0,
+    val batteryLifeHours: Float = 0f,
+    val peakTempCelsius: Float = 0f,
+    val socName: String = "",
+    val cameraSummary: String = "",
+    val verdict: String = ""
 )

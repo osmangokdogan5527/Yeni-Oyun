@@ -1,33 +1,33 @@
 package com.example.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.example.data.GameSaveEntity
 import com.example.viewmodel.GameState
-import java.text.SimpleDateFormat
-import java.util.*
 
+private const val TOTAL_SLOTS = 5
+
+/**
+ * Kayıt yuvalarını (0 = otomatik kayıt, 1-4 = manuel) listeleyen, yükleme/kaydetme/
+ * silme işlemlerini ve yeni oyun başlatmayı sağlayan diyalog.
+ */
 @Composable
 fun SaveLoadDialog(
     currentState: GameState,
@@ -38,367 +38,156 @@ fun SaveLoadDialog(
     onDeleteSlot: (slotId: Int) -> Unit,
     onNewGame: () -> Unit
 ) {
-    var showNewGameConfirm by remember { mutableStateOf(false) }
-    var slotToOverwrite by remember { mutableStateOf<Int?>(null) }
+    var confirmingNewGame by remember { mutableStateOf(false) }
+    var namingSlot by remember { mutableStateOf<Int?>(null) }
     var slotNameInput by remember { mutableStateOf("") }
-    var showNameInputDialog by remember { mutableStateOf<Int?>(null) }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth(0.95f)
-                .fillMaxHeight(0.90f),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surface,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(20.dp)
-            ) {
-                // Header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.linearGradient(
-                                        listOf(
-                                            MaterialTheme.colorScheme.primary,
-                                            MaterialTheme.colorScheme.tertiary
-                                        )
-                                    )
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Save,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-
-                        Column {
-                            Text(
-                                text = "Kayıt & Yükleme Merkezi",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "SQLite Room Veritabanı & Gemini AI",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Kapat")
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Gemini AI Status Card
-                Card(
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Text(text = "🤖", fontSize = 20.sp)
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Gemini Yapay Zeka Motoru",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Text(
-                                text = "Lansman incelemeleri ve dinamik sektör haberleri anlık üretilir.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                            )
-                        }
-                    }
-                }
-
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text("Kayıt & Yükleme", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "Slot 0 otomatik kayıttır. Diğer slotlara manuel kayıt yapabilirsin.",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 Spacer(modifier = Modifier.height(14.dp))
 
-                Text(
-                    text = "Kayıt Yuvaları (Slots)",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Slots List
                 LazyColumn(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
+                    modifier = Modifier.heightIn(max = 380.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Slot 0: AutoSave
-                    val autoSave = savedGames.firstOrNull { it.slotId == 0 }
-                    item {
-                        SaveSlotItem(
-                            slotId = 0,
-                            title = "💾 Otomatik Kayıt",
-                            isAutoSave = true,
-                            saveEntity = autoSave,
-                            onSave = { onSaveSlot(0, "Otomatik Kayıt") },
-                            onLoad = { onLoadSlot(0); onDismiss() },
-                            onDelete = { onDeleteSlot(0) }
-                        )
-                    }
-
-                    // Slots 1 to 3: Manual Slots
-                    items(listOf(1, 2, 3)) { slotId ->
-                        val entity = savedGames.firstOrNull { it.slotId == slotId }
-                        SaveSlotItem(
+                    items((0 until TOTAL_SLOTS).toList()) { slotId ->
+                        val entity = savedGames.find { it.slotId == slotId }
+                        SaveSlotRow(
                             slotId = slotId,
-                            title = "📂 Kayıt Slotu $slotId",
-                            isAutoSave = false,
-                            saveEntity = entity,
+                            entity = entity,
+                            onLoad = { onLoadSlot(slotId) },
                             onSave = {
-                                slotNameInput = entity?.slotName ?: "${currentState.companyName} ($slotId)"
-                                showNameInputDialog = slotId
+                                if (slotId == 0) {
+                                    onSaveSlot(slotId, "Otomatik Kayıt")
+                                } else {
+                                    slotNameInput = entity?.slotName ?: "Kayıt Slotu $slotId"
+                                    namingSlot = slotId
+                                }
                             },
-                            onLoad = { onLoadSlot(slotId); onDismiss() },
                             onDelete = { onDeleteSlot(slotId) }
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                // Bottom Action: New Game
-                OutlinedButton(
-                    onClick = { showNewGameConfirm = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    ),
-                    border = ButtonDefaults.outlinedButtonBorder.copy(
-                        brush = Brush.horizontalGradient(listOf(MaterialTheme.colorScheme.error, MaterialTheme.colorScheme.error))
-                    )
-                ) {
-                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Yeni Oyun Başlat (Sıfırla)", fontWeight = FontWeight.Bold)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    TextButton(onClick = { confirmingNewGame = true }) {
+                        Text("Yeni Oyun Başlat", color = MaterialTheme.colorScheme.error)
+                    }
+                    Button(onClick = onDismiss) { Text("Kapat") }
                 }
             }
         }
     }
 
-    // Name Input Dialog for Saving
-    if (showNameInputDialog != null) {
-        val targetSlot = showNameInputDialog!!
+    namingSlot?.let { slotId ->
         AlertDialog(
-            onDismissRequest = { showNameInputDialog = null },
-            title = { Text("Kayıt Adı Belirleyin") },
+            onDismissRequest = { namingSlot = null },
+            title = { Text("Kayıt Adı") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Slot $targetSlot için bir kayıt ismi yazın:")
-                    OutlinedTextField(
-                        value = slotNameInput,
-                        onValueChange = { slotNameInput = it },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Kayıt Başlığı") }
-                    )
-                }
+                OutlinedTextField(
+                    value = slotNameInput,
+                    onValueChange = { if (it.length <= 24) slotNameInput = it },
+                    singleLine = true,
+                    label = { Text("Slot $slotId için isim") }
+                )
             },
             confirmButton = {
-                Button(onClick = {
-                    val safeName = slotNameInput.trim().ifEmpty { "Kayıt Slotu $targetSlot" }
-                    onSaveSlot(targetSlot, safeName)
-                    showNameInputDialog = null
-                }) {
-                    Text("Kaydet")
-                }
+                TextButton(onClick = {
+                    onSaveSlot(slotId, slotNameInput.trim().ifEmpty { "Kayıt Slotu $slotId" })
+                    namingSlot = null
+                }) { Text("Kaydet") }
             },
             dismissButton = {
-                TextButton(onClick = { showNameInputDialog = null }) {
-                    Text("İptal")
-                }
+                TextButton(onClick = { namingSlot = null }) { Text("Vazgeç") }
             }
         )
     }
 
-    // Confirm New Game Dialog
-    if (showNewGameConfirm) {
+    if (confirmingNewGame) {
         AlertDialog(
-            onDismissRequest = { showNewGameConfirm = false },
-            title = { Text("Yeni Oyun Başlatılsın mı?") },
-            text = {
-                Text("Mevcut kaydedilmemiş ilerlemeniz sıfırlanacaktır. Yeni bir şirket kurmak istiyor musunuz?")
-            },
+            onDismissRequest = { confirmingNewGame = false },
+            title = { Text("Yeni Oyuna Başla?") },
+            text = { Text("Mevcut ilerlemen kaydedilmediyse kaybolur. Yeni bir şirketle sıfırdan başlamak istediğine emin misin?") },
             confirmButton = {
-                Button(
-                    onClick = {
-                        showNewGameConfirm = false
-                        onNewGame()
-                        onDismiss()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text("Evet, Sıfırla ve Başlat")
-                }
+                TextButton(onClick = {
+                    onNewGame()
+                    confirmingNewGame = false
+                    onDismiss()
+                }) { Text("Evet, Yeni Oyun", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = { showNewGameConfirm = false }) {
-                    Text("Vazgeç")
-                }
+                TextButton(onClick = { confirmingNewGame = false }) { Text("Vazgeç") }
             }
         )
     }
 }
 
 @Composable
-private fun SaveSlotItem(
+private fun SaveSlotRow(
     slotId: Int,
-    title: String,
-    isAutoSave: Boolean,
-    saveEntity: GameSaveEntity?,
-    onSave: () -> Unit,
+    entity: GameSaveEntity?,
     onLoad: () -> Unit,
+    onSave: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val dateFormatter = remember { SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()) }
-
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (saveEntity != null) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
-        ),
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = if (saveEntity != null) saveEntity.slotName else title,
-                    style = MaterialTheme.typography.titleSmall,
+                    text = entity?.slotName ?: (if (slotId == 0) "Otomatik Kayıt (Boş)" else "Boş Slot $slotId"),
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.Bold
                 )
-
-                if (saveEntity != null) {
+                if (entity != null) {
                     Text(
-                        text = dateFormatter.format(Date(saveEntity.lastSavedTimestamp)),
-                        style = MaterialTheme.typography.labelSmall,
+                        text = "${entity.companyName} • ${entity.year}/${entity.month} • $${"%,d".format(entity.budget)}",
+                        fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
                     Text(
-                        text = "Boş Slot",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                    )
-                }
-            }
-
-            if (saveEntity != null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "🏢 ${saveEntity.companyName} (${saveEntity.month}/${saveEntity.year})",
-                        style = MaterialTheme.typography.bodySmall,
+                        text = "Henüz kayıt yok",
+                        fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Text(
-                        text = "💰 $${"%,d".format(saveEntity.budget)} | ⭐ ${saveEntity.reputation}",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
                 }
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (saveEntity != null) {
-                    IconButton(
-                        onClick = onDelete,
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = "Sil",
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(18.dp)
-                        )
+            Row {
+                IconButton(onClick = onSave) {
+                    Icon(Icons.Default.Save, contentDescription = "Kaydet", tint = MaterialTheme.colorScheme.primary)
+                }
+                if (entity != null) {
+                    IconButton(onClick = onLoad) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = "Yükle", tint = Color(0xFF10B981))
                     }
-
-                    Spacer(modifier = Modifier.width(6.dp))
-
-                    if (!isAutoSave) {
-                        OutlinedButton(
-                            onClick = onSave,
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                        ) {
-                            Text("Üzerine Yaz", fontSize = 12.sp)
-                        }
-                        Spacer(modifier = Modifier.width(6.dp))
-                    }
-
-                    Button(
-                        onClick = onLoad,
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
-                    ) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Yükle", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                } else {
-                    Button(
-                        onClick = onSave,
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
-                    ) {
-                        Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Buraya Kaydet", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    IconButton(onClick = onDelete) {
+                        Icon(Icons.Default.Delete, contentDescription = "Sil", tint = MaterialTheme.colorScheme.error)
                     }
                 }
             }

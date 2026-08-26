@@ -1,20 +1,9 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="64dp"
-    android:height="64dp"
-    android:viewportWidth="100"
-    android:viewportHeight="100">
-    <!-- Outer Octagon Badge -->
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M30,8 L70,8 L92,30 L92,70 L70,92 L30,92 L8,70 L8,30 Z" />
-    <path
-        android:fillColor="#0F172A"
-        android:pathData="M32,14 L68,14 L86,32 L86,68 L68,86 L32,86 L14,68 L14,32 Z" />
-    <!-- Dynamic Angular Lightning Bolt -->
-    <path
-        android:fillColor="#FBBF24"
-        android:pathData="M56,16 L24,52 L46,52 L38,84 L76,46 L52,46 Z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M52,22 L32,50 L46,50 L42,72 L66,48 L50,48 Z" />
+        android:fillColor="#FF000000"
+        android:pathData="M13,2L4,14H11L10,22L20,9H13Z" />
 </vector>

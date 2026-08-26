@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
 import com.example.ui.theme.*
 import com.example.viewmodel.ModelTier
 import com.example.viewmodel.PhoneSpecs
@@ -1413,6 +1414,35 @@ fun PhoneBuilderScreen(
                                     valueRange = 0f..1000000f,
                                     steps = 20
                                 )
+
+                                // Geri Çağırma (Recall) Risk Önizlemesi: QA bütçesi düştükçe
+                                // üretim sonrası geri çağrılma riski artar. Kesin risk üretim
+                                // anında tasarım/teknoloji puanına göre biraz daha değişebilir.
+                                val qaPerUnitPreview = if (quantity > 0) qaBudget / quantity else 0f
+                                val recallRiskPreview = (55f - (qaPerUnitPreview * 3f).coerceAtMost(40f))
+                                    .roundToInt().coerceIn(2, 55)
+                                val riskColor = when {
+                                    recallRiskPreview <= 15 -> Green500
+                                    recallRiskPreview <= 30 -> Color(0xFFF59E0B)
+                                    else -> Color(0xFFEF4444)
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        "Tahmini Geri Çağırma Riski (ilk 3 ay)",
+                                        fontSize = 11.sp,
+                                        color = Slate600
+                                    )
+                                    Text(
+                                        "%$recallRiskPreview",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = riskColor
+                                    )
+                                }
                             }
 
                             // Finansal Özet Kartı

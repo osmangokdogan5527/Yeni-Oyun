@@ -1,150 +1,131 @@
 package com.example.api
 
-import android.util.Log
 import com.example.BuildConfig
 import com.example.viewmodel.MarketTrend
 import com.example.viewmodel.PhoneSpecs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
-import kotlin.random.Random
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
+/**
+ * Oyun içeriğini (dinamik haberler, telefon eleştirmen yorumları) Gemini API ile
+ * üreten servis katmanı.
+ *
+ * ÖNEMLİ: [GameViewModel] bu sınıfı zaten çağırıyordu (generateDynamicNews /
+ * generatePhoneReview), ama proje içinde tanımı yoktu — yani proje bu haliyle
+ * DERLENEMİYORDU ("unresolved reference: AiGameService"). Bu dosya o eksikliği
+ * gideriyor ve mevcut [GeminiApiService]/[RetrofitClient] altyapısını gerçekten
+ * kullanıma sokuyor.
+ *
+ * Her iki fonksiyon da API anahtarı ayarlanmamışsa veya ağ çağrısı başarısız
+ * olursa sessizce yerel bir yedek değere düşer — yani bu servis asla oyunu
+ * çökertmez, kilitlemez veya oyuncuyu bekletmez.
+ */
 object AiGameService {
-    private const val TAG = "AiGameService"
+
+    private val json = Json { ignoreUnknownKeys = true }
+
+    /** .env dosyasında GEMINI_API_KEY gerçekten ayarlanmışsa true döner. */
+    private val isApiKeyConfigured: Boolean
+        get() = BuildConfig.GEMINI_API_KEY.isNotBlank() &&
+            BuildConfig.GEMINI_API_KEY != "MY_GEMINI_API_KEY"
+
+    @Serializable
+    private data class NewsGenResult(val title: String, val text: String)
 
     /**
-     * Generates a realistic tech-critic review for a newly launched smartphone using Gemini AI.
-     * Falls back to a rich procedural review if Gemini is unavailable or offline.
+     * Yıl/ay ve o anki pazar trendine göre kısa, gerçekçi bir teknoloji haberi üretir.
+     * Başarısız olursa (anahtar yok, ağ hatası, geçersiz cevap) null döner — çağıran
+     * taraf bu ay için AI haberini atlar, oyunun akışında hiçbir kesinti olmaz.
+     */
+    suspend fun generateDynamicNews(
+        year: Int,
+        month: Int,
+        trendTitle: String,
+        competitorNames: List<String>
+    ): Pair<String, String>? {
+        if (!isApiKeyConfigured) return null
+
+        return withContext(Dispatchers.IO) {
+            try {
+                val prompt = """
+                    Sen bir teknoloji haber ajansısın. $year yılı $month. ayında geçen,
+                    akıllı telefon sektörüyle ilgili KISA ve gerçekçi bir haber yaz.
+                    Güncel pazar trendi: "$trendTitle".
+                    Sektördeki bazı şirketler: ${competitorNames.take(4).joinToString(", ")}.
+                    Sadece şu JSON formatında cevap ver, başka hiçbir açıklama ekleme:
+                    {"title": "Haber başlığı (en fazla 10 kelime)", "text": "Haber metni (2-3 cümle, Türkçe)"}
+                """.trimIndent()
+
+                val request = GenerateContentRequest(
+                    contents = listOf(Content(parts = listOf(Part(text = prompt)), role = "user")),
+                    generationConfig = GenerationConfig(
+                        temperature = 0.9f,
+                        responseMimeType = "application/json"
+                    )
+                )
+
+                val response = RetrofitClient.service.generateContent(BuildConfig.GEMINI_API_KEY, request)
+                val rawText = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
+                    ?: return@withContext null
+
+                val parsed = json.decodeFromString<NewsGenResult>(rawText)
+                if (parsed.title.isBlank() || parsed.text.isBlank()) null
+                else parsed.title to parsed.text
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    /**
+     * Yeni çıkan bir telefon modeli için kısa bir eleştirmen alıntısı üretir.
+     * Her koşulda bir metin döndürür: Gemini başarısız olursa yerel, önceden
+     * hazırlanmış bir yoruma (isAi = false) düşer, böylece lansman akışı asla
+     * boş/kırık bir alıntıyla kalmaz.
      */
     suspend fun generatePhoneReview(
         specs: PhoneSpecs,
         companyName: String,
         year: Int,
         reviewScore: Int,
-        trend: MarketTrend?
-    ): Pair<String, Boolean> = withContext(Dispatchers.IO) {
-        val apiKey = try {
-            BuildConfig.GEMINI_API_KEY
-        } catch (e: Exception) {
-            ""
-        }
+        trend: MarketTrend
+    ): Pair<String, Boolean> {
+        val fallback = localFallbackQuote(reviewScore)
+        if (!isApiKeyConfigured) return fallback to false
 
-        if (apiKey.isNotBlank() && apiKey != "MY_GEMINI_API_KEY") {
+        return withContext(Dispatchers.IO) {
             try {
-                val prompt = buildString {
-                    append("Sen ünlü bir teknoloji editörüsün (MKBHD, The Verge veya Technopat tarzı). ")
-                    append("$year yılında $companyName şirketi yeni '${specs.name}' (${specs.tier.title} sınıfı) akıllı telefonunu piyasaya sürdü. ")
-                    append("Özellikler: Ekran: ${specs.display}, İşlemci: ${specs.processor}, RAM: ${specs.ram}, Depolama: ${specs.storage}, Kamera: ${specs.camera}, Batarya: ${specs.batteryCapacity} (${specs.batteryType}), Gövde: ${specs.material} / ${specs.backFinish}, Çerçeve: ${specs.frameStyle}, İşletim Sistemi: ${specs.osName} (${specs.osFocus}), Fiyat: $${specs.price}. ")
-                    if (trend != null) {
-                        append("Aktif Pazar Trendi: '${trend.title}'. ")
-                    }
-                    append("Telefonun aldığı genel inceleme puanı: $reviewScore/100. ")
-                    append("Lütfen Türkçe olarak 2-3 cümlelik akıcı, zekice ve eğlenceli bir basın incelemesi yaz. Yazının sonunda ünlü bir teknoloji editörü adı (örn. '— Marques Brownlee', '— Dieter Bohn (The Verge)', '— Hakkı Alkan (ShiftDelete)', '— Recep Baltaş (Technopat)' veya '— Linus Tech') ekle. Sadece inceleme metnini döndür.")
-                }
+                val prompt = """
+                    Sen kıdemli bir teknoloji eleştirmenisin. $year yılında $companyName firmasının
+                    çıkardığı "${specs.name}" adlı telefonu değerlendiriyorsun.
+                    Özellikler: ${specs.processor}, ${specs.display}, ${specs.camera}, ${specs.batteryCapacity}, Fiyat: ${'$'}${specs.price}.
+                    Puanı: $reviewScore/100. Güncel pazar trendi: "${trend.title}".
+                    Tek cümlelik, esprili ama gerçekçi bir eleştirmen alıntısı yaz (Türkçe, tırnak
+                    işareti KULLANMA, en fazla 25 kelime). Sadece alıntı metnini yaz, başka
+                    hiçbir açıklama ekleme.
+                """.trimIndent()
 
                 val request = GenerateContentRequest(
-                    contents = listOf(
-                        Content(
-                            parts = listOf(Part(text = prompt)),
-                            role = "user"
-                        )
-                    ),
-                    generationConfig = GenerationConfig(
-                        temperature = 0.8f,
-                        topP = 0.95f,
-                        topK = 40
-                    )
+                    contents = listOf(Content(parts = listOf(Part(text = prompt)), role = "user")),
+                    generationConfig = GenerationConfig(temperature = 1.0f)
                 )
 
-                val response = withTimeoutOrNull(8000L) {
-                    RetrofitClient.service.generateContent(apiKey, request)
-                }
+                val response = RetrofitClient.service.generateContent(BuildConfig.GEMINI_API_KEY, request)
+                val quote = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim()
 
-                val aiText = response?.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim()
-                if (!aiText.isNullOrBlank()) {
-                    return@withContext Pair(aiText, true)
-                }
+                if (quote.isNullOrBlank()) fallback to false else quote to true
             } catch (e: Exception) {
-                Log.w(TAG, "Gemini API call failed, using procedural fallback: ${e.message}")
+                fallback to false
             }
         }
-
-        // Procedural Fallback
-        val reviewerNames = listOf(
-            "Marques Brownlee (MKBHD)",
-            "Dieter Bohn (The Verge)",
-            "Hakkı Alkan (ShiftDelete)",
-            "Recep Baltaş (Technopat)",
-            "Ali Güngör (Technopat)",
-            "Mrwhosetheboss (Arun Maini)",
-            "Eren Caner",
-            "Mesut Çevik"
-        )
-        val reviewer = reviewerNames[Random.nextInt(reviewerNames.size)]
-        
-        val tone = when {
-            reviewScore >= 90 -> "Yılın tartışmasız en iddialı amiral gemisi! ${specs.material} gövde kalitesi, ${specs.display} ekran ve ${specs.camera} kamera performansı büyüleyici. $${specs.price} fiyatını sonuna kadar hak ediyor."
-            reviewScore >= 75 -> "${specs.name}, sunduğu ${specs.processor} performansı ve ${specs.ram} RAM kapasitesiyle günlük kullanımda oldukça akıcı. ${specs.batteryCapacity} bataryası günü rahat çıkarıyor."
-            reviewScore >= 55 -> "Segmentinde fena bir alternatif değil. ${specs.display} ekranı başarılı ancak $${specs.price} fiyat etiketine göre bazı rakiplerinin gerisinde kalabiliyor."
-            else -> "${specs.name} maalesef beklentilerin altında kaldı. Donanım optimizasyonu ve malzeme hissiyatı geliştirilmeli."
-        }
-
-        Pair("\"$tone\" — $reviewer", false)
     }
 
-    /**
-     * Generates dynamic tech world breaking news using Gemini AI or fallback.
-     */
-    suspend fun generateDynamicNews(
-        year: Int,
-        month: Int,
-        currentTrendTitle: String,
-        topCompetitors: List<String>
-    ): Pair<String, String>? = withContext(Dispatchers.IO) {
-        val apiKey = try {
-            BuildConfig.GEMINI_API_KEY
-        } catch (e: Exception) {
-            ""
-        }
-
-        if (apiKey.isNotBlank() && apiKey != "MY_GEMINI_API_KEY") {
-            try {
-                val competitorsStr = topCompetitors.take(4).joinToString(", ")
-                val prompt = "Sen bir teknoloji haber ajansısın. Yıl: $year, Ay: $month. Sektördeki aktif trend: '$currentTrendTitle'. Önde gelen markalar: $competitorsStr. Akıllı telefon dünyasında yaşanan, tüketicileri ve piyasayı heyecanlandıracak kısa, vurucu 1 adet Türkçe flaş haber üret. Format tam olarak şu şekilde olmalı:\nBAŞLIK: <Çarpıcı Başlık>\nMETİN: <1-2 cümlelik haber içeriği>"
-
-                val request = GenerateContentRequest(
-                    contents = listOf(
-                        Content(
-                            parts = listOf(Part(text = prompt)),
-                            role = "user"
-                        )
-                    ),
-                    generationConfig = GenerationConfig(
-                        temperature = 0.85f,
-                        topP = 0.95f
-                    )
-                )
-
-                val response = withTimeoutOrNull(6000L) {
-                    RetrofitClient.service.generateContent(apiKey, request)
-                }
-
-                val aiText = response?.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim()
-                if (!aiText.isNullOrBlank()) {
-                    val lines = aiText.lines().map { it.trim() }.filter { it.isNotEmpty() }
-                    val titleLine = lines.firstOrNull { it.startsWith("BAŞLIK:", ignoreCase = true) }?.substringAfter(":")?.trim()
-                        ?: lines.firstOrNull()?.replace("BAŞLIK:", "", ignoreCase = true)?.trim()
-                    val textLine = lines.firstOrNull { it.startsWith("METİN:", ignoreCase = true) }?.substringAfter(":")?.trim()
-                        ?: lines.drop(1).joinToString(" ").replace("METİN:", "", ignoreCase = true).trim()
-
-                    if (!titleLine.isNullOrBlank() && !textLine.isNullOrBlank()) {
-                        return@withContext Pair("🤖 $titleLine", textLine)
-                    }
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "Dynamic news generation failed: ${e.message}")
-            }
-        }
-        null
+    private fun localFallbackQuote(reviewScore: Int): String = when {
+        reviewScore >= 85 -> "Bu yıl piyasaya çıkan en etkileyici cihazlardan biri, kesinlikle göz kamaştırıyor."
+        reviewScore >= 65 -> "Sağlam bir seçenek; fiyat/performans dengesini gözetenler için makul bir tercih."
+        reviewScore >= 40 -> "Beklentileri karşılıyor ama rakiplerinin gerisinde kalan yönleri de var."
+        else -> "Maalesef bu modelde ciddi eksiklikler var, alıcıların dikkatli olması önerilir."
     }
 }

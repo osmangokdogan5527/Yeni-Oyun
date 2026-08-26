@@ -1,31 +1,15 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="64dp"
-    android:height="64dp"
-    android:viewportWidth="100"
-    android:viewportHeight="100">
-    <!-- Planetary Core Ring System -->
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M50,50 m-18,0 a18,18 0 1,1 36,0 a18,18 0 1,1 -36,0" />
+        android:fillColor="#FF000000"
+        android:pathData="M12,4L13.2,10.8L20,12L13.2,13.2L12,20L10.8,13.2L4,12L10.8,10.8Z" />
     <path
-        android:fillColor="#0284C7"
-        android:pathData="M50,50 m-12,0 a12,12 0 1,1 24,0 a12,12 0 1,1 -24,0" />
+        android:fillColor="#FF000000"
+        android:pathData="M19,3L19.6,5.4L22,6L19.6,6.6L19,9L18.4,6.6L16,6L18.4,5.4Z" />
     <path
-        android:fillColor="#38BDF8"
-        android:pathData="M50,50 m-6,0 a6,6 0 1,1 12,0 a6,6 0 1,1 -12,0" />
-    <!-- Dynamic Inclined Orbit Ring -->
-    <path
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="6"
-        android:fillColor="#00000000"
-        android:pathData="M14,32 C26,10 78,90 86,68 C94,46 22,10 14,32 Z" />
-    <path
-        android:strokeColor="#38BDF8"
-        android:strokeWidth="2.5"
-        android:fillColor="#00000000"
-        android:pathData="M14,32 C26,10 78,90 86,68 C94,46 22,10 14,32 Z" />
-    <!-- Satellite Flare -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M82,64 m-4,0 a4,4 0 1,1 8,0 a4,4 0 1,1 -8,0" />
+        android:fillColor="#FF000000"
+        android:pathData="M5,15L5.6,17.4L8,18L5.6,18.6L5,21L4.4,18.6L2,18L4.4,17.4Z" />
 </vector>

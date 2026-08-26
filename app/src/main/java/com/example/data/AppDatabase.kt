@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 
 @Database(entities = [GameSaveEntity::class], version = 1, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
+
     abstract fun gameSaveDao(): GameSaveDao
 
     companion object {
@@ -18,8 +19,8 @@ abstract class AppDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "smartphone_tycoon_db"
-                ).fallbackToDestructiveMigration().build()
+                    "smartphone_tycoon.db"
+                ).build()
                 INSTANCE = instance
                 instance
             }

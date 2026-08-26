@@ -1,11 +1,7 @@
 /**
  * Gemini API (generateContent) için Retrofit servis tanımı ve istemcisi.
- *
- * NOT: Bu servis şu an [com.example.viewmodel.GameViewModel] veya başka hiçbir
- * yerden ÇAĞRILMIYOR — haberler, olaylar ve rakip AI'ı tamamen yerel (lokal) kodla
- * üretiliyor. Eğer amacınız gerçekten Gemini destekli içerik üretmekse, bu servisi
- * GameViewModel içinden çağırıp `GEMINI_API_KEY`'i (.env üzerinden) kullanacak şekilde
- * bağlamanız gerekiyor; aksi halde bu dosya şu an ölü kod (dead code) durumunda.
+ * Bu servis [com.example.api.AiGameService] tarafından, dinamik haber ve
+ * telefon eleştirmen yorumu üretmek için kullanılır.
  */
 package com.example.api
 

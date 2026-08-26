@@ -1,23 +1,9 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="64dp"
-    android:height="64dp"
-    android:viewportWidth="100"
-    android:viewportHeight="100">
-    <!-- Cyber Aegis Shield Outer -->
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M50,6 L86,18 L86,52 C86,74 50,94 50,94 C50,94 14,74 14,52 L14,18 Z" />
-    <path
-        android:fillColor="#0F172A"
-        android:pathData="M50,14 L78,24 L78,50 C78,68 50,84 50,84 C50,84 22,68 22,50 L22,24 Z" />
-    <!-- Center Cyber Tech V-Core -->
-    <path
-        android:fillColor="#38BDF8"
-        android:pathData="M50,22 L72,30 L50,74 L28,30 Z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M50,30 L64,36 L50,64 L36,36 Z" />
-    <path
-        android:fillColor="#0284C7"
-        android:pathData="M50,36 L58,40 L50,56 L42,40 Z" />
+        android:fillColor="#FF000000"
+        android:pathData="M12,2L20,5.5V11C20,16 16.8,20.4 12,22C7.2,20.4 4,16 4,11V5.5Z" />
 </vector>

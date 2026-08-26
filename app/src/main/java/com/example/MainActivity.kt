@@ -13,13 +13,16 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -498,11 +501,19 @@ fun DevicesScreen(
                                 }
 
                                 Surface(
-                                    color = if (isSelling) MaterialTheme.colorScheme.primary else Slate400,
+                                    color = when {
+                                        model.isRecalled -> MaterialTheme.colorScheme.error
+                                        isSelling -> MaterialTheme.colorScheme.primary
+                                        else -> Slate400
+                                    },
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Text(
-                                        text = if (isSelling) "${model.monthsOnMarket}/${model.maxMonthsOnMarket} Ay" else "Satış Bitti",
+                                        text = when {
+                                            model.isRecalled -> "⚠️ GERİ ÇAĞRILDI"
+                                            isSelling -> "${model.monthsOnMarket}/${model.maxMonthsOnMarket} Ay"
+                                            else -> "Satış Bitti"
+                                        },
                                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
@@ -1575,47 +1586,88 @@ fun BottomNavigationBar(
     currentScreen: AppScreen,
     onNavigate: (AppScreen) -> Unit
 ) {
-    NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 6.dp,
-        windowInsets = WindowInsets.navigationBars
-    ) {
-        val navItems = listOf(
-            Triple(AppScreen.Dashboard, Icons.Default.Home, "Ana Sayfa"),
-            Triple(AppScreen.Devices, Icons.Default.PhoneAndroid, "Cihazlar"),
-            Triple(AppScreen.Market, Icons.AutoMirrored.Filled.TrendingUp, "Pazar"),
-            Triple(AppScreen.Benchmark, Icons.Default.Speed, "Test Lab"),
-            Triple(AppScreen.Software, Icons.Default.Terminal, "Yazılım"),
-            Triple(AppScreen.Research, Icons.Default.Science, "Ar-Ge"),
-            Triple(AppScreen.Employees, Icons.Default.Group, "Personel"),
-            Triple(AppScreen.News, Icons.Default.Info, "Haberler")
-        )
+    val navItems = listOf(
+        Triple(AppScreen.Dashboard, Icons.Default.Home, "Ana Sayfa"),
+        Triple(AppScreen.Devices, Icons.Default.PhoneAndroid, "Cihazlar"),
+        Triple(AppScreen.Market, Icons.AutoMirrored.Filled.TrendingUp, "Pazar"),
+        Triple(AppScreen.Benchmark, Icons.Default.Speed, "Test Lab"),
+        Triple(AppScreen.Software, Icons.Default.Terminal, "Yazılım"),
+        Triple(AppScreen.Research, Icons.Default.Science, "Ar-Ge"),
+        Triple(AppScreen.Employees, Icons.Default.Group, "Personel"),
+        Triple(AppScreen.News, Icons.Default.Campaign, "Haberler")
+    )
 
-        navItems.forEach { (screen, icon, title) ->
-            val isSelected = currentScreen == screen
-            NavigationBarItem(
-                selected = isSelected,
-                onClick = { onNavigate(screen) },
-                alwaysShowLabel = true,
-                icon = {
-                    Icon(
-                        icon,
-                        contentDescription = title,
-                        modifier = Modifier.size(20.dp)
-                    )
-                },
-                label = {
-                    Text(
-                        text = title,
-                        fontSize = 9.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.Center
-                    )
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(currentScreen) {
+        val selectedIndex = navItems.indexOfFirst { it.first == currentScreen }
+        if (selectedIndex >= 0) {
+            listState.animateScrollToItem((selectedIndex - 1).coerceAtLeast(0))
+        }
+    }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 8.dp,
+        shadowElevation = 6.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+    ) {
+        LazyRow(
+            state = listState,
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            itemsIndexed(navItems) { _, (screen, icon, title) ->
+                val isSelected = currentScreen == screen
+                val containerColor by animateColorAsState(
+                    targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                    label = "pill_bg_$title"
+                )
+                val contentColor by animateColorAsState(
+                    targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    label = "pill_content_$title"
+                )
+
+                Surface(
+                    onClick = { onNavigate(screen) },
+                    shape = CircleShape,
+                    color = containerColor,
+                    contentColor = contentColor,
+                    tonalElevation = if (isSelected) 4.dp else 0.dp,
+                    shadowElevation = if (isSelected) 2.dp else 0.dp,
+                    modifier = Modifier.height(42.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = title,
+                            modifier = Modifier.size(18.dp),
+                            tint = contentColor
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = title,
+                            fontSize = 12.5.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            maxLines = 1,
+                            softWrap = false,
+                            color = contentColor
+                        )
+                    }
                 }
-            )
+            }
         }
     }
 }
