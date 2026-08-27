@@ -2,6 +2,10 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+// --- MARKA VURGU RENGİ (uygulama genelinde kullanılan tutarlı camgöbeği aksan) ---
+val BrandCyan = Color(0xFF0EA5E9)
+val BrandCyanDark = Color(0xFF38BDF8)
+
 val MdPrimary = Color(0xFF6750A4)
 val MdOnPrimary = Color(0xFFFFFFFF)
 val MdPrimaryContainer = Color(0xFFEADDFF)
@@ -28,6 +32,7 @@ val MdErrorContainer = Color(0xFFFFD8E4)
 val MdOnErrorContainer = Color(0xFF31111D)
 
 val Green500 = Color(0xFF22C55E)
+val Slate50 = Color(0xFFF8FAFC)
 val Slate100 = Color(0xFFF1F5F9)
 val Slate200 = Color(0xFFE2E8F0)
 val Slate300 = Color(0xFFCBD5E1)

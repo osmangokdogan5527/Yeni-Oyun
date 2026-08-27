@@ -281,7 +281,7 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                             shape = RoundedCornerShape(6.dp)
                         ) {
                             Text(
-                                text = "Kalan: ${activeRes.remainingMonths} Ay",
+                                text = "Kalan: ${activeRes.remainingMonths} Dönem (~${"%.1f".format(activeRes.remainingMonths / 2.0)} Ay)",
                                 modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
@@ -426,7 +426,7 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
 
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(queueItem.techName, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Slate900)
-                                    Text("Maliyet: $${"%,d".format(queueItem.cost).replace(',', '.')} • Tahmini: ${queueItem.totalMonths} Ay", fontSize = 11.sp, color = Slate600)
+                                    Text("Maliyet: $${"%,d".format(queueItem.cost).replace(',', '.')} • Tahmini: ${queueItem.totalMonths} Dönem (~${"%.1f".format(queueItem.totalMonths / 2.0)} Ay)", fontSize = 11.sp, color = Slate600)
                                 }
 
                                 OutlinedButton(
@@ -571,7 +571,7 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                                 if (isUnlocked) {
                                     Text("✓ Açıldı & Yapılandırmaya Eklendi", fontWeight = FontWeight.Bold, color = Green500, fontSize = 10.sp)
                                 } else if (isBeingResearched) {
-                                    Text("⚡ Araştırma Sürüyor (${state.activeResearch?.remainingMonths} Ay Kaldı)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary, fontSize = 10.sp)
+                                    Text("⚡ Araştırma Sürüyor (${state.activeResearch?.remainingMonths} Dönem Kaldı)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary, fontSize = 10.sp)
                                 } else if (isInQueue) {
                                     Text("📋 Sırada (${queueIndex + 1}. Sırada)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 10.sp)
                                 } else if (!isAvailable) {
@@ -582,7 +582,7 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text("Maliyet: $${"%,d".format(tech.cost).replace(',', '.')}", fontWeight = FontWeight.Bold, color = if (canAfford) MaterialTheme.colorScheme.primary else Color.Red, fontSize = 10.5.sp)
-                                        Text("• Süre: $estimatedDuration Ay", fontWeight = FontWeight.Medium, color = Slate600, fontSize = 10.sp)
+                                        Text("• Süre: $estimatedDuration Dönem (~${"%.1f".format(estimatedDuration / 2.0)} Ay)", fontWeight = FontWeight.Medium, color = Slate600, fontSize = 10.sp)
                                     }
                                 }
                             }

@@ -1,16 +1,3 @@
-/**
- * Oyunun ana durum yönetimi ve iş mantığı katmanı.
- *
- * Bu dosya şunları içerir:
- * - [GameState] ve alt veri sınıfları (şirket, telefon modelleri, rakipler, Ar-Ge, yazılım vb.)
- * - [GameViewModel]: aylık simülasyon adımını (satış, pazar, haberler, rakip AI) yürüten,
- *   kayıt/yükleme (Room) işlemlerini yöneten ana ViewModel.
- *
- * Not: Dosya oldukça büyük (3000+ satır) — yeni özellik eklerken ilgili bölümü bulmak için
- * "MARK:"tarzı yorum başlıkları veya IDE'nin yapı (structure) görünümünü kullanmanız önerilir.
- * Uzun vadede bu dosyayı sorumluluk alanına göre (SaveRepository, MarketSimulation,
- * CompetitorAI gibi) ayrı dosyalara bölmek okunabilirliği artırır.
- */
 package com.example.viewmodel
 
 import android.app.Application
@@ -20,7 +7,6 @@ import com.example.api.AiGameService
 import com.example.data.AppDatabase
 import com.example.data.GameSaveEntity
 import com.example.data.GameSaveRepository
-import com.example.model.BenchmarkScore
 import com.example.util.BenchmarkCalculator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,880 +16,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlin.math.roundToInt
 import kotlin.random.Random
-
-@Serializable
-enum class EmployeeType {
-    ENGINEER,       // Mühendis ($8,000/ay): Teknolojik yıpranmayı düşürür ve taban kaliteyi artırır.
-    QA_INSPECTOR,   // QA Uzmanı ($5,000/ay): Cihaz eleştirmen ve test puanına doğrudan +2 puan ekler.
-    ASSEMBLY_WORKER // Üretim İşçisi ($3,000/ay): Birim cihaz üretim maliyetini düşürür (%25'e kadar).
-}
-
-@Serializable
-enum class CampaignType(
-    val title: String,
-    val cost: Long,
-    val durationMonths: Int,
-    val boostPercent: Int,
-    val description: String
-) {
-    SOCIAL_MEDIA("Sosyal Medya Reklamı", 50000L, 3, 25, "3 Ay boyunca +%25 satış talebi artışı"),
-    INFLUENCER("Influencer İşbirliği", 150000L, 3, 50, "3 Ay boyunca +%50 satış talebi artışı"),
-    TV_COMMERCIAL("TV Reklam Kampanyası", 400000L, 6, 80, "6 Ay boyunca +%80 satış talebi artışı")
-}
-
-@Serializable
-data class ActiveCampaign(
-    val type: CampaignType,
-    val remainingMonths: Int
-)
-
-@Serializable
-enum class OsType(
-    val title: String,
-    val subtitle: String,
-    val devCost: Long,
-    val monthlyMaintenance: Long,
-    val reviewBonus: Int,
-    val storeRevenuePerUser: Float, // Dolar / aktif kullanıcı / ay
-    val description: String
-) {
-    STOCK_ANDROID(
-        "Saf Açık Kaynak OS (Stok)",
-        "Hazır Açık Kaynak Çekirdek",
-        0L,
-        0L,
-        0,
-        0.0f,
-        "Sıfır geliştirme ve bakım maliyeti. Özel marka kimliği veya mağaza komisyon geliri sağlamaz."
-    ),
-    CUSTOM_UI_SKIN(
-        "Özel Şirket Arayüzü (UI Skin)",
-        "Özelleştirilmiş Kullanıcı Deneyimi",
-        750000L,
-        40000L,
-        10,
-        1.20f,
-        "Kendi tema motoru, özel widget'lar ve entegre uygulama mağazası. İnceleme puanına +10 ekler ve aktif kullanıcılardan aylık mağaza komisyon geliri sağlar."
-    ),
-    PROPRIETARY_KERNEL(
-        "Bağımsız Çekirdek İşletim Sistemi (Proprietary OS)",
-        "Sıfırdan Özel Çekirdek & Ekosistem",
-        3500000L,
-        120000L,
-        20,
-        3.00f,
-        "Donanımla %100 kusursuz entegrasyon, ultra akıcı optimizasyon, +20 inceleme puanı ve cihaz başına rekor mağaza/servis geliri!"
-    )
-}
-
-@Serializable
-enum class OsFocus(
-    val title: String,
-    val icon: String,
-    val bonusDescription: String,
-    val strategicAdvantage: String
-) {
-    SECURITY(
-        "Güvenlik & Gizlilik Odaklı",
-        "🛡️",
-        "Uçtan uca donanımsal şifreleme ve kurumsal veri kalkanı.",
-        "İş & Kurumsal segmentinde +%25 Satış Talebi ve İtibar Bonusu"
-    ),
-    AI_SMART(
-        "Yapay Zeka & Akıllı Asistan",
-        "🧠",
-        "Cihaz üstü yerel LLM asistanı ve akıllı hesaplamalı kamera motoru.",
-        "Kamera puanına +15 ve Trend uyumunda dev avantaj"
-    ),
-    GAMING_TURBO(
-        "Oyun & Turbo Performans",
-        "🎮",
-        "Düşük gecikmeli GPU optimizasyonu ve gelişmiş termal yönetim.",
-        "Oyuncu telefonlarında +%30 Satış ve Hız Bonusu"
-    ),
-    LIGHTWEIGHT(
-        "Hafiflik & Pil Optimizasyonu",
-        "⚡",
-        "Sıfır bloatware, akıcı 120Hz animasyonlar ve enerji tasarrufu.",
-        "Batarya puanına +15 ve tüm segmentlerde geniş memnuniyet"
-    ),
-    AESTHETIC(
-        "Estetik & Zengin Özelleştirme",
-        "🎨",
-        "Dinamik temalar, saydam cam efektleri ve widget ekosistemi.",
-        "Tasarım puanına +12 ve genç kitlede popülerlik"
-    )
-}
-
-@Serializable
-enum class UpdateGuarantee(
-    val years: Int,
-    val title: String,
-    val monthlyCost: Long,
-    val reputationBonus: Int
-) {
-    ONE_YEAR(1, "1 Yıl Temel Destek", 0L, 0),
-    THREE_YEARS(3, "3 Yıl Düzenli Güncelleme", 30000L, 5),
-    FIVE_YEARS(5, "5 Yıl Uzun Ömür Garantisi", 80000L, 12),
-    SEVEN_YEARS(7, "7 Yıl Lider Amiral Gemisi Desteği", 150000L, 20)
-}
-
-@Serializable
-enum class OsLicenseType(
-    val title: String, 
-    val badge: String, 
-    val shortLabel: String,
-    val description: String,
-    val adoptionSpeedMultiplier: Float,
-    val storeRevenueMultiplier: Float,
-    val priceTolerationBonusPercent: Int
-) {
-    OPEN_SOURCE(
-        "Açık Kaynak (Open-Source / OEM Serbest)", 
-        "🌐 Açık Kaynak",
-        "Açık Kaynak",
-        "Topluluk ve diğer tüm telefon üreticileri (OEM) işletim sisteminizi serbestçe kullanabilir. Pazar popülaritesi ve aktif cihaz sayısı hızla yayılır; devasa küresel App Store ekosistemi ve servis geliri üretir.",
-        2.4f, 
-        1.2f,
-        0
-    ),
-    CLOSED_PROPRIETARY(
-        "Kapalı Kaynak (Tescilli / Lisanslı Mülkiyet)", 
-        "🔒 Kapalı / Lisanslı",
-        "Kapalı Kaynak",
-        "Apple iOS ve Windows Mobile benzeri kapalı ekosistem. Şirketinizin amiral gemisi cihazlarına özel prestij, yüksek satış fiyatı toleransı ve diğer firmalara cihaz başı lisans satış geliri sağlar.",
-        0.75f, 
-        2.2f,
-        15
-    )
-}
-
-@Serializable
-enum class StoreCommissionRate(val percent: Int, val label: String, val marketLoyaltyBonus: Float) {
-    DEVELOPER_FRIENDLY(15, "%15 Geliştirici Dostu (Yüksek Büyüme)", 1.25f),
-    BALANCED(20, "%20 Dengeli Pazar Standardı", 1.0f),
-    MAXIMUM_PROFIT(30, "%30 Maksimum Kâr Marjı", 0.85f)
-}
-
-@Serializable
-enum class OsModuleType(
-    val id: String,
-    val title: String,
-    val icon: String,
-    val summary: String,
-    val impactText: String,
-    val baseCost: Long,
-    val maxLevel: Int = 5
-) {
-    KERNEL_ENGINE(
-        "kernel",
-        "Çekirdek & 144Hz Akıcılık",
-        "⚡",
-        "Düşük gecikmeli grafik işleme ve mikroçekirdek bellek mimarisi.",
-        "+15 İnceleme Puanı & Kusursuz Cihaz Akıcılığı",
-        6000000L
-    ),
-    AI_NEURAL(
-        "ai",
-        "Yerel Nöral Yapay Zeka",
-        "🧠",
-        "Cihaz üstü LLM yapay zeka asistanı ve hesaplamalı kamera motoru.",
-        "+20 İnovasyon Bonusu & Trend Eşleşmesinde +%25 Satış",
-        10000000L
-    ),
-    SECURITY_VAULT(
-        "security",
-        "Donanımsal Güvenlik Kasası",
-        "🛡️",
-        "Kriptografik veri yalıtımı, sandbox ve sıfır gün kalkanı.",
-        "İş & Kurumsal Pazarda +%35 Talep Patlaması",
-        5000000L
-    ),
-    CLOUD_SYNC(
-        "cloud",
-        "Bulut & Çoklu Cihaz Ekosistemi",
-        "☁️",
-        "Masaüstü, tablet ve saatler arası anlık kesintisiz senkronizasyon.",
-        "%95 Müşteri Sadakati & Aylık Düzenli Bulut Geliri",
-        8000000L
-    ),
-    APP_STORE_SDK(
-        "store",
-        "App Store & Geliştirici SDK",
-        "🏪",
-        "Gelişmiş API setleri, grafik kütüphaneleri ve küresel mağaza altyapısı.",
-        "Uygulama Kataloğunu Katlar & Komisyon Gelirlerini %50 Artırır",
-        7000000L
-    )
-}
-
-@Serializable
-data class CompetitorOsInfo(
-    val id: String,
-    val name: String,
-    val company: String,
-    val iconEmoji: String,
-    val licenseTypeBadge: String,
-    val marketSharePercent: Float,
-    val techScore: Int,
-    val ecosystemScore: Int,
-    val userBaseFormatted: String,
-    val appCountFormatted: String,
-    val monthlyEcosystemRevenue: String,
-    val coreStrength: String,
-    val mainFlaw: String,
-    val brandColorHex: Long
-)
-
-@Serializable
-enum class ModelTier(
-    val title: String, 
-    val badge: String, 
-    val priceMultiplier: Float, 
-    val costMultiplier: Float,
-    val reviewBonus: Int, 
-    val description: String
-) {
-    STANDARD("Standart", "📱", 1.0f, 1.0f, 0, "Dengeli ana akım model. Fiyat/performans kitlesine hitap eder."),
-    PRO("Pro", "💎", 1.35f, 1.0f, 0, "Gelişmiş amiral gemisi. Yüksek marj ve teknoloji meraklıları için üstün donanım."),
-    ULTRA("Ultra / Pro Max", "👑", 1.75f, 1.0f, 0, "En üst seviye amiral gemisi. Zirve prestij, en yüksek fiyat tavanı ve talep çekiciliği."),
-    LITE("Lite / SE", "🏷️", 0.75f, 1.0f, 0, "Bütçe dostu giriş seviyesi. Düşük fiyat, yüksek satış hacmi.")
-}
-
-@Serializable
-data class CustomOsState(
-    val name: String = "Stok Açık Kaynak Android",
-    val version: String = "1.0",
-    val type: OsType = OsType.STOCK_ANDROID,
-    val licenseType: OsLicenseType = OsLicenseType.OPEN_SOURCE,
-    val focus: OsFocus = OsFocus.LIGHTWEIGHT,
-    val updateGuarantee: UpdateGuarantee = UpdateGuarantee.ONE_YEAR,
-    val commissionRate: StoreCommissionRate = StoreCommissionRate.BALANCED,
-    val themeColorHex: Long = 0xFF0284C7,
-    val majorVersionCount: Int = 1,
-    val minorVersionCount: Int = 0,
-    val lastUpdateMonth: Int = 1,
-    val lastUpdateYear: Int = 2010,
-    val assignedDevs: Int = 0,
-    val popularityPercent: Float = 0.0f,
-    val ecosystemScore: Int = 10,
-    val optimizationScore: Int = 20,
-    val thirdPartyAdoptersCount: Int = 0,
-    val thirdPartyActiveDevices: Long = 0L,
-    val perDeviceLicenseFee: Int = 0,
-    val totalAppStoreRevenueToDate: Long = 0L,
-    val totalLicenseRevenueToDate: Long = 0L,
-    val lastMonthAppStoreIncome: Long = 0L,
-    val lastMonthLicenseIncome: Long = 0L,
-    val devXp: Int = 0,
-    // New OS Architecture & Strategy Levels
-    val kernelLevel: Int = 1,
-    val aiLevel: Int = 1,
-    val securityLevel: Int = 1,
-    val cloudLevel: Int = 1,
-    val appStoreLevel: Int = 1,
-    val devFundBalance: Long = 0L,
-    val totalStoreApps: Long = 45000L,
-    val customerLoyaltyPercent: Float = 35.0f,
-    val devConCount: Int = 0,
-    val lastMonthCloudRevenue: Long = 0L,
-    val totalCloudRevenueToDate: Long = 0L
-) {
-    val isCustomActive: Boolean get() = type != OsType.STOCK_ANDROID
-    val overallTechScore: Int get() = (optimizationScore * 0.4f + (kernelLevel + aiLevel + securityLevel + cloudLevel + appStoreLevel) * 4f).toInt().coerceIn(10, 100)
-}
-
-@Serializable
-data class PhoneSpecs(
-    val name: String,
-    val seriesName: String = "",
-    val generation: Int = 1,
-    val tier: ModelTier = ModelTier.STANDARD,
-    val style: String,
-    val material: String,
-    val processor: String,
-    val ramCapacity: String = "1 GB",
-    val ramType: String = "LPDDR1",
-    val storage: String = "16 GB",
-    val sdCardSupport: String = "MicroSD (32 GB)",
-    val display: String,
-    val camera: String,
-    val batteryCapacity: String,
-    val batteryType: String,
-    val connectivity: String,
-    val cellularNetwork: String = "3G HSPA+",
-    val chargingPort: String = "Micro-USB",
-    val wirelessConnectivity: String = "Wi-Fi 4 & BT 2.1",
-    val audio: String,
-    val glass: String,
-    val price: Int,
-    val quantity: Int,
-    val qaBudget: Long = 0,
-    val techScore: Int = 2010,
-    val matchesTrend: Boolean = false,
-    val selectedColors: List<String> = listOf("Gece Siyahı"),
-    val colorHexes: List<Long> = listOf(0xFF0F172A),
-    val colorName: String = "Gece Siyahı",
-    val colorHex: Long = 0xFF0F172A,
-    val frameStyle: String = "Düz Metal Kenar",
-    val cameraBumpStyle: String = "Dikey Ada",
-    val backFinish: String = "Buzlu Mat Cam",
-    val notchStyle: String = "Nokta Delik",
-    val logoStyle: String = "Minimal Elmas",
-    val osName: String = "Android AOSP (Stok Açık Kaynak)",
-    val osType: String = "Açık Kaynak",
-    val osFocus: String = "Standart",
-    val osLicenseFee: Int = 0,
-    val unitCost: Int = 50
-) {
-    val ram: String get() = "$ramCapacity $ramType"
-}
-
-@Serializable
-data class ActiveModel(
-    val id: String,
-    val specs: PhoneSpecs,
-    val totalStock: Int,
-    val remainingStock: Int,
-    val totalSold: Int = 0,
-    val totalRevenue: Long = 0,
-    val periodsOnMarket: Int = 0, // 2 periyot = 1 ay
-    val monthsOnMarket: Int = 0,
-    val reviewScore: Int,
-    val launchYear: Int,
-    val launchMonth: Int,
-    val isExtendedNewsSent: Boolean = false,
-    val activeCampaign: ActiveCampaign? = null,
-    val matchesTrend: Boolean = false,
-    val benchmarkScore: BenchmarkScore? = null,
-    val recallRiskPercent: Int = 0,
-    val isRecalled: Boolean = false,
-    val recalledYear: Int? = null,
-    val recalledMonth: Int? = null
-) {
-    val maxMonthsOnMarket: Int
-        get() = if (reviewScore >= 60) 24 else 12
-
-    val maxPeriodsOnMarket: Int
-        get() = maxMonthsOnMarket * 2
-
-    val isCompleted: Boolean
-        get() = remainingStock <= 0 || periodsOnMarket >= maxPeriodsOnMarket || (periodsOnMarket == 0 && monthsOnMarket >= maxMonthsOnMarket)
-}
-
-@Serializable
-enum class TrendCategory(val title: String, val icon: String, val tip: String) {
-    HIGH_REFRESH_DISPLAY("Yüksek Yenileme Hızlı Ekran", "⚡", "120Hz/144Hz/240Hz ekran veya Oyuncu tarzı kullanın."),
-    CAMERA_PRO("Gelişmiş Kamera & Özçekim", "📸", "Çift, Üçlü veya Periskop/200MP kamera seçin."),
-    LONG_BATTERY("Yüksek Kapasiteli Batarya", "🔋", "4500mAh+ kapasite veya Katı Hal batarya seçin."),
-    BUDGET_VALUE("Ekonomik Fiyat / Performans", "🏷️", "Cihaz satış fiyatını $400 veya altına ayarlayın."),
-    PREMIUM_BUILD("Titanyum & Cam Premium Kasa", "💎", "Titanyum veya Cam kasa malzemesi kullanın."),
-    AI_PROCESSOR("Yapay Zeka & Güçlü İşlemci", "🧠", "Qualcomm Gen / In-House / Kuantum çip veya 12GB+ RAM seçin."),
-    FAST_CONNECTIVITY("5G & Hızlı Bağlantı", "📶", "5G, Wi-Fi 6E/7 veya Uydu bağlantısı seçin.")
-}
-
-@Serializable
-data class MarketTrend(
-    val id: String,
-    val title: String,
-    val description: String,
-    val category: TrendCategory,
-    val bonusMultiplier: Float = 1.5f,
-    val remainingMonths: Int = 4,
-    val totalDurationMonths: Int = 4
-)
-
-@Serializable
-data class CompetitorCompany(
-    val id: String,
-    val name: String, // "Armut", "Samsong", "Xiaomeme", "Gugıl"
-    val logoEmoji: String,
-    val slogan: String,
-    val brandColorHex: Long,
-    val marketSharePercent: Float,
-    val monthlySales: Int,
-    val currentTopModel: String,
-    val currentModelPrice: Int,
-    val currentModelScore: Int,
-    val strategyType: String,
-    val strengthText: String,
-    val weaknessText: String
-)
-
-@Serializable
-data class CompetitorReleaseHistory(
-    val id: String,
-    val companyName: String,
-    val logoEmoji: String,
-    val modelName: String,
-    val price: Int,
-    val score: Int,
-    val year: Int,
-    val month: Int,
-    val headline: String
-)
-
-@Serializable
-data class NewsArticle(
-    val id: String,
-    val title: String,
-    val text: String,
-    val category: String, // "Sektör", "Teknoloji", "Pazar", "Şirket"
-    val year: Int,
-    val month: Int,
-    val isAiGenerated: Boolean = false,
-    val reviewerQuote: String? = null
-)
-
-@Serializable
-data class MarketReport(
-    val title: String,
-    val text: String,
-    val profit: Long,
-    val unitsSold: Int,
-    val reviewScore: Int,
-    val aiReviewQuote: String? = null,
-    val isAiGenerated: Boolean = false
-)
-
-@Serializable
-data class OfficeTier(
-    val level: Int,
-    val name: String,
-    val maxEmployees: Int,
-    val monthlyRent: Long,
-    val upgradeCost: Long
-)
-
-val OFFICE_TIERS = listOf(
-    OfficeTier(1, "Başlangıç Ofisi", 25, 25000L, 0L),
-    OfficeTier(2, "İş Merkezi Ofisi", 50, 65000L, 500000L),
-    OfficeTier(3, "Teknoloji Plazası", 100, 180000L, 2500000L),
-    OfficeTier(4, "Akıllı Gökdelen Kampüsü", 500, 600000L, 12000000L)
-)
-
-@Serializable
-data class FactoryTier(
-    val level: Int,
-    val name: String,
-    val maxWorkers: Int,
-    val discountPercent: Float,
-    val monthlyMaintenance: Long,
-    val upgradeCost: Long
-)
-
-val FACTORY_TIERS = listOf(
-    FactoryTier(0, "Atölye (Fason Üretim)", 15, 0f, 10000L, 0L),
-    FactoryTier(1, "Küçük Ölçekli Fabrika", 40, 10f, 50000L, 1000000L),
-    FactoryTier(2, "Otomatik Seri Üretim Fabrikası", 100, 20f, 180000L, 5000000L),
-    FactoryTier(3, "Mega Akıllı Robotik Fabrika", 300, 35f, 500000L, 20000000L)
-)
-
-@Serializable
-data class ActiveResearch(
-    val techId: String,
-    val techName: String,
-    val totalMonths: Int,
-    val remainingMonths: Int,
-    val cost: Long
-)
-
-@Serializable
-data class GameState(
-    val reports: List<MarketReport> = emptyList(),
-    val budget: Long = 4500000,
-    val monthlyIncome: Long = 0,
-    val rdSpending: Long = 0,
-    val reputation: Int = 0,
-    val year: Int = 2010,
-    val month: Int = 1,
-    val period: Int = 1, // 1: Ayın 1. Yarısı (1-15 Gün / 2 Hafta), 2: Ayın 2. Yarısı (16-30 Gün / 2 Hafta)
-    val modelCount: Int = 0,
-    val techLevel: String = "Giriş",
-    val manufacturedPhones: List<PhoneSpecs> = emptyList(),
-    val activeModels: List<ActiveModel> = emptyList(),
-    val unlockedTech: List<String> = emptyList(),
-    val activeResearch: ActiveResearch? = null,
-    val researchQueue: List<ActiveResearch> = emptyList(),
-    val newsList: List<NewsArticle> = emptyList(),
-    val officeLevel: Int = 1,
-    val factoryLevel: Int = 0,
-    val engineers: Int = 3,
-    val qaInspectors: Int = 2,
-    val assemblyWorkers: Int = 15,
-    val noticeMessage: String? = null,
-    val companyName: String = "Apex Mobile",
-    val companyLogoId: String = "ic_logo_diamond",
-    val companyLogoStyle: String = "Minimal Elmas",
-    val companyBrandColorHex: Long = 0xFF2563EB,
-    val companySlogan: String = "Geleceğin Akıllı Telefonları",
-    val isCompanySetupDone: Boolean = false,
-    val currentTrend: MarketTrend = MarketTrend(
-        id = "trend_2010_init",
-        title = "Dokunmatik & Metal Şıklığı Trendi",
-        description = "Tüketiciler tuşlu telefonları terk edip şık dokunmatik ekranlara ve kaliteli gövdelere yöneliyor.",
-        category = TrendCategory.PREMIUM_BUILD,
-        bonusMultiplier = 1.15f,
-        remainingMonths = 4,
-        totalDurationMonths = 4
-    ),
-    val competitors: List<CompetitorCompany> = listOf(
-        CompetitorCompany(
-            id = "comp_samsung",
-            name = "Samsung",
-            logoEmoji = "🌌",
-            slogan = "Geleceği Bugünden Şekillendir",
-            brandColorHex = 0xFF1428A0,
-            marketSharePercent = 21.5f,
-            monthlySales = 172000,
-            currentTopModel = "Galaxy S",
-            currentModelPrice = 599,
-            currentModelScore = 85,
-            strategyType = "Global Lider & Geniş Portföy",
-            strengthText = "Sektör lideri AMOLED ekran teknolojisi, katlanabilir ekranlar ve devasa üretim gücü",
-            weaknessText = "Geniş model yelpazesi nedeniyle hızlı değer kaybı"
-        ),
-        CompetitorCompany(
-            id = "comp_apple",
-            name = "Apple",
-            logoEmoji = "🍎",
-            slogan = "Farklı Düşün (Think Different)",
-            brandColorHex = 0xFF0F172A,
-            marketSharePercent = 19.5f,
-            monthlySales = 156000,
-            currentTopModel = "iPhone 4",
-            currentModelPrice = 699,
-            currentModelScore = 89,
-            strategyType = "Ultra Premium & Kapalı iOS Ekosistemi",
-            strengthText = "Kusursuz donanım-yazılım uyumu, Bionic çipler ve rekor kâr marjı",
-            weaknessText = "Yüksek fiyatlandırma ve kapalı ekosistem kısıtlamaları"
-        ),
-        CompetitorCompany(
-            id = "comp_xiaomi",
-            name = "Xiaomi",
-            logoEmoji = "🟠",
-            slogan = "Herkes İçin İnovasyon",
-            brandColorHex = 0xFFFF6900,
-            marketSharePercent = 13.0f,
-            monthlySales = 104000,
-            currentTopModel = "Mi 1",
-            currentModelPrice = 249,
-            currentModelScore = 79,
-            strategyType = "Fiyat / Performans & Ekosistem Devi",
-            strengthText = "Agresif fiyatlandırma, zengin donanım, HyperOS ekosistemi ve 120W+ hızlı şarj",
-            weaknessText = "Giriş segmentinde daha düşük birim kâr marjı"
-        ),
-        CompetitorCompany(
-            id = "comp_oppo",
-            name = "Oppo",
-            logoEmoji = "🟢",
-            slogan = "İlham Veren Teknoloji (Inspiration Ahead)",
-            brandColorHex = 0xFF008A4B,
-            marketSharePercent = 8.5f,
-            monthlySales = 68000,
-            currentTopModel = "Find X",
-            currentModelPrice = 549,
-            currentModelScore = 83,
-            strategyType = "Gelişmiş Kamera & SuperVOOC Şarj",
-            strengthText = "MariSilicon görüntüleme işlemcisi, Hasselblad ortaklığı ve ultra şık tasarım",
-            weaknessText = "Batı pazarlarında dalgalı patent süreçleri"
-        ),
-        CompetitorCompany(
-            id = "comp_vivo",
-            name = "Vivo",
-            logoEmoji = "🔷",
-            slogan = "Kusursuz Çekim, Sınırsız İnovasyon",
-            brandColorHex = 0xFF0057FF,
-            marketSharePercent = 7.5f,
-            monthlySales = 60000,
-            currentTopModel = "Xplay",
-            currentModelPrice = 499,
-            currentModelScore = 82,
-            strategyType = "Zeiss Optik Kamera & Sektör İlkleri",
-            strengthText = "Ekran içi parmak izinde öncülük, Zeiss T* kaplama lensler ve V serisi ISP çipleri",
-            weaknessText = "Küresel yazılım arayüzü dağıtımında bölgesel farklılıklar"
-        ),
-        CompetitorCompany(
-            id = "comp_huawei",
-            name = "Huawei",
-            logoEmoji = "🌸",
-            slogan = "Geleceği Yeniden İnşa Et",
-            brandColorHex = 0xFFCF0A2C,
-            marketSharePercent = 5.5f,
-            monthlySales = 44000,
-            currentTopModel = "Ascend P1",
-            currentModelPrice = 449,
-            currentModelScore = 84,
-            strategyType = "HarmonyOS Ekosistemi & Bağımsız Güç",
-            strengthText = "Kendi Kirin çipleri, XMAGE mobil fotoğrafçılık liderliği ve inanılmaz AR-GE direnci",
-            weaknessText = "Bazı Batı pazarlarında lisans ve 5G tedarik ambargoları"
-        ),
-        CompetitorCompany(
-            id = "comp_google",
-            name = "Google",
-            logoEmoji = "🌐",
-            slogan = "Saf Android & Gemini AI Gücü",
-            brandColorHex = 0xFF4285F4,
-            marketSharePercent = 3.5f,
-            monthlySales = 28000,
-            currentTopModel = "Nexus One",
-            currentModelPrice = 529,
-            currentModelScore = 83,
-            strategyType = "Yapay Zeka & Saf Yazılım Deneyimi",
-            strengthText = "Gemini AI entegrasyonu, anında Android güncellemeleri ve hesaplamalı fotoğrafçılık",
-            weaknessText = "Sınırlı sayıda ülkede resmi satış ve donanım çeşitliliği"
-        ),
-        CompetitorCompany(
-            id = "comp_motorola",
-            name = "Motorola",
-            logoEmoji = "🦇",
-            slogan = "Merhaba Moto (Hello Moto)",
-            brandColorHex = 0xFF001489,
-            marketSharePercent = 3.2f,
-            monthlySales = 25600,
-            currentTopModel = "Droid Razr",
-            currentModelPrice = 399,
-            currentModelScore = 80,
-            strategyType = "Razr Katlanabilir & Temiz Android Deneyimi",
-            strengthText = "Razr serisi ikonik katlanabilir dış ekranlar, güçlü marka mirası ve uygun fiyatlı modeller",
-            weaknessText = "Yazılım güncelleme sıklığı ve uzun vadeli destek"
-        ),
-        CompetitorCompany(
-            id = "comp_oneplus",
-            name = "OnePlus",
-            logoEmoji = "➕",
-            slogan = "Asla Yetinme (Never Settle)",
-            brandColorHex = 0xFFEB0028,
-            marketSharePercent = 2.8f,
-            monthlySales = 22400,
-            currentTopModel = "OnePlus One",
-            currentModelPrice = 299,
-            currentModelScore = 86,
-            strategyType = "Akıcı Ekran, Hızlı Şarj & Amiral Gemisi Gücü",
-            strengthText = "OxygenOS akıcılığı, Hasselblad renk kalibrasyonu ve 100W+ SUPERVOOC şarj",
-            weaknessText = "Fiyatların zamanla premium seviyeye yaklaşmasıyla eski F/P algısının değişmesi"
-        ),
-        CompetitorCompany(
-            id = "comp_realme",
-            name = "Realme",
-            logoEmoji = "⚡",
-            slogan = "Cesaret Et (Dare to Leap)",
-            brandColorHex = 0xFFFFC915,
-            marketSharePercent = 2.6f,
-            monthlySales = 20800,
-            currentTopModel = "Realme 1",
-            currentModelPrice = 199,
-            currentModelScore = 77,
-            strategyType = "Genç Nesil & Trend Yaratan Tasarımlar",
-            strengthText = "Çok hızlı üretim döngüsü, 240W rekor şarj hızları ve şık cesur tasarımlar",
-            weaknessText = "Pazarda çok sayıda benzer model bulunması"
-        ),
-        CompetitorCompany(
-            id = "comp_honor",
-            name = "Honor",
-            logoEmoji = "💫",
-            slogan = "Sihri Keşfet (Go Beyond)",
-            brandColorHex = 0xFF00A3E0,
-            marketSharePercent = 2.4f,
-            monthlySales = 19200,
-            currentTopModel = "Honor 6",
-            currentModelPrice = 349,
-            currentModelScore = 80,
-            strategyType = "Ultra İnce Katlanabilir & MagicOS",
-            strengthText = "Dünyanın en ince katlanabilir (Magic V) gövdeleri, göz koruma PWM ekran teknolojisi",
-            weaknessText = "Eski Huawei mirasını bağımsız kimliğe tam dönüştürme süreci"
-        ),
-        CompetitorCompany(
-            id = "comp_sony",
-            name = "Sony",
-            logoEmoji = "📷",
-            slogan = "Duyguları Harekete Geçir (Make.Believe)",
-            brandColorHex = 0xFF1F2937,
-            marketSharePercent = 1.8f,
-            monthlySales = 14400,
-            currentTopModel = "Xperia Arc",
-            currentModelPrice = 599,
-            currentModelScore = 82,
-            strategyType = "Kamera Sensör Teknolojisi & Pro İçerik",
-            strengthText = "Tüm sektöre Exmor-T kamera sensörü sağlama, 4K OLED ekranlar, 3.5mm jak ve MicroSD sadakati",
-            weaknessText = "Yüksek fiyatlandırma ve sınırlı pazarlama bütçesi"
-        ),
-        CompetitorCompany(
-            id = "comp_asus",
-            name = "Asus",
-            logoEmoji = "🎮",
-            slogan = "Oyuncuların Cumhuriyeti (ROG)",
-            brandColorHex = 0xFFFF0033,
-            marketSharePercent = 1.5f,
-            monthlySales = 12000,
-            currentTopModel = "PadFone",
-            currentModelPrice = 649,
-            currentModelScore = 81,
-            strategyType = "ROG Ultra Oyuncu Donanımı & Aktif Soğutma",
-            strengthText = "Hava tetikleyicileri (AirTrigger), aktif soğutucu fanlar, 165Hz+ ekranlar ve 6000mAh batarya",
-            weaknessText = "Oyun odaklı kalın gövde ve niş tüketici kitlesi"
-        ),
-        CompetitorCompany(
-            id = "comp_nokia",
-            name = "Nokia",
-            logoEmoji = "🏛️",
-            slogan = "İnsanları Birbirine Bağlar (Connecting People)",
-            brandColorHex = 0xFF124191,
-            marketSharePercent = 1.5f,
-            monthlySales = 12000,
-            currentTopModel = "N8 Symbian",
-            currentModelPrice = 429,
-            currentModelScore = 78,
-            strategyType = "Miras, Dayanıklılık & Kolay Tamir",
-            strengthText = "HMD QuickFix evde tamir edilebilirlik, saf Android ve efsanevi gövde sağlamlığı",
-            weaknessText = "Üst segment amiral gemisi yarışından çekilmiş olması"
-        ),
-        CompetitorCompany(
-            id = "comp_tecno",
-            name = "Tecno",
-            logoEmoji = "🌍",
-            slogan = "Geleceğe Adım At (Stop At Nothing)",
-            brandColorHex = 0xFF0072CE,
-            marketSharePercent = 1.8f,
-            monthlySales = 14400,
-            currentTopModel = "Phantom 6 Plus",
-            currentModelPrice = 149,
-            currentModelScore = 73,
-            strategyType = "Gelişmekte Olan Pazarlar & Phantom Serisi",
-            strengthText = "Yerel pazar ten rengi kalibrasyon algoritmaları, agresif uygun fiyat ve Phantom katlanabilir modeller",
-            weaknessText = "Gelişmiş Batı pazarlarında düşük marka bilinirliği"
-        ),
-        CompetitorCompany(
-            id = "comp_infinix",
-            name = "Infinix",
-            logoEmoji = "🚀",
-            slogan = "Gelecek Şimdi (The Future is Now)",
-            brandColorHex = 0xFF1E824C,
-            marketSharePercent = 1.5f,
-            monthlySales = 12000,
-            currentTopModel = "Infinix Zero",
-            currentModelPrice = 169,
-            currentModelScore = 74,
-            strategyType = "Bütçe Dostu Oyuncu & 260W Hızlı Şarj",
-            strengthText = "Gençlere yönelik GT serisi mecha oyun tasarımları, dev bataryalar ve uygun fiyat",
-            weaknessText = "İnceleme puanlarında kamera tutarlılığı"
-        ),
-        CompetitorCompany(
-            id = "comp_nothing",
-            name = "Nothing",
-            logoEmoji = "💡",
-            slogan = "Teknolojiyi Yeniden Heyecanlı Kıl",
-            brandColorHex = 0xFF18181B,
-            marketSharePercent = 1.0f,
-            monthlySales = 8000,
-            currentTopModel = "Concept 1",
-            currentModelPrice = 449,
-            currentModelScore = 85,
-            strategyType = "Şeffaf Glyph Işıklandırma & Minimalist OS",
-            strengthText = "Benzersiz şeffaf arka kapak LED ışıkları, sade nokta-matris tasarımı ve yüksek tasarım cazibesi",
-            weaknessText = "Yeni bir marka olarak sınırlı servis ağı"
-        ),
-        CompetitorCompany(
-            id = "comp_zte",
-            name = "ZTE",
-            logoEmoji = "🔮",
-            slogan = "Yarın Bugünden Başlar",
-            brandColorHex = 0xFF008CD6,
-            marketSharePercent = 1.2f,
-            monthlySales = 9600,
-            currentTopModel = "Blade V",
-            currentModelPrice = 229,
-            currentModelScore = 76,
-            strategyType = "Görünmez Ekran Altı Kamera & RedMagic Canavarları",
-            strengthText = "Gerçek tam ekran (çentiksiz ekran altı kamera), dahili RGB fanlı RedMagic oyun serisi",
-            weaknessText = "Yazılım arayüzünün küresel yerelleştirme derinliği"
-        ),
-        CompetitorCompany(
-            id = "comp_tcl",
-            name = "TCL",
-            logoEmoji = "📺",
-            slogan = "Görsel Büyüklüğe İlham Ver",
-            brandColorHex = 0xFFED1C24,
-            marketSharePercent = 1.2f,
-            monthlySales = 9600,
-            currentTopModel = "TCL Idol",
-            currentModelPrice = 199,
-            currentModelScore = 75,
-            strategyType = "NXTPAPER Kağıt Hissiyatlı Ekranlar & Uygun Fiyat",
-            strengthText = "Kendi CSOT panel üretimi, göz yormayan mat NXTPAPER ekran teknolojisi",
-            weaknessText = "İşlemci ve kamera performansında orta segmentte kalması"
-        ),
-        CompetitorCompany(
-            id = "comp_fairphone",
-            name = "Fairphone",
-            logoEmoji = "🌱",
-            slogan = "Daha Adil Bir Akıllı Telefon",
-            brandColorHex = 0xFF0084A8,
-            marketSharePercent = 0.5f,
-            monthlySales = 4000,
-            currentTopModel = "Fairphone 1 Modüler",
-            currentModelPrice = 499,
-            currentModelScore = 80,
-            strategyType = "%100 Modüler & 8 Yıl Yazılım Desteği",
-            strengthText = "Tornavidayla 2 dakikada değişen parçalar, geri dönüştürülmüş adil materyaller ve 8 yıl güncelleme",
-            weaknessText = "Modüler yapı nedeniyle daha kalın gövde ve mütevazı donanım özellikleri"
-        )
-    ),
-    val competitorReleases: List<CompetitorReleaseHistory> = emptyList(),
-    val playerMarketSharePercent: Float = 0f,
-    val totalMarketMonthlyVolume: Int = 800000,
-    val customOs: CustomOsState = CustomOsState(),
-    val customChipsets: List<CustomChipset> = emptyList(),
-    val totalChipsetOemRevenue: Long = 0L,
-    val lastPeriodChipsetOemRevenue: Long = 0L,
-    val lastPeriodChipsetsSold: Int = 0,
-    val activeTechExpo: TechExpoEvent? = null,
-    val pastTechExpos: List<TechExpoEvent> = emptyList()
-) {
-    val currentOfficeTier: OfficeTier
-        get() = OFFICE_TIERS.firstOrNull { it.level == officeLevel } ?: OFFICE_TIERS.first()
-
-    val currentFactoryTier: FactoryTier
-        get() = FACTORY_TIERS.firstOrNull { it.level == factoryLevel } ?: FACTORY_TIERS.first()
-
-    val totalEmployees: Int
-        get() = engineers + qaInspectors + assemblyWorkers
-
-    val maxEmployees: Int
-        get() = currentOfficeTier.maxEmployees
-
-    val engineerSalary: Long get() = engineers * 8000L
-    val qaSalary: Long get() = qaInspectors * 5000L
-    val workerSalary: Long get() = assemblyWorkers * 3000L
-    val totalSalaries: Long get() = engineerSalary + qaSalary + workerSalary
-
-    val officeExpense: Long get() = currentOfficeTier.monthlyRent
-    val factoryMaintenance: Long get() = currentFactoryTier.monthlyMaintenance
-    val osMaintenanceExpense: Long 
-        get() = (if (customOs.type != OsType.STOCK_ANDROID) customOs.type.monthlyMaintenance else 0L) + customOs.updateGuarantee.monthlyCost
-
-    val totalMonthlyExpenses: Long get() = totalSalaries + officeExpense + factoryMaintenance + osMaintenanceExpense
-
-    val activeUserBase: Int 
-        get() = activeModels.sumOf { it.totalSold }
-
-    val workerDiscountPercent: Float
-        get() = (assemblyWorkers * 0.25f).coerceAtMost(15f)
-
-    val unitCostDiscountPercent: Float
-        get() = (workerDiscountPercent + currentFactoryTier.discountPercent).coerceAtMost(50f)
-
-    val qaScoreBonus: Int
-        get() = qaInspectors * 2
-
-    val engineerTechBonus: Int
-        get() = engineers * 2
-}
 
 class GameViewModel(application: Application) : AndroidViewModel(application) {
     private val database = AppDatabase.getDatabase(application)
@@ -1047,247 +162,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         autoSaveGame()
     }
 
-    private fun getHistoricalNewsForYearMonth(year: Int, month: Int): List<NewsArticle> {
-        val list = mutableListOf<NewsArticle>()
-        
-        when {
-            year == 2010 && month == 1 -> list.add(NewsArticle("hist_2010_1", "Akıllı Telefon Çağı Başlıyor", "Dokunmatik ekranlı akıllı cihazlar geleneksel tuşlu telefonların pazar payını hızla ele geçiriyor.", "Teknoloji", 2010, 1))
-            year == 2010 && month == 6 -> list.add(NewsArticle("hist_2010_6", "Mobil Uygulama Ekosistemleri Genişliyor", "Kullanıcılar cihaz tercihlerinde uygulama desteğine ve ekran kalitesine önem vermeye başladı.", "Pazar", 2010, 6))
-            year == 2011 && month == 1 -> list.add(NewsArticle("hist_2011_1", "Çift Çekirdekli İşlemci Çağı", "Mobil oyunlar ve HD videolar akıllı telefonlarda standart hale geliyor. Yüksek RAM kapasitesi aranıyor.", "Teknoloji", 2011, 1))
-            year == 2011 && month == 7 -> list.add(NewsArticle("hist_2011_7", "Ön Kamera ve Sosyal Medya Patlaması", "Ön kameralı telefonlara olan talep rekor kırıyor. Özçekim (selfie) trendi pazarı yönlendiriyor.", "Sektör", 2011, 7))
-            year == 2012 && month == 1 -> list.add(NewsArticle("hist_2012_1", "4G LTE Hızında Mobil Bağlantı", "Yüksek hızlı 4G şebekeleri yaygınlaşırken kullanıcılar görüntülü görüşme ve yayıncılığa yöneliyor.", "Teknoloji", 2012, 1))
-            year == 2012 && month == 8 -> list.add(NewsArticle("hist_2012_8", "İnce Tasarım Yarışı", "8mm altı alüminyum ve cam gövdeli cihazlar premium segmente yön veriyor.", "Pazar", 2012, 8))
-            year == 2013 && month == 1 -> list.add(NewsArticle("hist_2013_1", "Full HD (1080p) Ekran Devrimi", "Keskin görseller sunan 1080p paneller amiral gemisi telefonların vazgeçilmezi oldu.", "Teknoloji", 2013, 1))
-            year == 2013 && month == 9 -> list.add(NewsArticle("hist_2013_9", "Biyometrik Parmak İzi Sensörleri", "Cihaz güvenliğinde parmak izi okuyucular yeni dönem başlatıyor.", "Sektör", 2013, 9))
-            year == 2014 && month == 1 -> list.add(NewsArticle("hist_2014_1", "Büyük Ekran (Phablet) Popülaritesi", "5.5 inç ve üzeri geniş ekranlı cihazlar medya tüketiminde birinci tercih haline geldi.", "Pazar", 2014, 1))
-            year == 2015 && month == 1 -> list.add(NewsArticle("hist_2015_1", "64-Bit İşlemciler ve 4GB RAM Standardı", "Performansta masaüstü bilgisayar seviyesine yaklaşan yeni mobil çipler tanıtıldı.", "Teknoloji", 2015, 1))
-            year == 2016 && month == 1 -> list.add(NewsArticle("hist_2016_1", "Çift Kamera Dönemi ve Portre Modu", "Optik zoom ve arka plan bulanıklaştırma sunan çift kamera sistemleri amiral gemilerinde şart.", "Teknoloji", 2016, 1))
-            year == 2017 && month == 1 -> list.add(NewsArticle("hist_2017_1", "Çerçevesiz Ekran ve Çentik Modası", "Ekran/gövde oranı %85 üzerine çıktı. 16:9 standart ekranlı cihaz satmak zorlaşıyor.", "Pazar", 2017, 1))
-            year == 2018 && month == 1 -> list.add(NewsArticle("hist_2018_1", "Ekran İçi Parmak İzi & Üçlü Kameralar", "Gizli sensörler ve gelişmiş gece modu fotoğrafçılığı tüketicilerin gözdesi.", "Teknoloji", 2018, 1))
-            year == 2019 && month == 1 -> list.add(NewsArticle("hist_2019_1", "5G Bağlantı ve Katlanabilir Ekranlar", "Yeni nesil katlanabilir cihazlar ve ultra hızlı 5G çipleri satışa sunuldu.", "Sektör", 2019, 1))
-            year == 2020 && month == 1 -> list.add(NewsArticle("hist_2020_1", "120Hz Yüksek Yenileme Hızlı OLED Ekranlar", "Kullanıcılar takılmasız ve yağ gibi akan 120Hz ekran tecrübesi talep ediyor.", "Teknoloji", 2020, 1))
-            year == 2021 && month == 1 -> list.add(NewsArticle("hist_2021_1", "5nm İşlemciler ve Güç Verimliliği", "Pil ömrünü uzatan ve ısınmayı engelleyen gelişmiş işlemciler pazara hakim.", "Teknoloji", 2021, 1))
-            year == 2022 && month == 1 -> list.add(NewsArticle("hist_2022_1", "NPU Yapay Zeka Çipleri Mobil Cihazlarda", "Fotoğraf işleme, ses tanıma ve pil yönetimi tamamen yapay zekaya devredildi.", "Teknoloji", 2022, 1))
-            year == 2023 && month == 1 -> list.add(NewsArticle("hist_2023_1", "Katlanabilir Ekran Satışları Katlandı", "Esnek ekran maliyetlerinin düşmesiyle katlanabilir modeller pazar payını artırdı.", "Pazar", 2023, 1))
-            year == 2024 && month == 1 -> list.add(NewsArticle("hist_2024_1", "Cihaz Üstü Üretken Yapay Zeka (GenAI)", "Çevrimdışı çalışan yapay zeka asistanları cihaz tercihlerinde 1 numaralı faktör.", "Teknoloji", 2024, 1))
-            year >= 2025 && month == 1 -> list.add(NewsArticle("hist_${year}_1", "Geleceğin Mobil Teknolojileri", "Katı hal bataryalar ve holografik ekran araştırmaları sektörde heyecan yaratıyor.", "Teknoloji", year, 1))
-        }
-        return list
-    }
-
     fun checkTrendMatch(specs: PhoneSpecs, trend: MarketTrend? = _state.value.currentTrend): Boolean {
-        if (trend == null) return false
-        return when (trend.category) {
-            TrendCategory.HIGH_REFRESH_DISPLAY -> {
-                specs.display.contains("120Hz") || specs.display.contains("144Hz") || specs.display.contains("240Hz") || specs.style == "Oyuncu"
-            }
-            TrendCategory.CAMERA_PRO -> {
-                specs.camera.contains("Çift") || specs.camera.contains("Üçlü") || specs.camera.contains("Periskop") || specs.camera.contains("200MP") || specs.camera.contains("GenAI") || specs.camera.contains("16-20") || specs.camera.contains("13 MP")
-            }
-            TrendCategory.LONG_BATTERY -> {
-                specs.batteryCapacity.contains("4500") || specs.batteryCapacity.contains("5000") || specs.batteryCapacity.contains("5500") || specs.batteryCapacity.contains("7000") || specs.batteryCapacity.contains("3600") || specs.batteryCapacity.contains("4000") || specs.batteryType.contains("Katı Hal")
-            }
-            TrendCategory.BUDGET_VALUE -> {
-                specs.price <= 400
-            }
-            TrendCategory.PREMIUM_BUILD -> {
-                specs.material == "Titanyum" || specs.material == "Cam" || specs.material == "Alüminyum" || 
-                specs.backFinish == "Vegan Deri" || specs.backFinish == "Karbon Fiber" || specs.backFinish == "Buzlu Mat Cam" ||
-                specs.frameStyle == "Ultra İnce Çerçeve" || specs.style == "Modern"
-            }
-            TrendCategory.AI_PROCESSOR -> {
-                specs.processor.contains("Gen") || specs.processor.contains("In-House") || specs.processor.contains("Kuantum") || 
-                specs.processor.contains("865") || specs.processor.contains("888") || specs.processor.contains("845") || 
-                specs.ramCapacity.contains("12") || specs.ramCapacity.contains("16") || specs.ramCapacity.contains("24") || specs.ramCapacity.contains("32") ||
-                specs.ramType.contains("LPDDR5") || specs.ramType.contains("LPDDR6")
-            }
-            TrendCategory.FAST_CONNECTIVITY -> {
-                specs.connectivity.contains("5G") || specs.connectivity.contains("Wi-Fi 6") || specs.connectivity.contains("Wi-Fi 7") || specs.connectivity.contains("Thunderbolt") || specs.connectivity.contains("Uydu") || specs.connectivity.contains("4G")
-            }
-        }
-    }
-
-    private fun generateNewTrend(year: Int, currentCategory: TrendCategory? = null): MarketTrend {
-        val pool = when {
-            year <= 2013 -> listOf(
-                MarketTrend("tr_cam_${Random.nextInt(100, 999)}", "Özçekim & HD Kamera Çılgınlığı", "Sosyal medya patlamasıyla tüketiciler yüksek çözünürlüklü ön/arka kamera istiyor.", TrendCategory.CAMERA_PRO, 1.20f, 4, 4),
-                MarketTrend("tr_prem_${Random.nextInt(100, 999)}", "İnce & Alüminyum Gövde Modası", "Plastikten sıkılan kullanıcılar metal ve cam şıklığını arıyor.", TrendCategory.PREMIUM_BUILD, 1.15f, 4, 4),
-                MarketTrend("tr_budg_${Random.nextInt(100, 999)}", "Ekonomik Akıllı Telefon Akını", "Gelişmekte olan pazarlarda $400 altı bütçe dostu cihazlar kapışılıyor.", TrendCategory.BUDGET_VALUE, 1.10f, 4, 4),
-                MarketTrend("tr_bat_${Random.nextInt(100, 999)}", "Tüm Gün Yeten Batarya Arayışı", "Büyük ekranlarla artan enerji ihtiyacı için yüksek mAh piller aranıyor.", TrendCategory.LONG_BATTERY, 1.15f, 4, 4),
-                MarketTrend("tr_conn_${Random.nextInt(100, 999)}", "4G LTE Hızlı Bağlantı Talebi", "Hızlı internet isteyen mobil kullanıcılar 4G destekli telefonları tercih ediyor.", TrendCategory.FAST_CONNECTIVITY, 1.20f, 4, 4)
-            )
-            year in 2014..2019 -> listOf(
-                MarketTrend("tr_disp_${Random.nextInt(100, 999)}", "Yüksek Yenileme Hızı & Oyuncu Ekranları", "Mobil oyunlar popülerleştikçe akıcı ekranlar ve oyuncu tasarımı revaçta.", TrendCategory.HIGH_REFRESH_DISPLAY, 1.15f, 4, 4),
-                MarketTrend("tr_cam2_${Random.nextInt(100, 999)}", "Çoklu Kamera & Portre Modu Modası", "Arka planı bulanıklaştıran çift ve üçlü kameralar tüketicilerin 1 numaralı tercihi.", TrendCategory.CAMERA_PRO, 1.20f, 4, 4),
-                MarketTrend("tr_prem2_${Random.nextInt(100, 999)}", "Cam & Çerçevesiz Tasarım Yarışı", "Cam arka kapaklar ve lüks metal çerçeveler vitrinleri süslüyor.", TrendCategory.PREMIUM_BUILD, 1.15f, 4, 4),
-                MarketTrend("tr_bat2_${Random.nextInt(100, 999)}", "Mega Kapasiteli Batarya Çılgınlığı", "Kullanıcılar 2 gün şarj istemeyen 4500mAh+ devasa pillere yöneliyor.", TrendCategory.LONG_BATTERY, 1.15f, 4, 4),
-                MarketTrend("tr_budg2_${Random.nextInt(100, 999)}", "Fiyat / Performans Patlaması", "Orta segmentte amiral gemisi hissi veren ucuz modeller kapışılıyor.", TrendCategory.BUDGET_VALUE, 1.10f, 4, 4)
-            )
-            else -> listOf(
-                MarketTrend("tr_ai_${Random.nextInt(100, 999)}", "Cihaz Üstü Yapay Zeka (AI) Çipleri", "NPU birimli işlemciler ve yüksek RAM kapasitesi satın alma tercihlerini belirliyor.", TrendCategory.AI_PROCESSOR, 1.25f, 4, 4),
-                MarketTrend("tr_disp2_${Random.nextInt(100, 999)}", "120Hz-240Hz Ultra Akıcı OLED Ekranlar", "Takılmasız LTPO ekranlar ve oyuncu dizaynları tüm segmentlerde talep ediliyor.", TrendCategory.HIGH_REFRESH_DISPLAY, 1.20f, 4, 4),
-                MarketTrend("tr_cam3_${Random.nextInt(100, 999)}", "1-İnç Sensörler & Periskop Zoom", "Profesyonel seviye fotoğrafçılık ve 8K kayıt yeteneği aranıyor.", TrendCategory.CAMERA_PRO, 1.20f, 4, 4),
-                MarketTrend("tr_prem3_${Random.nextInt(100, 999)}", "Titanyum Alaşım & Zırhlı Gövde Trendi", "Uzay endüstrisi sınıfı titanyum gövde modelleri prestij sembolü oldu.", TrendCategory.PREMIUM_BUILD, 1.15f, 4, 4),
-                MarketTrend("tr_conn2_${Random.nextInt(100, 999)}", "5G & Uydu İletişimi Çılgınlığı", "Kesintisiz küresel bağlantı ve acil durum uydu iletişimi gözde.", TrendCategory.FAST_CONNECTIVITY, 1.20f, 4, 4),
-                MarketTrend("tr_bat3_${Random.nextInt(100, 999)}", "Katı Hal Batarya & 5000mAh+ Güç", "Isınmayan ve günlerce dayanan yeni nesil bataryalar pazarı sallıyor.", TrendCategory.LONG_BATTERY, 1.20f, 4, 4)
-            )
-        }
-
-        val candidates = pool.filter { it.category != currentCategory }
-        return candidates.randomOrNull() ?: pool.random()
-    }
-
-    private fun getCompetitorModelForYear(companyName: String, year: Int): Triple<String, Int, Int> {
-        val cleanName = companyName.lowercase()
-        return when {
-            cleanName.contains("samsung") -> when {
-                year <= 2010 -> Triple("Galaxy S", 599, 85)
-                year == 2011 -> Triple("Galaxy S2 AMOLED", 649, 87)
-                year in 2012..2013 -> Triple("Galaxy S4 Note", 699, 89)
-                year in 2014..2015 -> Triple("Galaxy S6 Edge", 749, 91)
-                year in 2016..2017 -> Triple("Galaxy S8 Infinity", 799, 93)
-                year in 2018..2019 -> Triple("Galaxy S10 Plus", 899, 94)
-                year in 2020..2021 -> Triple("Galaxy S21 Ultra 5G", 1199, 95)
-                year in 2022..2023 -> Triple("Galaxy Z Fold 5", 1499, 96)
-                else -> Triple("Galaxy S25 Ultra AI", 1299, 97)
-            }
-            cleanName.contains("apple") -> when {
-                year <= 2010 -> Triple("iPhone 4 Retina", 699, 89)
-                year == 2011 -> Triple("iPhone 4S Siri", 699, 90)
-                year == 2012 -> Triple("iPhone 5 Lightning", 749, 91)
-                year == 2013 -> Triple("iPhone 5S Touch ID", 799, 92)
-                year in 2014..2015 -> Triple("iPhone 6 Plus", 849, 93)
-                year in 2016..2017 -> Triple("iPhone X Bionic", 999, 95)
-                year in 2018..2019 -> Triple("iPhone 11 Pro Max", 1099, 95)
-                year in 2020..2021 -> Triple("iPhone 13 Pro Ceramic", 1199, 96)
-                year in 2022..2023 -> Triple("iPhone 15 Pro Titanium", 1299, 97)
-                else -> Triple("iPhone 16 Pro AI Max", 1399, 98)
-            }
-            cleanName.contains("xiaomi") -> when {
-                year <= 2010 -> Triple("Mi 1 MIUI", 249, 79)
-                year in 2011..2013 -> Triple("Mi 3 Speed", 279, 82)
-                year in 2014..2016 -> Triple("Redmi Note 3 Metal", 219, 84)
-                year in 2017..2018 -> Triple("Mi 8 Pro Şeffaf", 399, 86)
-                year in 2019..2020 -> Triple("Redmi K20 Pro Pop-up", 349, 88)
-                year in 2021..2022 -> Triple("Xiaomi 12 Pro 120W", 599, 90)
-                year in 2023..2024 -> Triple("Redmi Turbo 3", 399, 92)
-                else -> Triple("Xiaomi 15 Ultra Titanium", 799, 95)
-            }
-            cleanName.contains("oppo") -> when {
-                year <= 2012 -> Triple("Finder Ultra Slim", 399, 80)
-                year in 2013..2015 -> Triple("N3 Dönen Kamera", 499, 83)
-                year in 2016..2018 -> Triple("Find X Stealth 3D", 699, 87)
-                year in 2019..2021 -> Triple("Find X3 Pro MicroLens", 799, 90)
-                year in 2022..2023 -> Triple("Find N2 Flip SuperVOOC", 999, 92)
-                else -> Triple("Find X8 Pro Hasselblad AI", 1099, 95)
-            }
-            cleanName.contains("vivo") -> when {
-                year <= 2013 -> Triple("Xplay Hi-Fi", 449, 80)
-                year in 2014..2016 -> Triple("X5Max 4.75mm Slim", 499, 82)
-                year in 2017..2019 -> Triple("NEX Ekran İçi Parmak İzi", 649, 86)
-                year in 2020..2022 -> Triple("X70 Pro+ Zeiss Gimbal", 799, 91)
-                else -> Triple("X200 Pro Zeiss Telephoto AI", 999, 95)
-            }
-            cleanName.contains("huawei") -> when {
-                year <= 2013 -> Triple("Ascend P6 Metal", 399, 81)
-                year in 2014..2016 -> Triple("P9 Leica Çift Kamera", 549, 86)
-                year in 2017..2019 -> Triple("Mate 20 Pro Matrix", 799, 92)
-                year in 2020..2022 -> Triple("Mate 40 Pro 5nm Kirin", 899, 94)
-                else -> Triple("Pura 70 Ultra XMAGE Geri Çekilebilir", 1199, 96)
-            }
-            cleanName.contains("google") -> when {
-                year <= 2012 -> Triple("Nexus 4 Pure", 399, 83)
-                year in 2013..2015 -> Triple("Nexus 6P Metal", 549, 86)
-                year in 2016..2018 -> Triple("Pixel 3 XL HDR+", 799, 90)
-                year in 2019..2021 -> Triple("Pixel 6 Pro Tensor", 899, 92)
-                year in 2022..2024 -> Triple("Pixel 8 Pro Gemini AI", 999, 94)
-                else -> Triple("Pixel 9 Pro Fold AI", 1399, 96)
-            }
-            cleanName.contains("motorola") -> when {
-                year <= 2013 -> Triple("Droid Razr Kevlar", 399, 80)
-                year in 2014..2016 -> Triple("Moto X Ahşap Kapak", 449, 83)
-                year in 2017..2019 -> Triple("Moto Z Modüler Mod", 499, 85)
-                year in 2020..2022 -> Triple("Edge 30 Ultra 200MP", 699, 89)
-                else -> Triple("Razr 50 Ultra Katlanabilir Dış Ekran", 899, 93)
-            }
-            cleanName.contains("oneplus") -> when {
-                year <= 2014 -> Triple("OnePlus One Flagship Killer", 299, 86)
-                year in 2015..2017 -> Triple("OnePlus 3 Dash Charge", 399, 87)
-                year in 2018..2020 -> Triple("OnePlus 7 Pro 90Hz Çerçevesiz", 669, 91)
-                year in 2021..2023 -> Triple("OnePlus 11 Hasselblad 100W", 699, 93)
-                else -> Triple("OnePlus 13 Snapdragon 8 Gen Elite", 799, 95)
-            }
-            cleanName.contains("realme") -> when {
-                year <= 2018 -> Triple("Realme 1 Diamond Design", 199, 78)
-                year in 2019..2021 -> Triple("Realme X Master Edition", 269, 82)
-                year in 2022..2023 -> Triple("GT Neo 5 240W Rekor Şarj", 399, 88)
-                else -> Triple("GT 6 AI Master Pro", 499, 92)
-            }
-            cleanName.contains("honor") -> when {
-                year <= 2015 -> Triple("Honor 6 Kirin", 299, 79)
-                year in 2016..2018 -> Triple("Honor 8 Aurora Cam", 399, 84)
-                year in 2019..2021 -> Triple("Honor View 20 Delikli Ekran", 499, 87)
-                year in 2022..2023 -> Triple("Magic V2 Dünyanın En İnce Katlanabilir", 1299, 94)
-                else -> Triple("Magic 7 Pro AI Göz Dostu PWM", 899, 95)
-            }
-            cleanName.contains("sony") -> when {
-                year <= 2012 -> Triple("Xperia Arc İnce Kavis", 499, 82)
-                year in 2013..2015 -> Triple("Xperia Z Suya Dayanıklı Cam", 599, 86)
-                year in 2016..2018 -> Triple("Xperia XZ Premium 4K HDR", 799, 89)
-                year in 2019..2022 -> Triple("Xperia 1 III 120Hz 4K CinemaWide", 1199, 92)
-                else -> Triple("Xperia 1 VI Exmor-T Pro Sensör", 1299, 94)
-            }
-            cleanName.contains("asus") -> when {
-                year <= 2014 -> Triple("PadFone Hibrit", 499, 79)
-                year in 2015..2017 -> Triple("ZenFone 2 4GB RAM Öncüsü", 299, 82)
-                year in 2018..2020 -> Triple("ROG Phone 2 120Hz AMOLED 6000mAh", 799, 90)
-                year in 2021..2023 -> Triple("ROG Phone 7 Ultimate Aktif Fan", 1199, 94)
-                else -> Triple("ROG Phone 8 Pro 165Hz Matrix LED", 1099, 96)
-            }
-            cleanName.contains("nokia") -> when {
-                year <= 2011 -> Triple("N8 Symbian 12MP Carl Zeiss", 429, 80)
-                year in 2012..2014 -> Triple("Lumia 1020 41MP PureView", 599, 87)
-                year in 2015..2018 -> Triple("Nokia 8 Sirocco Zırhlı", 649, 85)
-                year in 2019..2022 -> Triple("Nokia XR20 Askeri Standart", 499, 83)
-                else -> Triple("HMD Skyline QuickFix Kolay Tamir", 399, 86)
-            }
-            cleanName.contains("tecno") -> when {
-                year <= 2015 -> Triple("Tecno Boom J7 Müzik", 129, 72)
-                year in 2016..2019 -> Triple("Phantom 8 Çift Kamera", 189, 76)
-                year in 2020..2022 -> Triple("Camon 19 Pro RGBW Sensör", 249, 81)
-                else -> Triple("Phantom V Fold 2 Katlanabilir", 799, 89)
-            }
-            cleanName.contains("infinix") -> when {
-                year <= 2016 -> Triple("Infinix Hot 3 Bütçe", 119, 71)
-                year in 2017..2020 -> Triple("Note 7 Büyük Ekran", 169, 75)
-                year in 2021..2023 -> Triple("Zero Ultra 180W Thunder Charge", 399, 84)
-                else -> Triple("GT 20 Pro Mecha RGB Gaming", 299, 88)
-            }
-            cleanName.contains("nothing") -> when {
-                year <= 2021 -> Triple("Nothing Concept Glyph 1", 399, 83)
-                year == 2022 -> Triple("Nothing Phone (1) Glyph Şeffaf", 449, 87)
-                year in 2023..2024 -> Triple("Nothing Phone (2) Glyph Matrix", 599, 90)
-                else -> Triple("Nothing Phone (3) Transparent AI", 699, 93)
-            }
-            cleanName.contains("zte") -> when {
-                year <= 2014 -> Triple("Blade V Akıllı Tasarım", 199, 75)
-                year in 2015..2018 -> Triple("Axon 7 Hi-Fi Çift Hoparlör", 399, 82)
-                year in 2019..2022 -> Triple("Axon 20 Dünyanın İlk Ekran Altı Kamerası", 449, 86)
-                else -> Triple("RedMagic 9 Pro Çentiksiz RGB Fanlı Canavar", 749, 93)
-            }
-            cleanName.contains("tcl") -> when {
-                year <= 2015 -> Triple("Idol 3 Çift Yönlü Kullanım", 199, 74)
-                year in 2016..2019 -> Triple("TCL Plex NXTVISION", 249, 78)
-                year in 2020..2023 -> Triple("TCL 40 NXTPAPER Göz Koruma Mat Ekran", 299, 83)
-                else -> Triple("TCL 50 Pro NXTPAPER 3.0 Kağıt Hissi", 349, 87)
-            }
-            else -> when { // Fairphone
-                year <= 2014 -> Triple("Fairphone 1 Modüler Başlangıç", 399, 76)
-                year in 2015..2019 -> Triple("Fairphone 2 Kendin Tamir Et", 499, 79)
-                year in 2020..2022 -> Triple("Fairphone 4 5G Adil Ticaret", 579, 83)
-                else -> Triple("Fairphone 5 %100 Modüler 8 Yıl Destek", 699, 87)
-            }
-        }
+        return com.example.viewmodel.checkTrendMatch(specs, trend)
     }
 
     companion object {
@@ -1308,6 +184,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun clearLastUnlockedAchievements() {
+        _state.update { it.copy(lastUnlockedAchievementIds = emptyList()) }
+    }
+
     fun advanceTime() {
         val currentState = _state.value
         val isSecondHalf = currentState.period == 2
@@ -1318,6 +198,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         var totalMonthlyRevenue = 0L
         var totalMonthlyUnitsSold = 0
+        var qualityWeightedReviewSum = 0.0
         var totalRecallCost = 0L
         var totalRecallReputationPenalty = 0
         val newNewsList = currentState.newsList.toMutableList()
@@ -1345,8 +226,26 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         // Process bi-weekly sales (2-week cycle, 24 periods per year) for each active model
+        // Fabrika, bu periyotta paylaşılan sınırlı bir üretim kapasitesine sahiptir; kapasite,
+        // üretimi devam eden (backlog'u olan) modellere piyasaya çıkış sırasına göre (FIFO) dağıtılır.
+        var remainingFactoryCapacityThisPeriod = currentState.currentFactoryTier.periodCapacity
         val updatedActiveModels = currentState.activeModels.map { model ->
-            if (!model.isCompleted && model.remainingStock > 0) {
+            // 0. ÜRETİM ADIMI: Fabrika kapasitesi izin verdiğince backlog'u kapat
+            var workingModel = model
+            if (model.hasPendingProduction && remainingFactoryCapacityThisPeriod > 0) {
+                val backlog = model.totalStock - model.producedStock
+                val producedThisPeriod = backlog.coerceAtMost(remainingFactoryCapacityThisPeriod)
+                if (producedThisPeriod > 0) {
+                    workingModel = model.copy(
+                        producedStock = model.producedStock + producedThisPeriod,
+                        remainingStock = model.remainingStock + producedThisPeriod
+                    )
+                    remainingFactoryCapacityThisPeriod -= producedThisPeriod
+                }
+            }
+
+            if (!workingModel.isCompleted && workingModel.remainingStock > 0) {
+                val model = workingModel
                 val newPeriods = model.periodsOnMarket + 1
                 val newMonths = newPeriods / 2
                 
@@ -1443,6 +342,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 
                 totalMonthlyRevenue += revenueThisPeriod
                 totalMonthlyUnitsSold += unitsSoldThisPeriod
+                qualityWeightedReviewSum += unitsSoldThisPeriod.toDouble() * model.reviewScore
 
                 var isExtendedNewsSent = model.isExtendedNewsSent
                 if (newMonths == 12 && model.maxMonthsOnMarket == 24 && !model.isExtendedNewsSent) {
@@ -1511,11 +411,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
                 modelAfterRecallCheck
             } else {
-                model
+                workingModel
             }
         }
-
-        val activeInstalledBase = updatedActiveModels.sumOf { it.totalSold }
 
         // --- CUSTOM OS BI-WEEKLY EVOLUTION & ADOPTION LOGIC ---
         var updatedCustomOs = currentState.customOs
@@ -1631,7 +529,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 totalCloudRevenueToDate = updatedCustomOs.totalCloudRevenueToDate + cloudRevenueThisPeriod,
                 lastMonthAppStoreIncome = appStoreRevenueThisPeriod * 2,
                 lastMonthLicenseIncome = licenseRevenueThisPeriod * 2,
-                lastMonthCloudRevenue = cloudRevenueThisPeriod * 2
+                lastMonthCloudRevenue = cloudRevenueThisPeriod * 2,
+                popularityHistory = (updatedCustomOs.popularityHistory + newPopularity).takeLast(30)
             )
         }
 
@@ -1854,7 +753,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val nextCandidate = updatedResearchQueue.first()
             val availableBudget = currentState.budget + netIncome
             if (availableBudget >= nextCandidate.cost) {
-                val duration = calculateResearchDuration(currentState.engineers)
+                val duration = calculateResearchDuration(currentState.engineers, nextCandidate.cost)
                 currentActiveResearch = nextCandidate.copy(
                     totalMonths = duration,
                     remainingMonths = duration
@@ -1937,13 +836,66 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
 
+        // --- KADEMELİ İTİBAR SÜRÜKLENMESİ (yumuşak, öngörülebilir itibar değişimi) ---
+        // Bu periyotta fiilen satılan cihazların ağırlıklı ortalama inceleme puanına göre itibarı
+        // çok küçük adımlarla hedefe doğru çeker. Kesirli birikim (momentum) sayesinde tek periyotta
+        // asla ani bir sıçrama olmaz; etki ancak birkaç periyot boyunca tutarlı kalite/kalitesizlikle birikir.
+        var updatedReputationMomentum = currentState.reputationMomentum
+        var passiveReputationDelta = 0
+        if (totalMonthlyUnitsSold > 0) {
+            val avgSoldQuality = qualityWeightedReviewSum / totalMonthlyUnitsSold.toDouble()
+            // 65 puan "nötr" kabul edilir: bunun altı itibarı yavaşça aşındırır, üstü yavaşça güçlendirir.
+            val qualityGap = (avgSoldQuality - 65.0) / 35.0 // yaklaşık -1.3..+1.0 aralığı
+            val driftThisPeriod = (qualityGap * 0.35).coerceIn(-0.5, 0.5)
+            updatedReputationMomentum += driftThisPeriod.toFloat()
+        }
+        // Birikim tam sayı puana ulaştıysa gerçek itibar değişimine dönüştür, kalanı sakla
+        if (updatedReputationMomentum >= 1f) {
+            passiveReputationDelta = kotlin.math.floor(updatedReputationMomentum).toInt()
+            updatedReputationMomentum -= passiveReputationDelta
+        } else if (updatedReputationMomentum <= -1f) {
+            passiveReputationDelta = kotlin.math.ceil(updatedReputationMomentum).toInt()
+            updatedReputationMomentum -= passiveReputationDelta
+        }
+
+        // --- TEDARİK ZİNCİRİ OLAYI (SUPPLY CHAIN EVENT) — ana state.update'ten ÖNCE hesaplanmalı ---
+        val (nextSupplyEvent, supplyEventJustStarted, endedSupplyEvent) = tickSupplyChainEvent(currentState.activeSupplyChainEvent, newYear)
+        if (supplyEventJustStarted && nextSupplyEvent != null) {
+            val direction = if (nextSupplyEvent.costMultiplierPercent > 100) "artırıyor" else "azaltıyor"
+            val deltaPercent = kotlin.math.abs(nextSupplyEvent.costMultiplierPercent - 100)
+            newNewsList.add(
+                0,
+                NewsArticle(
+                    id = "supply_start_${nextSupplyEvent.id}",
+                    title = "${nextSupplyEvent.icon} TEDARİK ZİNCİRİ: ${nextSupplyEvent.title}",
+                    text = "${nextSupplyEvent.description} Bu durum yaklaşık ${nextSupplyEvent.totalPeriods} periyot boyunca üretim maliyetlerini %$deltaPercent $direction.",
+                    category = "Sektör",
+                    year = newYear,
+                    month = newMonth
+                )
+            )
+        }
+        if (endedSupplyEvent != null) {
+            newNewsList.add(
+                NewsArticle(
+                    id = "supply_end_${endedSupplyEvent.id}",
+                    title = "✅ ATLATILDI: ${endedSupplyEvent.title} Sona Erdi",
+                    text = "${endedSupplyEvent.title} etkisini yitirdi, üretim maliyetleri normale döndü.",
+                    category = "Sektör",
+                    year = newYear,
+                    month = newMonth
+                )
+            )
+        }
+
         _state.update {
             it.copy(
                 period = newPeriod,
                 month = newMonth,
                 year = newYear,
                 budget = it.budget + netIncome - autoStartResearchCost + expoPrizeTotal - totalRecallCost,
-                reputation = (it.reputation + expoRepGain - totalRecallReputationPenalty).coerceIn(0, 100),
+                reputation = (it.reputation + expoRepGain - totalRecallReputationPenalty.coerceAtMost(20) + passiveReputationDelta).coerceIn(0, 100),
+                reputationMomentum = updatedReputationMomentum,
                 monthlyIncome = totalCombinedRevenue * 2, // Equivalent monthly rate
                 customOs = updatedCustomOs,
                 customChipsets = updatedChipsets,
@@ -1963,8 +915,43 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 totalMarketMonthlyVolume = totalMarketVolume * 2,
                 activeTechExpo = triggeredExpoEvent,
                 pastTechExpos = if (triggeredExpoEvent != null) listOf(triggeredExpoEvent) + it.pastTechExpos else it.pastTechExpos,
+                activeSupplyChainEvent = nextSupplyEvent,
                 techLevel = if (updatedUnlockedTech.size >= 15) "Yapay Zeka" else if (updatedUnlockedTech.size >= 5) "İleri Düzey" else "Giriş"
             )
+        }
+
+        // --- BAŞARIMLAR (ACHIEVEMENTS) KONTROLÜ ---
+        val stateAfterPeriod = _state.value
+        val newlyUnlocked = evaluateNewlyUnlockedAchievements(stateAfterPeriod)
+        if (newlyUnlocked.isNotEmpty()) {
+            val achievementBonusRep = newlyUnlocked.sumOf {
+                when (it.tier) {
+                    AchievementTier.BRONZE -> 1
+                    AchievementTier.SILVER -> 2
+                    AchievementTier.GOLD -> 4
+                    AchievementTier.PLATINUM -> 8
+                }
+            }.coerceAtMost(6) // Aynı periyotta birden çok başarım birden açılırsa itibarın aniden sıçramasını önler
+            val achievementNews = newlyUnlocked.map { ach ->
+                NewsArticle(
+                    id = "achv_${ach.id}_${newYear}_${newMonth}",
+                    title = "🏅 BAŞARIM AÇILDI: ${ach.title}",
+                    text = "${ach.icon} ${ach.description} (${ach.tier.displayName} Rozet)",
+                    category = "Şirket",
+                    year = newYear,
+                    month = newMonth
+                )
+            }
+            _state.update {
+                it.copy(
+                    unlockedAchievementIds = it.unlockedAchievementIds + newlyUnlocked.map { a -> a.id },
+                    lastUnlockedAchievementIds = newlyUnlocked.map { a -> a.id },
+                    reputation = (it.reputation + achievementBonusRep).coerceIn(0, 100),
+                    newsList = it.newsList + achievementNews
+                )
+            }
+        } else {
+            _state.update { it.copy(lastUnlockedAchievementIds = emptyList()) }
         }
 
         autoSaveGame()
@@ -2000,155 +987,189 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val newTotalEmployees = currentState.totalEmployees + count
 
         if (newTotalEmployees > currentState.maxEmployees) {
-            _state.update {
-                it.copy(
-                    noticeMessage = "Ofis Kapasitesi Yetersiz! Mevcut ofisiniz en fazla ${currentState.maxEmployees} çalışan barındırabilir. Personel alabilmek için Şirket Ofisinizi büyütün."
-                )
-            }
+            _state.update { it.copy(noticeMessage = "Ofis kapasitesi yetersiz! (${currentState.totalEmployees}/${currentState.maxEmployees}) Ofisinizi yükseltin.") }
             return
         }
 
         if (type == EmployeeType.ASSEMBLY_WORKER) {
-            val newWorkers = currentState.assemblyWorkers + count
-            if (newWorkers > currentState.currentFactoryTier.maxWorkers) {
-                _state.update {
-                    it.copy(
-                        noticeMessage = "Fabrika İşçi Kapasitesi Yetersiz! Mevcut tesisiniz en fazla ${currentState.currentFactoryTier.maxWorkers} işçi barındırabilir. Daha fazla montaj işçisi için Fabrikanızı geliştirin."
-                    )
-                }
+            val newWorkerCount = currentState.assemblyWorkers + count
+            if (newWorkerCount > currentState.currentFactoryTier.maxWorkers) {
+                _state.update { it.copy(noticeMessage = "Fabrika işçi kapasitesi yetersiz! (${currentState.assemblyWorkers}/${currentState.currentFactoryTier.maxWorkers}) Daha fazla montaj işçisi için fabrikanızı yükseltin.") }
                 return
             }
         }
 
-        _state.update { state ->
+        val salaryCost = when (type) {
+            EmployeeType.ENGINEER -> 8000L * count
+            EmployeeType.QA_INSPECTOR -> 5000L * count
+            EmployeeType.ASSEMBLY_WORKER -> 3000L * count
+        }
+
+        if (currentState.budget < salaryCost) {
+            _state.update { it.copy(noticeMessage = "İşe alım ve ilk maaş teminatı için yetersiz bütçe! ($${"%,d".format(salaryCost)} gerekli)") }
+            return
+        }
+
+        val typeName = when(type) {
+            EmployeeType.ENGINEER -> "Ar-Ge Mühendisi"
+            EmployeeType.QA_INSPECTOR -> "QA Test Uzmanı"
+            EmployeeType.ASSEMBLY_WORKER -> "Üretim Hattı İşçisi"
+        }
+
+        _state.update { current ->
             when (type) {
-                EmployeeType.ENGINEER -> state.copy(engineers = state.engineers + count)
-                EmployeeType.QA_INSPECTOR -> state.copy(qaInspectors = state.qaInspectors + count)
-                EmployeeType.ASSEMBLY_WORKER -> state.copy(assemblyWorkers = state.assemblyWorkers + count)
+                EmployeeType.ENGINEER -> current.copy(
+                    engineers = current.engineers + count,
+                    noticeMessage = "$count adet $typeName işe alındı."
+                )
+                EmployeeType.QA_INSPECTOR -> current.copy(
+                    qaInspectors = current.qaInspectors + count,
+                    noticeMessage = "$count adet $typeName işe alındı."
+                )
+                EmployeeType.ASSEMBLY_WORKER -> current.copy(
+                    assemblyWorkers = current.assemblyWorkers + count,
+                    noticeMessage = "$count adet $typeName işe alındı."
+                )
             }
         }
+        autoSaveGame()
     }
 
     fun fireEmployee(type: EmployeeType, count: Int = 1) {
-        _state.update { state ->
+        val currentState = _state.value
+        val currentCount = when (type) {
+            EmployeeType.ENGINEER -> currentState.engineers
+            EmployeeType.QA_INSPECTOR -> currentState.qaInspectors
+            EmployeeType.ASSEMBLY_WORKER -> currentState.assemblyWorkers
+        }
+
+        if (currentCount < count) {
+            return
+        }
+
+        val typeName = when(type) {
+            EmployeeType.ENGINEER -> "Ar-Ge Mühendisi"
+            EmployeeType.QA_INSPECTOR -> "QA Test Uzmanı"
+            EmployeeType.ASSEMBLY_WORKER -> "Üretim Hattı İşçisi"
+        }
+
+        _state.update { current ->
             when (type) {
                 EmployeeType.ENGINEER -> {
-                    val newEng = (state.engineers - count).coerceAtLeast(0)
-                    state.copy(
+                    val newEng = current.engineers - count
+                    val updatedCustomOs = if (current.customOs.assignedDevs > newEng) {
+                        current.customOs.copy(assignedDevs = newEng)
+                    } else current.customOs
+                    current.copy(
                         engineers = newEng,
-                        customOs = state.customOs.copy(assignedDevs = state.customOs.assignedDevs.coerceAtMost(newEng))
+                        customOs = updatedCustomOs,
+                        noticeMessage = "$count adet $typeName ile yollar ayrıldı."
                     )
                 }
-                EmployeeType.QA_INSPECTOR -> state.copy(qaInspectors = (state.qaInspectors - count).coerceAtLeast(0))
-                EmployeeType.ASSEMBLY_WORKER -> state.copy(assemblyWorkers = (state.assemblyWorkers - count).coerceAtLeast(0))
+                EmployeeType.QA_INSPECTOR -> current.copy(
+                    qaInspectors = current.qaInspectors - count,
+                    noticeMessage = "$count adet $typeName ile yollar ayrıldı."
+                )
+                EmployeeType.ASSEMBLY_WORKER -> current.copy(
+                    assemblyWorkers = current.assemblyWorkers - count,
+                    noticeMessage = "$count adet $typeName ile yollar ayrıldı."
+                )
             }
         }
+        autoSaveGame()
     }
 
     fun upgradeOffice() {
         val currentState = _state.value
         val nextTier = OFFICE_TIERS.firstOrNull { it.level == currentState.officeLevel + 1 } ?: return
 
-        if (currentState.budget >= nextTier.upgradeCost) {
-            val news = NewsArticle(
-                id = "news_office_${currentState.year}_${currentState.month}_${Random.nextInt(100, 999)}",
-                title = "ŞİRKET BÜYÜYOR: ${nextTier.name}",
-                text = "Şirketiniz Genel Merkezini ${nextTier.name} seviyesine taşıdı! Yeni çalışan kapasitesi: ${nextTier.maxEmployees} Personel.",
-                category = "Şirket",
-                year = currentState.year,
-                month = currentState.month
-            )
-
-            val report = MarketReport(
-                title = "Şirket Ofisi Büyütüldü: ${nextTier.name}",
-                text = "Genel Merkez ${nextTier.name} tesisine taşındı ($${"%,d".format(nextTier.upgradeCost)} harcandı). Yeni Çalışan Kapasitesi: ${nextTier.maxEmployees}, Aylık Kira: $${"%,d".format(nextTier.monthlyRent)}.",
-                profit = -nextTier.upgradeCost,
-                unitsSold = 0,
-                reviewScore = 0
-            )
-
-            _state.update {
-                it.copy(
-                    budget = it.budget - nextTier.upgradeCost,
-                    officeLevel = nextTier.level,
-                    newsList = it.newsList + news,
-                    reports = it.reports + report
-                )
-            }
-        } else {
-            _state.update {
-                it.copy(noticeMessage = "Ofis yükseltmesi için yetersiz bütçe! Gereken: $${"%,d".format(nextTier.upgradeCost)}")
-            }
+        if (currentState.budget < nextTier.upgradeCost) {
+            _state.update { it.copy(noticeMessage = "Ofis yükseltmesi için yetersiz bütçe! Gereken: $${"%,d".format(nextTier.upgradeCost)}") }
+            return
         }
+
+        val report = MarketReport(
+            title = "Ofis Yükseltildi: ${nextTier.name}",
+            text = "Şirket merkezimiz yeni binaya taşındı ($${"%,d".format(nextTier.upgradeCost)}). Yeni çalışan kapasitesi: ${nextTier.maxEmployees} kişi.",
+            profit = -nextTier.upgradeCost,
+            unitsSold = 0,
+            reviewScore = 0
+        )
+
+        val news = NewsArticle(
+            id = "office_up_${currentState.year}_${currentState.month}_${Random.nextInt(100, 999)}",
+            title = "ŞİRKET MERKEZİ GENİŞLİYOR: ${nextTier.name}",
+            text = "${currentState.companyName}, büyüme hedefleri doğrultusunda ${nextTier.name} seviyesine taşındı. Kapasite ${nextTier.maxEmployees} çalışana çıkarıldı.",
+            category = "Şirket",
+            year = currentState.year,
+            month = currentState.month
+        )
+
+        _state.update {
+            it.copy(
+                budget = it.budget - nextTier.upgradeCost,
+                officeLevel = nextTier.level,
+                reputation = (it.reputation + 2).coerceIn(0, 100),
+                reports = it.reports + report,
+                newsList = it.newsList + news,
+                noticeMessage = "Tebrikler! ${nextTier.name} genel merkezine taşındınız."
+            )
+        }
+        autoSaveGame()
     }
 
     fun upgradeFactory() {
         val currentState = _state.value
         val nextTier = FACTORY_TIERS.firstOrNull { it.level == currentState.factoryLevel + 1 } ?: return
 
-        if (currentState.budget >= nextTier.upgradeCost) {
-            val news = NewsArticle(
-                id = "news_factory_${currentState.year}_${currentState.month}_${Random.nextInt(100, 999)}",
-                title = "YENİ ÜRETİM TESİSİ: ${nextTier.name}",
-                text = "Şirketiniz ${nextTier.name} yatırımını tamamladı! Yeni üretim indirimi: %${nextTier.discountPercent.toInt()}, Maksimum İşçi Kapasitesi: ${nextTier.maxWorkers}.",
-                category = "Şirket",
-                year = currentState.year,
-                month = currentState.month
-            )
-
-            val report = MarketReport(
-                title = "Fabrika Yatırımı: ${nextTier.name}",
-                text = "${nextTier.name} faaliyete geçti ($${"%,d".format(nextTier.upgradeCost)} harcandı). Birim Üretim İndirimi: %${nextTier.discountPercent.toInt()}, Aylık Sabit Tesis Bakımı: $${"%,d".format(nextTier.monthlyMaintenance)}.",
-                profit = -nextTier.upgradeCost,
-                unitsSold = 0,
-                reviewScore = 0
-            )
-
-            _state.update {
-                it.copy(
-                    budget = it.budget - nextTier.upgradeCost,
-                    factoryLevel = nextTier.level,
-                    newsList = it.newsList + news,
-                    reports = it.reports + report
-                )
-            }
-        } else {
-            _state.update {
-                it.copy(noticeMessage = "Fabrika yatırımı için yetersiz bütçe! Gereken: $${"%,d".format(nextTier.upgradeCost)}")
-            }
+        if (currentState.budget < nextTier.upgradeCost) {
+            _state.update { it.copy(noticeMessage = "Fabrika yükseltmesi için yetersiz bütçe! Gereken: $${"%,d".format(nextTier.upgradeCost)}") }
+            return
         }
+
+        val report = MarketReport(
+            title = "Fabrika Yükseltildi: ${nextTier.name}",
+            text = "Üretim tesislerimiz ${nextTier.name} seviyesine modernize edildi ($${"%,d".format(nextTier.upgradeCost)}). Üretim maliyet indirimi: %${nextTier.discountPercent}.",
+            profit = -nextTier.upgradeCost,
+            unitsSold = 0,
+            reviewScore = 0
+        )
+
+        val news = NewsArticle(
+            id = "factory_up_${currentState.year}_${currentState.month}_${Random.nextInt(100, 999)}",
+            title = "ÜRETİM TESİSİ YENİLENDİ: ${nextTier.name}",
+            text = "${currentState.companyName}, üretim hatlarını ${nextTier.name} standardına yükseltti. Cihaz başına üretim maliyeti %${nextTier.discountPercent} düşecek.",
+            category = "Şirket",
+            year = currentState.year,
+            month = currentState.month
+        )
+
+        _state.update {
+            it.copy(
+                budget = it.budget - nextTier.upgradeCost,
+                factoryLevel = nextTier.level,
+                reputation = (it.reputation + 3).coerceIn(0, 100),
+                reports = it.reports + report,
+                newsList = it.newsList + news,
+                noticeMessage = "Tebrikler! Üretim tesisiniz ${nextTier.name} seviyesine yükseltildi."
+            )
+        }
+        autoSaveGame()
     }
 
     fun clearNoticeMessage() {
         _state.update { it.copy(noticeMessage = null) }
     }
 
-    fun setCompanyProfile(
-        name: String,
-        logoId: String,
-        logoStyle: String,
-        brandColorHex: Long,
-        slogan: String
-    ) {
-        _state.update { current ->
-            val safeName = name.trim().ifEmpty { "Apex Mobile" }
-            val safeSlogan = slogan.trim().ifEmpty { "Geleceğin Akıllı Telefonları" }
-            current.copy(
-                companyName = safeName,
+    fun setCompanyProfile(name: String, logoId: String, logoStyle: String, brandColorHex: Long, slogan: String) {
+        _state.update {
+            it.copy(
+                companyName = name.ifBlank { "Apex Mobile" },
                 companyLogoId = logoId,
                 companyLogoStyle = logoStyle,
                 companyBrandColorHex = brandColorHex,
-                companySlogan = safeSlogan,
-                isCompanySetupDone = true,
-                reports = listOf(
-                    MarketReport(
-                        title = "$safeName Kuruldu",
-                        text = "$safeName akıllı telefon pazarına adım attı! \"$safeSlogan\" vizyonuyla ilk telefonunuzu tasarlamak için Cihazlar bölümüne gidin.",
-                        profit = 0,
-                        unitsSold = 0,
-                        reviewScore = 0
-                    )
-                )
+                companySlogan = slogan.ifBlank { "Geleceğin Akıllı Telefonları" },
+                isCompanySetupDone = true
             )
         }
         autoSaveGame()
@@ -2160,41 +1181,45 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val totalCost = (productionCost.toLong() * specs.quantity) + specs.qaBudget
         
         if (currentState.budget < totalCost) {
-            // Not enough budget
             return
         }
 
-        // Calculate product quality based on QA budget, component balance, engineers, QA inspectors, and design aesthetics
-        val qaPerUnit = specs.qaBudget.toFloat() / (specs.quantity.coerceAtLeast(1)).toFloat()
-        val qaFactor = (qaPerUnit * 1.2f).coerceAtMost(35f).toInt()
-        val zeroQaPenalty = if (specs.qaBudget == 0L && specs.quantity > 5000) -6 else if (specs.qaBudget == 0L) -3 else 0
-        val techPenalty = ((currentState.year - specs.techScore) * 9 - currentState.engineerTechBonus).coerceAtLeast(0)
-        val baseQuality = (64 - techPenalty + (currentState.engineers * 2)).coerceIn(10, 85)
-        
-        // Design Score Bonus (Premium materials, modern notch, frame, back finish & color options)
-        val designBonus = when (specs.material) {
-            "Titanyum" -> 6
-            "Cam" -> 4
-            "Alüminyum" -> 2
+        // Technological Obsolescence Calculation
+        val currentYear = currentState.year
+        var techPenalty = 0
+
+        if (currentYear >= 2012 && specs.processor.contains("S4")) techPenalty += 10
+        if (currentYear >= 2014 && specs.processor.contains("801")) techPenalty += 10
+        if (currentYear >= 2016 && specs.processor.contains("820")) techPenalty += 10
+        if (currentYear >= 2018 && specs.processor.contains("845")) techPenalty += 10
+        if (currentYear >= 2020 && specs.processor.contains("865")) techPenalty += 10
+
+        if (currentYear >= 2013 && specs.display.contains("720p")) techPenalty += 10
+        if (currentYear >= 2016 && specs.display.contains("1080p")) techPenalty += 8
+        if (currentYear >= 2019 && !specs.display.contains("Çerçevesiz") && !specs.display.contains("120Hz") && !specs.display.contains("Katlanabilir") && !specs.display.contains("144Hz") && !specs.display.contains("240Hz")) techPenalty += 12
+
+        if (currentYear >= 2014 && specs.camera.contains("5 MP")) techPenalty += 15
+        if (currentYear >= 2016 && specs.camera.contains("8-13")) techPenalty += 10
+        if (currentYear >= 2019 && !specs.camera.contains("Üçlü") && !specs.camera.contains("Periskop") && !specs.camera.contains("108MP") && !specs.camera.contains("200MP") && !specs.camera.contains("GenAI") && !specs.camera.contains("Donanımsal ISP")) techPenalty += 8
+
+        // Mitigate penalty with engineers
+        val finalTechPenalty = (techPenalty - currentState.engineerTechBonus).coerceAtLeast(0)
+
+        // Quality and Review Score calculation
+        val baseQuality = (100 - finalTechPenalty).coerceIn(40, 95)
+        val qaPerUnit = if (specs.quantity > 0) specs.qaBudget.toFloat() / specs.quantity else 0f
+        val qaFactor = (qaPerUnit * 0.35f).toInt().coerceIn(0, 15)
+        val zeroQaPenalty = if (specs.qaBudget == 0L) -8 else 0
+
+        // Design & Aesthetics Review Score Bonus
+        val designBonus = when {
+            specs.material == "Titanyum" || specs.backFinish == "Vegan Deri" -> 5
+            specs.material == "Cam" || specs.backFinish == "Karbon Fiber" -> 3
+            specs.material == "Alüminyum" || specs.backFinish == "Buzlu Mat Cam" -> 2
             else -> 0
-        } + when (specs.backFinish) {
-            "Vegan Deri" -> 4
-            "Karbon Fiber" -> 3
-            "Buzlu Mat Cam" -> 2
-            "Parlak Ayna Cam" -> 1
-            else -> 0
-        } + when (specs.notchStyle) {
-            "Görünmez Ekran Altı" -> 6
-            "Dinamik Ada / Hap" -> 3
-            "Nokta Delik" -> 2
-            else -> 0
-        } + when (specs.frameStyle) {
-            "Ultra İnce Çerçeve" -> 3
-            "Zırhlı Kesim", "Kavisli 2.5D" -> 2
-            else -> 1
         } + when {
-            specs.selectedColors.size >= 4 -> 4
-            specs.selectedColors.size >= 2 -> 2
+            specs.frameStyle == "Ultra İnce Çerçeve" || specs.frameStyle == "Zırhlı Kesim" -> 3
+            specs.notchStyle == "Dinamik Ada / Hap" || specs.notchStyle == "Görünmez Ekran Altı" -> 3
             else -> 0
         }
 
@@ -2214,15 +1239,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         val reviewScore = (baseQuality + qaFactor + zeroQaPenalty + currentState.qaScoreBonus + designBonus + osBonus + specs.tier.reviewBonus + Random.nextInt(-3, 4)).coerceIn(10, 100)
 
-        // Geri Çağırma (Recall) Riski: Düşük QA harcaması ve düşük inceleme puanı
-        // riski artırır. İyi test edilmiş, yüksek puanlı telefonlar neredeyse hiç
-        // geri çağrılmaz; ucuza kaçılan, aceleye getirilmiş modeller risklidir.
+        // Geri Çağırma (Recall) Riski
         val recallRiskPercent = calculateRecallRisk(qaPerUnit = qaPerUnit, reviewScore = reviewScore)
 
         val techComment = when {
-            techPenalty == 0 -> "Teknolojisi, tasarımı ve yazılımı çağın ötesinde!"
-            techPenalty < 10 -> "Donanımı ve yazılımı günümüz standartlarına uygun."
-            techPenalty < 25 -> "Biraz geride kalmış bir teknoloji."
+            finalTechPenalty == 0 -> "Teknolojisi, tasarımı ve yazılımı çağın ötesinde!"
+            finalTechPenalty < 10 -> "Donanımı ve yazılımı günümüz standartlarına uygun."
+            finalTechPenalty < 25 -> "Biraz geride kalmış bir teknoloji."
             else -> "Teknolojisi maalesef çok eski."
         }
 
@@ -2240,11 +1263,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             osOptimization = currentState.customOs.overallTechScore
         )
 
+        val factoryPeriodCapacity = currentState.currentFactoryTier.periodCapacity
+        val initialProducedBatch = specs.quantity.coerceAtMost(factoryPeriodCapacity)
+
         val newActiveModel = ActiveModel(
             id = "${specs.name}_${currentState.year}_${currentState.month}_${Random.nextInt(1000, 9999)}",
             specs = finalSpecs,
             totalStock = specs.quantity,
-            remainingStock = specs.quantity,
+            remainingStock = initialProducedBatch,
+            producedStock = initialProducedBatch,
             totalSold = 0,
             totalRevenue = 0,
             monthsOnMarket = 0,
@@ -2256,10 +1283,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             recallRiskPercent = recallRiskPercent
         )
 
+        val productionNote = if (initialProducedBatch < specs.quantity) {
+            " 🏭 Fabrika kapasitesi nedeniyle ilk seride ${"%,d".format(initialProducedBatch)} adet üretildi; kalan ${"%,d".format(specs.quantity - initialProducedBatch)} adet önümüzdeki periyotlarda kademeli olarak üretilecek."
+        } else ""
+
         val launchNews = NewsArticle(
             id = "news_launch_${newActiveModel.id}",
             title = "${currentState.companyName.uppercase()} LANSMANI: ${specs.name} Piyasada!",
-            text = "${currentState.companyName}, ${specs.name} modelini üretti! ${"%,d".format(specs.quantity)} adetlik stok mağazalara dağıtıldı ve 12-24 ay boyunca satılacak. $techComment$colorNote$osNote$trendBonusNote$tierNote$genNote Eleştirmen puanı: $reviewScore/100.",
+            text = "${currentState.companyName}, ${specs.name} modelini üretti! ${"%,d".format(specs.quantity)} adetlik stok hedeflendi ve 12-24 ay boyunca satılacak.$productionNote $techComment$colorNote$osNote$trendBonusNote$tierNote$genNote Eleştirmen puanı: $reviewScore/100.",
             category = "Şirket",
             year = currentState.year,
             month = currentState.month
@@ -2315,268 +1346,19 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun calculateProductionCost(specs: PhoneSpecs): Int {
-        var cost = 15 // Base assembly cost
-
-        // Material & Frame & Finish
-        cost += when(specs.material) { "Plastik" -> 5; "Alüminyum" -> 20; "Cam" -> 30; "Titanyum" -> 60; else -> 10 }
-        cost += when(specs.backFinish) { "Buzlu Mat Cam" -> 0; "Parlak Ayna Cam" -> 5; "Vegan Deri" -> 10; "Fırçalanmış Metal" -> 8; "Karbon Fiber" -> 15; else -> 0 }
-        cost += when(specs.cameraBumpStyle) { "Dikey Ada" -> 0; "Dairesel Halo" -> 5; "Yatay Vizör" -> 8; "Kare Ada" -> 5; "Yüzen Çift Halka" -> 0; else -> 0 }
-        cost += when(specs.frameStyle) { "Düz Metal Kenar" -> 0; "Kavisli 2.5D" -> 5; "Zırhlı Kesim" -> 10; "Ultra İnce Çerçeve" -> 12; else -> 0 }
-        cost += when(specs.notchStyle) { "Nokta Delik" -> 0; "Dinamik Ada / Hap" -> 8; "Klasik Çentik" -> 0; "Görünmez Ekran Altı" -> 25; else -> 0 }
-        cost += when(specs.style) { "Modern" -> 10; "Klasik" -> 5; "Oyuncu" -> 15; "Dayanıklı" -> 20; else -> 5 }
-
-        // Processor
-        val customChip = _state.value.customChipsets.find { specs.processor.contains(it.name) }
-        cost += if (customChip != null) {
-            customChip.unitCost
-        } else {
-            when {
-                specs.processor.contains("Kuantum") -> 300
-                specs.processor.contains("Gen 3") || specs.processor.contains("D9300") -> 240
-                specs.processor.contains("Gen 1") || specs.processor.contains("D9000") -> 180
-                specs.processor.contains("In-House") -> 150
-                specs.processor.contains("865") || specs.processor.contains("D800") -> 140
-                specs.processor.contains("845") || specs.processor.contains("G90") -> 110
-                specs.processor.contains("820") || specs.processor.contains("Helio") -> 85
-                specs.processor.contains("801") || specs.processor.contains("Atom") -> 60
-                specs.processor.contains("S4") || specs.processor.contains("MT67") -> 40
-                else -> 20
-            }
-        }
-
-        // RAM Capacity
-        cost += when {
-            specs.ramCapacity.contains("32") -> 140
-            specs.ramCapacity.contains("24") -> 110
-            specs.ramCapacity.contains("16") -> 80
-            specs.ramCapacity.contains("12") -> 60
-            specs.ramCapacity.contains("8") -> 42
-            specs.ramCapacity.contains("6") -> 30
-            specs.ramCapacity.contains("4") -> 20
-            specs.ramCapacity.contains("3") -> 15
-            specs.ramCapacity.contains("2") -> 10
-            specs.ramCapacity.contains("1") -> 6
-            else -> 3 // 512 MB
-        }
-
-        // RAM Type
-        cost += when {
-            specs.ramType.contains("LPDDR6") -> 75
-            specs.ramType.contains("LPDDR5X") -> 55
-            specs.ramType.contains("LPDDR5") -> 40
-            specs.ramType.contains("LPDDR4X") -> 28
-            specs.ramType.contains("LPDDR4") -> 18
-            specs.ramType.contains("LPDDR3") -> 10
-            specs.ramType.contains("LPDDR2") -> 5
-            else -> 2 // LPDDR1
-        }
-
-        // Internal Storage
-        cost += when {
-            specs.storage.contains("2 TB") -> 115
-            specs.storage.contains("1 TB") -> 80
-            specs.storage.contains("512 GB") -> 55
-            specs.storage.contains("256 GB") -> 38
-            specs.storage.contains("128 GB") -> 25
-            specs.storage.contains("64 GB") -> 16
-            specs.storage.contains("32 GB") -> 10
-            specs.storage.contains("16 GB") -> 6
-            else -> 3 // 8 GB
-        }
-
-        // External SD Card Slot
-        cost += when {
-            specs.sdCardSupport.contains("NM") || specs.sdCardSupport.contains("Express") -> 16
-            specs.sdCardSupport.contains("2 TB") -> 11
-            specs.sdCardSupport.contains("512 GB") -> 7
-            specs.sdCardSupport.contains("128 GB") -> 4
-            specs.sdCardSupport.contains("32 GB") -> 2
-            else -> 0 // Yok
-        }
-
-        // Display
-        cost += when {
-            specs.display.contains("Holografik") -> 200
-            specs.display.contains("240Hz") -> 140
-            specs.display.contains("Katlanabilir") -> 120
-            specs.display.contains("144Hz") -> 100
-            specs.display.contains("120Hz") -> 80
-            specs.display.contains("Çerçevesiz") -> 55
-            specs.display.contains("Kavisli") -> 45
-            specs.display.contains("QHD") -> 30
-            specs.display.contains("FHD") -> 20
-            else -> 10
-        }
-
-        // Glass
-        cost += when {
-            specs.glass.contains("Sapphire") || specs.glass.contains("Armor+") -> 80
-            specs.glass.contains("Gorilla Armor") -> 60
-            specs.glass.contains("Ceramic") -> 50
-            specs.glass.contains("Victus") -> 35
-            specs.glass.contains("Glass 5") -> 25
-            specs.glass.contains("Glass 4") -> 20
-            specs.glass.contains("Glass 3") -> 15
-            specs.glass.contains("Glass 2") -> 10
-            else -> 5
-        }
-
-        // Camera
-        cost += when {
-            specs.camera.contains("Donanımsal ISP") -> 250
-            specs.camera.contains("GenAI") -> 180
-            specs.camera.contains("1 İnç") || specs.camera.contains("200MP") -> 130
-            specs.camera.contains("Ekran Altı") -> 100
-            specs.camera.contains("Periskop") -> 85
-            specs.camera.contains("Üçlü") -> 50
-            specs.camera.contains("Çift") -> 35
-            specs.camera.contains("16-20") -> 25
-            specs.camera.contains("8-13") -> 15
-            else -> 10
-        }
-
-        // Connectivity (Cellular, Port, Wireless)
-        cost += when {
-            specs.cellularNetwork.contains("Uydu") -> 45
-            specs.cellularNetwork.contains("5G mmWave") -> 30
-            specs.cellularNetwork.contains("5G Sub-6") -> 22
-            specs.cellularNetwork.contains("4G LTE Cat 6") -> 14
-            specs.cellularNetwork.contains("4G LTE") -> 10
-            specs.cellularNetwork.contains("3G HSPA+") -> 5
-            specs.cellularNetwork.contains("3G") -> 3
-            else -> 2
-        }
-
-        cost += when {
-            specs.chargingPort.contains("Thunderbolt 4") -> 35
-            specs.chargingPort.contains("USB-C 3.2") -> 22
-            specs.chargingPort.contains("USB-C 3.1") -> 15
-            specs.chargingPort.contains("USB-C 2.0") -> 10
-            specs.chargingPort.contains("USB 3.0 Micro-B") -> 8
-            specs.chargingPort.contains("Micro-USB") -> 3
-            specs.chargingPort.contains("Mini-USB") -> 2
-            else -> 2
-        }
-
-        cost += when {
-            specs.wirelessConnectivity.contains("Wi-Fi 7") -> 30
-            specs.wirelessConnectivity.contains("Wi-Fi 6E") -> 20
-            specs.wirelessConnectivity.contains("Wi-Fi 6") -> 14
-            specs.wirelessConnectivity.contains("Wi-Fi 5 (ac)") -> 9
-            specs.wirelessConnectivity.contains("Wi-Fi 4 (n)") -> 5
-            specs.wirelessConnectivity.contains("Wi-Fi 4 & BT 2.1") -> 3
-            else -> 2
-        }
-
-        // Audio
-        cost += when {
-            specs.audio.contains("AI") -> 100
-            specs.audio.contains("Kayıpsız") -> 80
-            specs.audio.contains("Uzamsal") -> 60
-            specs.audio.contains("Asimetrik") -> 45
-            specs.audio.contains("Dolby") -> 35
-            specs.audio.contains("Jaksız") -> 25
-            specs.audio.contains("Ön Stereo") -> 20
-            specs.audio.contains("Beats") -> 10
-            else -> 5
-        }
-
-        // Battery Capacity
-        cost += when {
-            specs.batteryCapacity.contains("7000") -> 45
-            specs.batteryCapacity.contains("5500") -> 35
-            specs.batteryCapacity.contains("5000") -> 30
-            specs.batteryCapacity.contains("4500") -> 25
-            specs.batteryCapacity.contains("4000") -> 20
-            specs.batteryCapacity.contains("3600") -> 16
-            specs.batteryCapacity.contains("3200") -> 12
-            specs.batteryCapacity.contains("3100") -> 10
-            else -> 2
-        }
-
-        // Battery Type & Charging
-        cost += when {
-            specs.batteryType.contains("Katı Hal 240W") -> 150
-            specs.batteryType.contains("Katı Hal 100W") -> 100
-            specs.batteryType.contains("Si-Ca") -> 85
-            specs.batteryType.contains("120W") -> 60
-            specs.batteryType.contains("65W") -> 40
-            specs.batteryType.contains("25W") -> 25
-            specs.batteryType.contains("20W") -> 20
-            specs.batteryType.contains("15W") -> 15
-            specs.batteryType.contains("10W") -> 8
-            else -> 5
-        }
-
-        // Multi-color setup cost: +$3 per extra color option beyond 1
-        val extraColorCount = (specs.selectedColors.size - 1).coerceAtLeast(0)
-        cost += extraColorCount * 3
-
-        // OS License Fee
-        cost += specs.osLicenseFee
-
-        // Apply Assembly Worker & Factory Tier production discount
-        val discountMultiplier = 1.0f - (_state.value.unitCostDiscountPercent / 100.0f)
-        return (cost * discountMultiplier).toInt().coerceAtLeast(5)
-    }
-
-    /**
-     * Bir modelin üretim anındaki geri çağırma (recall) riskini (%2-%55) hesaplar.
-     * Birim başına QA harcaması ve nihai inceleme puanı ne kadar yüksekse, risk o
-     * kadar düşer. Bu risk, [advanceTime] içinde modelin piyasadaki ilk 3 ayında
-     * kontrol edilir — bkz. [checkForRecall].
-     */
-    private fun calculateRecallRisk(qaPerUnit: Float, reviewScore: Int): Int {
-        val qaProtection = (qaPerUnit * 3f).coerceAtMost(40f)
-        val reviewProtection = ((reviewScore - 40).coerceAtLeast(0) * 0.6f).coerceAtMost(35f)
-        val baseRisk = 55f
-        return (baseRisk - qaProtection - reviewProtection).roundToInt().coerceIn(2, 55)
-    }
-
-    /**
-     * Piyasadaki bir modelin bu ay geri çağrılıp çağrılmayacağını belirler.
-     * Sadece ilk 3 ayda kontrol edilir (üretim hataları genelde erken ortaya çıkar);
-     * [ActiveModel.recallRiskPercent] üç aya yayılmış aylık bir tehlike oranına
-     * çevrilir. Tetiklenirse, tazminat maliyeti ve itibar cezasıyla birlikte
-     * geri çağrılmış modeli döndürür; aksi halde modeli olduğu gibi döndürür.
-     */
-    private fun checkForRecall(model: ActiveModel, year: Int, month: Int): Pair<ActiveModel, RecallOutcome?> {
-        if (model.isRecalled || model.recallRiskPercent <= 0 || model.monthsOnMarket > 3) {
-            return model to null
-        }
-
-        val monthlyHazardPercent = model.recallRiskPercent / 3f
-        if (Random.nextFloat() * 100f >= monthlyHazardPercent) {
-            return model to null
-        }
-
-        val compensationCost = (model.totalSold.toLong() * model.specs.unitCost) +
-            (model.remainingStock.toLong() * (model.specs.unitCost / 2))
-        val reputationPenalty = (((70 - model.reviewScore).coerceAtLeast(15)) / 3).coerceIn(3, 15)
-
-        val recalledModel = model.copy(
-            remainingStock = 0,
-            isRecalled = true,
-            recalledYear = year,
-            recalledMonth = month
+        val baseCost = com.example.viewmodel.calculateProductionCost(
+            specs = specs,
+            customChipsets = _state.value.customChipsets,
+            unitCostDiscountPercent = _state.value.unitCostDiscountPercent
         )
-
-        return recalledModel to RecallOutcome(
-            model = recalledModel,
-            compensationCost = compensationCost,
-            reputationPenalty = reputationPenalty
-        )
+        val supplyMultiplier = (_state.value.activeSupplyChainEvent?.costMultiplierPercent ?: 100) / 100f
+        return (baseCost * supplyMultiplier).toInt().coerceAtLeast(1)
     }
-
-    private data class RecallOutcome(
-        val model: ActiveModel,
-        val compensationCost: Long,
-        val reputationPenalty: Int
-    )
 
     fun remanufactureModel(modelId: String, additionalQuantity: Int) {
         val currentState = _state.value
         val model = currentState.activeModels.find { it.id == modelId } ?: return
+        if (model.isRecalled) return // Geri çağrılmış bir ürün yeniden üretilemez
 
         val unitCost = calculateProductionCost(model.specs)
         val totalCost = unitCost.toLong() * additionalQuantity
@@ -2596,8 +1378,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
                 it.copy(
                     totalStock = it.totalStock + additionalQuantity,
-                    remainingStock = it.remainingStock + additionalQuantity,
                     monthsOnMarket = newMonthsOnMarket
+                    // remainingStock ve producedStock kasıtlı olarak değişmiyor: ek sipariş
+                    // fabrika kapasitesine göre önümüzdeki periyotlarda kademeli üretilecek.
                 )
             } else {
                 it
@@ -2606,8 +1389,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         val restockNews = NewsArticle(
             id = "news_restock_${modelId}_${currentState.year}_${currentState.month}_${Random.nextInt(100, 999)}",
-            title = "TEKRAR ÜRETİM: ${model.specs.name}",
-            text = "Yoğun talep üzerine ${model.specs.name} modeli için ${"%,d".format(additionalQuantity)} adet yeni stok üretilerek mağazalara dağıtıldı.",
+            title = "TEKRAR ÜRETİM SİPARİŞİ: ${model.specs.name}",
+            text = "Yoğun talep üzerine ${model.specs.name} modeli için ${"%,d".format(additionalQuantity)} adet yeni üretim siparişi verildi. Fabrika kapasitesine göre önümüzdeki periyotlarda kademeli olarak üretilip mağazalara dağıtılacak.",
             category = "Şirket",
             year = currentState.year,
             month = currentState.month
@@ -3160,235 +1943,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _state.update { it.copy(activeTechExpo = null) }
     }
 
-    private fun generateTechExpo(
-        year: Int,
-        playerModels: List<ActiveModel>,
-        playerCompanyName: String,
-        playerBrandColorHex: Long,
-        competitors: List<CompetitorCompany>
-    ): TechExpoEvent {
-        val expoNames = listOf(
-            "MWC (Mobile World Congress)" to "Barselona, İspanya",
-            "CES (Consumer Electronics Show)" to "Las Vegas, ABD",
-            "IFA Tech Global" to "Berlin, Almanya",
-            "Computex World Expo" to "Taipei, Tayvan"
-        )
-        val selectedExpo = expoNames[(year + 3) % expoNames.size]
-
-        // Pool of all eligible competitor phones for this year
-        val competitorNominees = competitors.map { comp ->
-            AwardNominee(
-                modelName = comp.currentTopModel,
-                companyName = comp.name,
-                isPlayer = false,
-                logoEmoji = comp.logoEmoji,
-                brandColorHex = comp.brandColorHex,
-                score = comp.currentModelScore,
-                price = comp.currentModelPrice,
-                highlightText = "${comp.name}, ${comp.currentTopModel} modeliyle ${comp.strategyType} alanında jüriden takdir topladı."
-            )
-        }
-
-        // Player nominees from active models
-        val playerNominees = playerModels.map { model ->
-            AwardNominee(
-                modelName = model.specs.name,
-                companyName = playerCompanyName,
-                isPlayer = true,
-                logoEmoji = "📱",
-                brandColorHex = playerBrandColorHex,
-                score = model.reviewScore,
-                price = model.specs.price,
-                highlightText = "${playerCompanyName} imzalı ${model.specs.name}, yenilikçi tasarımı (${model.specs.material}) ve ${model.specs.osType} işletim sistemiyle fuarda büyük sükse yaptı."
-            )
-        }
-
-        val allNominees = competitorNominees + playerNominees
-
-        val awardResults = mutableListOf<AwardResult>()
-        var playerWonCount = 0
-        var totalPrizeWon = 0L
-        var reputationGained = 0
-
-        // 1. FLAGSHIP OF THE YEAR (Highest overall score)
-        val flagshipNominees = allNominees.sortedByDescending { it.score }.take(4)
-        val flagshipWinner = flagshipNominees.firstOrNull() ?: competitorNominees.first()
-        if (flagshipWinner.isPlayer) {
-            playerWonCount++
-            totalPrizeWon += AwardCategory.FLAGSHIP_OF_THE_YEAR.prizeMoney
-            reputationGained += AwardCategory.FLAGSHIP_OF_THE_YEAR.reputationBonus
-        }
-        awardResults.add(
-            AwardResult(
-                category = AwardCategory.FLAGSHIP_OF_THE_YEAR,
-                winner = flagshipWinner,
-                nominees = flagshipNominees,
-                ceremonyReview = "${flagshipWinner.companyName} üretimi ${flagshipWinner.modelName}, olağanüstü ${flagshipWinner.score}/100 inceleme puanı ve tavizsiz donanımıyla ${year} Yılının En İyi Amiral Gemisi seçildi!"
-            )
-        )
-
-        // 2. VALUE CHAMPION (Best score / price ratio)
-        val valueNominees = allNominees.sortedByDescending { (it.score.toFloat() / it.price.coerceAtLeast(100).toFloat()) * 1000f }.take(4)
-        val valueWinner = valueNominees.firstOrNull() ?: competitorNominees.first()
-        if (valueWinner.isPlayer) {
-            playerWonCount++
-            totalPrizeWon += AwardCategory.VALUE_CHAMPION.prizeMoney
-            reputationGained += AwardCategory.VALUE_CHAMPION.reputationBonus
-        }
-        awardResults.add(
-            AwardResult(
-                category = AwardCategory.VALUE_CHAMPION,
-                winner = valueWinner,
-                nominees = valueNominees,
-                ceremonyReview = "${valueWinner.companyName} tarafından sunulan ${valueWinner.modelName}, $${valueWinner.price} fiyat etiketine karşılık sunduğu ${valueWinner.score} puanlık üstün deneyimle Fiyat/Performans Tacını kazandı!"
-            )
-        )
-
-        // 3. INNOVATION AWARD (Favoring high tech score or special features)
-        val innovationNominees = allNominees.shuffled().sortedByDescending {
-            it.score + if (it.isPlayer) 5 else Random.nextInt(-3, 4)
-        }.take(4)
-        val innovationWinner = innovationNominees.firstOrNull() ?: competitorNominees.first()
-        if (innovationWinner.isPlayer) {
-            playerWonCount++
-            totalPrizeWon += AwardCategory.INNOVATION_AWARD.prizeMoney
-            reputationGained += AwardCategory.INNOVATION_AWARD.reputationBonus
-        }
-        awardResults.add(
-            AwardResult(
-                category = AwardCategory.INNOVATION_AWARD,
-                winner = innovationWinner,
-                nominees = innovationNominees,
-                ceremonyReview = "${innovationWinner.companyName} ${innovationWinner.modelName}, endüstri standartlarını aşan cesur inovasyonları ve mühendislik başarısıyla Yılın İnovasyonu Ödülüne layık görüldü!"
-            )
-        )
-
-        // 4. BEST DESIGN AWARD
-        val designNominees = allNominees.shuffled().take(4).sortedByDescending { it.score }
-        val designWinner = designNominees.firstOrNull() ?: competitorNominees.first()
-        if (designWinner.isPlayer) {
-            playerWonCount++
-            totalPrizeWon += AwardCategory.BEST_DESIGN.prizeMoney
-            reputationGained += AwardCategory.BEST_DESIGN.reputationBonus
-        }
-        awardResults.add(
-            AwardResult(
-                category = AwardCategory.BEST_DESIGN,
-                winner = designWinner,
-                nominees = designNominees,
-                ceremonyReview = "${designWinner.companyName} tasarımı ${designWinner.modelName}, kusursuz malzeme kalitesi, ince çerçeveleri ve ergonomisiyle En İyi Endüstriyel Tasarım Ödülünü kazandı!"
-            )
-        )
-
-        return TechExpoEvent(
-            year = year,
-            expoName = selectedExpo.first,
-            city = selectedExpo.second,
-            awards = awardResults,
-            playerWonCount = playerWonCount,
-            totalPrizeWon = totalPrizeWon,
-            reputationGained = reputationGained
-        )
-    }
-
-    val rivalOperatingSystems: List<CompetitorOsInfo> = listOf(
-        CompetitorOsInfo(
-            id = "os_ios",
-            name = "iOS (Apple OS)",
-            company = "Apple Inc.",
-            iconEmoji = "🍎",
-            licenseTypeBadge = "🔒 Kapalı / Tescilli",
-            marketSharePercent = 23.5f,
-            techScore = 96,
-            ecosystemScore = 99,
-            userBaseFormatted = "1.25 Milyar",
-            appCountFormatted = "2.2M+ Uygulama",
-            monthlyEcosystemRevenue = "$1,850,000,000",
-            coreStrength = "Kusursuz donanım-yazılım optimizasyonu, Metal grafik motoru, rekor kâr marjı ve %98 kullanıcı bağlılığı.",
-            mainFlaw = "Katı kapalı duvar bahçesi ve yan yükleme kısıtlamaları.",
-            brandColorHex = 0xFF0F172A
-        ),
-        CompetitorOsInfo(
-            id = "os_android",
-            name = "Android (GMS/AOSP)",
-            company = "Google LLC",
-            iconEmoji = "🌐",
-            licenseTypeBadge = "🌐 Açık Kaynak",
-            marketSharePercent = 63.5f,
-            techScore = 94,
-            ecosystemScore = 98,
-            userBaseFormatted = "3.20 Milyar",
-            appCountFormatted = "3.8M+ Uygulama",
-            monthlyEcosystemRevenue = "$2,400,000,000",
-            coreStrength = "Dünya çapında binlerce OEM üretici desteği, Google Play Store ve derin Gemini AI entegrasyonu.",
-            mainFlaw = "Cihaz parçalanması ve eski telefonlara güvenlik güncellemesi gecikmeleri.",
-            brandColorHex = 0xFF10B981
-        ),
-        CompetitorOsInfo(
-            id = "os_harmony",
-            name = "HarmonyOS (Next)",
-            company = "Huawei Technologies",
-            iconEmoji = "🌸",
-            licenseTypeBadge = "⚡ Mikroçekirdek",
-            marketSharePercent = 8.2f,
-            techScore = 90,
-            ecosystemScore = 86,
-            userBaseFormatted = "550 Milyon",
-            appCountFormatted = "950K+ Uygulama",
-            monthlyEcosystemRevenue = "$380,000,000",
-            coreStrength = "Süper Cihaz dağıtık mikroçekirdek mimarisi, Kirin çip senkronizasyonu ve Asya pazarında dev sadakat.",
-            mainFlaw = "Batı pazarlarında GMS kısıtları ve küresel uygulama adaptasyon süreci.",
-            brandColorHex = 0xFFCF0A2C
-        ),
-        CompetitorOsInfo(
-            id = "os_oneui",
-            name = "One UI (Galaxy OS)",
-            company = "Samsung Electronics",
-            iconEmoji = "🌌",
-            licenseTypeBadge = "📱 Özel Android Arayüzü",
-            marketSharePercent = 18.8f,
-            techScore = 92,
-            ecosystemScore = 93,
-            userBaseFormatted = "1.15 Milyar",
-            appCountFormatted = "2.9M+ Uygulama",
-            monthlyEcosystemRevenue = "$880,000,000",
-            coreStrength = "DeX masaüstü modu, Galaxy AI üretkenlik araçları ve katlanabilir ekran optimizasyonu.",
-            mainFlaw = "Geniş sistem boyutu ve yoğun arka plan bellek kullanımı.",
-            brandColorHex = 0xFF1428A0
-        ),
-        CompetitorOsInfo(
-            id = "os_hyperos",
-            name = "HyperOS",
-            company = "Xiaomi Corp",
-            iconEmoji = "🟠",
-            licenseTypeBadge = "⚡ Hibrit Kernel",
-            marketSharePercent = 9.4f,
-            techScore = 88,
-            ecosystemScore = 87,
-            userBaseFormatted = "620 Milyon",
-            appCountFormatted = "2.1M+ Uygulama",
-            monthlyEcosystemRevenue = "$440,000,000",
-            coreStrength = "Vela IoT mimarisi, elektrikli otomobil & akıllı ev cihazları arası ultra hızlı bağlantı.",
-            mainFlaw = "Sistem içi reklamlar ve agresif arka plan pil yönetimi kısıtları.",
-            brandColorHex = 0xFFFF6900
-        ),
-        CompetitorOsInfo(
-            id = "os_windows",
-            name = "Windows 10 Mobile",
-            company = "Microsoft",
-            iconEmoji = "🪟",
-            licenseTypeBadge = "🔒 Kapalı Kaynak",
-            marketSharePercent = 0.6f,
-            techScore = 75,
-            ecosystemScore = 40,
-            userBaseFormatted = "15 Milyon",
-            appCountFormatted = "280K Uygulama",
-            monthlyEcosystemRevenue = "$15,000,000",
-            coreStrength = "Canlı kutucuklar (Live Tiles), Continuum masaüstü modu ve yerel Microsoft Office desteği.",
-            mainFlaw = "Geliştiricilerin platformu terk etmesi ve kritik popüler uygulamaların eksikliği.",
-            brandColorHex = 0xFF00A4EF
-        )
-    )
+    val rivalOperatingSystems: List<CompetitorOsInfo> = DEFAULT_RIVAL_OPERATING_SYSTEMS
 
     fun saveCustomChipset(chipset: CustomChipset) {
         val currentState = _state.value
@@ -3508,4 +2063,3 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         autoSaveGame()
     }
 }
-
