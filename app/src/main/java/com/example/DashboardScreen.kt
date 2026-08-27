@@ -35,7 +35,8 @@ fun GameDashboard(
     onNewDevice: () -> Unit = {},
     onNavigateToMarket: () -> Unit = {},
     onNavigateToSoftware: () -> Unit = {},
-    onEditCompanyProfile: () -> Unit = {}
+    onEditCompanyProfile: () -> Unit = {},
+    onOpenFinance: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val listState = rememberLazyListState()
@@ -66,6 +67,54 @@ fun GameDashboard(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
+        // Finansal Kriz / Negatif Bakiye Uyarısı
+        if (state.budget < 0) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 3.dp)
+                    .clickable { onOpenFinance() },
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF2F2)),
+                border = BorderStroke(1.dp, Color(0xFFF87171))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "🚨", fontSize = 20.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "FİNANSAL KRİZ UYARISI!",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFDC2626)
+                        )
+                        Text(
+                            text = "Kasa -$${"%,d".format(kotlin.math.abs(state.budget))} ekside! İflas masasını önlemek için Finans & Kredi Merkezini açın.",
+                            fontSize = 10.sp,
+                            color = Color(0xFF991B1B)
+                        )
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Color(0xFFDC2626)
+                    ) {
+                        Text(
+                            "Kurtar",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                        )
+                    }
+                }
+            }
+        }
+
         // Aktif Tedarik Zinciri Olayı Uyarısı
         state.activeSupplyChainEvent?.let { event ->
             val isNegative = event.costMultiplierPercent > 100
@@ -198,7 +247,10 @@ fun GameDashboard(
             reputation = state.reputation,
             reputationMomentum = state.reputationMomentum,
             modelCount = state.modelCount,
-            techLevel = state.techLevel
+            techLevel = state.techLevel,
+            activeLoansCount = state.activeLoans.size,
+            totalDebt = state.totalDebt,
+            onOpenFinance = onOpenFinance
         )
 
         // Market & Consumer Trend Snapshot Card
@@ -370,10 +422,13 @@ fun DashboardStatsGrid(
     reputation: Int,
     reputationMomentum: Float = 0f,
     modelCount: Int,
-    techLevel: String
+    techLevel: String,
+    activeLoansCount: Int = 0,
+    totalDebt: Long = 0L,
+    onOpenFinance: () -> Unit = {}
 ) {
     // Format budget
-    val formattedBudget = "$%,d".format(budget).replace(',', '.')
+    val formattedBudget = if (budget >= 0) "$%,d".format(budget).replace(',', '.') else "-$%,d".format(kotlin.math.abs(budget)).replace(',', '.')
 
     Column(
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -386,11 +441,24 @@ fun DashboardStatsGrid(
             StatCard(
                 title = "NAKİT BÜTÇE",
                 value = formattedBudget,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onOpenFinance() }
             ) {
-                Box(modifier = Modifier.fillMaxWidth().height(4.dp).background(Slate200, CircleShape)) {
-                    val widthFraction = (budget.toFloat() / 20000000f).coerceIn(0f, 1f)
-                    Box(modifier = Modifier.fillMaxWidth(widthFraction).height(4.dp).background(Green500, CircleShape))
+                if (totalDebt > 0) {
+                    Text(
+                        text = "🏦 Borç: $${"%,d".format(totalDebt)} (Finans)",
+                        fontSize = 9.sp,
+                        color = Color(0xFFE11D48),
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                } else {
+                    Box(modifier = Modifier.fillMaxWidth().height(4.dp).background(Slate200, CircleShape)) {
+                        val widthFraction = (budget.toFloat() / 20000000f).coerceIn(0f, 1f)
+                        Box(modifier = Modifier.fillMaxWidth(widthFraction).height(4.dp).background(Green500, CircleShape))
+                    }
                 }
             }
             StatCard(

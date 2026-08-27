@@ -888,12 +888,64 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
 
+        // --- BANK LOANS & DEBT PROCESSING ---
+        val processedLoans = mutableListOf<BankLoan>()
+        val closedLoansNews = mutableListOf<NewsArticle>()
+        var creditScoreGain = 0
+
+        for (loan in currentState.activeLoans) {
+            val payment = loan.periodPayment
+            val newRemainingBalance = (loan.remainingBalance - payment).coerceAtLeast(0L)
+            val newRemainingPeriods = loan.remainingPeriods - 1
+
+            if (newRemainingPeriods <= 0 || newRemainingBalance <= 0) {
+                // Loan fully paid off!
+                creditScoreGain += 20
+                closedLoansNews.add(
+                    NewsArticle(
+                        id = "loan_closed_${loan.id}_${newYear}_${newMonth}_${newPeriod}",
+                        title = "✅ KREDİ BORCU KAPANDI: ${loan.type.title}",
+                        text = "${loan.type.title} kapsamındaki $${"%,d".format(loan.principalAmount)} tutarındaki banka kredisi borcu başarıyla sıfırlandı. Şirket kredi notunuz yükseldi (+20 Puan)!",
+                        category = "Şirket",
+                        year = newYear,
+                        month = newMonth
+                    )
+                )
+            } else {
+                processedLoans.add(
+                    loan.copy(
+                        remainingBalance = newRemainingBalance,
+                        remainingPeriods = newRemainingPeriods
+                    )
+                )
+            }
+        }
+        newNewsList.addAll(closedLoansNews)
+
+        val updatedCreditScore = (currentState.creditScore + creditScoreGain).coerceIn(300, 900)
+        val updatedPatentCooldown = (currentState.patentLiquidationCooldown - 1).coerceAtLeast(0)
+        val finalCalculatedBudget = currentState.budget + netIncome - autoStartResearchCost + expoPrizeTotal - totalRecallCost
+
+        if (finalCalculatedBudget < 0) {
+            newNewsList.add(
+                0,
+                NewsArticle(
+                    id = "bankruptcy_warn_${newYear}_${newMonth}_${newPeriod}",
+                    title = "🚨 FİNANSAL KRİZ: Şirket Kasası Negatife Düştü!",
+                    text = "Bütçeniz -$${"%,d".format(kotlin.math.abs(finalCalculatedBudget))} seviyesine geriledi! İflas masasına sürüklenmemek için Finans Merkezinden Banka Kredisi çekin, patent devredin veya acil melek yatırımcı fonu sağlayın.",
+                    category = "Şirket",
+                    year = newYear,
+                    month = newMonth
+                )
+            )
+        }
+
         _state.update {
             it.copy(
                 period = newPeriod,
                 month = newMonth,
                 year = newYear,
-                budget = it.budget + netIncome - autoStartResearchCost + expoPrizeTotal - totalRecallCost,
+                budget = finalCalculatedBudget,
                 reputation = (it.reputation + expoRepGain - totalRecallReputationPenalty.coerceAtMost(20) + passiveReputationDelta).coerceIn(0, 100),
                 reputationMomentum = updatedReputationMomentum,
                 monthlyIncome = totalCombinedRevenue * 2, // Equivalent monthly rate
@@ -916,6 +968,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 activeTechExpo = triggeredExpoEvent,
                 pastTechExpos = if (triggeredExpoEvent != null) listOf(triggeredExpoEvent) + it.pastTechExpos else it.pastTechExpos,
                 activeSupplyChainEvent = nextSupplyEvent,
+                activeLoans = processedLoans,
+                creditScore = updatedCreditScore,
+                patentLiquidationCooldown = updatedPatentCooldown,
                 techLevel = if (updatedUnlockedTech.size >= 15) "Yapay Zeka" else if (updatedUnlockedTech.size >= 5) "İleri Düzey" else "Giriş"
             )
         }
@@ -2061,5 +2116,206 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
         autoSaveGame()
+    }
+
+    fun takeOutLoan(loanType: LoanType): Boolean {
+        val current = _state.value
+        if (loanType == LoanType.EMERGENCY_BAILOUT && current.budget > 500000L) {
+            _state.update { it.copy(noticeMessage = "Devlet Acil Kurtarma Kredisi yalnızca nakit sıkışıklığında veya iflas riski belirdiğinde (< $500.000 bakiye) kullanılabilir.") }
+            return false
+        }
+        if (current.reputation < loanType.requiredReputation) {
+            _state.update { it.copy(noticeMessage = "Bu kredi için en az ${loanType.requiredReputation} şirket itibarı gerekiyor!") }
+            return false
+        }
+        if (current.activeLoans.size >= 4) {
+            _state.update { it.copy(noticeMessage = "Aynı anda en fazla 4 aktif banka kredisi taşıyabilirsiniz. Lütfen mevcut kredilerinizden bazılarını kapatın.") }
+            return false
+        }
+
+        val scoreAdjustment = when {
+            current.creditScore >= 820 -> -2
+            current.creditScore >= 780 -> -1
+            current.creditScore < 600 -> +3
+            current.creditScore < 680 -> +1
+            else -> 0
+        }
+        val effectiveInterest = (loanType.interestPercent + scoreAdjustment).coerceAtLeast(2)
+        val principal = loanType.principal
+        val totalRepayment = principal + (principal * effectiveInterest / 100)
+        val periodPayment = totalRepayment / loanType.durationPeriods
+
+        val newLoan = BankLoan(
+            id = "loan_${System.currentTimeMillis()}_${Random.nextInt(100, 999)}",
+            type = loanType,
+            principalAmount = principal,
+            totalRepayment = totalRepayment,
+            remainingBalance = totalRepayment,
+            totalPeriods = loanType.durationPeriods,
+            remainingPeriods = loanType.durationPeriods,
+            periodPayment = periodPayment,
+            interestPercent = effectiveInterest
+        )
+
+        val news = NewsArticle(
+            id = "loan_taken_${current.year}_${current.month}_${current.period}_${Random.nextInt(100, 999)}",
+            title = "🏦 BANKA FİNANSMANI: ${loanType.title} Onaylandı",
+            text = "Şirket hesabına $${"%,d".format(principal)} tutarında nakit aktarıldı. ${loanType.durationPeriods} dönem boyunca dönemlik $${"%,d".format(periodPayment)} taksit tahsil edilecektir (Toplam Faiz: %$effectiveInterest).",
+            category = "Şirket",
+            year = current.year,
+            month = current.month
+        )
+
+        _state.update { state ->
+            state.copy(
+                budget = state.budget + principal,
+                activeLoans = state.activeLoans + newLoan,
+                newsList = listOf(news) + state.newsList,
+                noticeMessage = "${loanType.title} onaylandı! Hesabınıza $${"%,d".format(principal)} eklendi."
+            )
+        }
+        autoSaveGame()
+        return true
+    }
+
+    fun payOffLoanEarly(loanId: String): Boolean {
+        val current = _state.value
+        val loan = current.activeLoans.firstOrNull { it.id == loanId } ?: return false
+        val cost = loan.earlyPayoffCost
+        if (current.budget < cost) {
+            _state.update { it.copy(noticeMessage = "Krediyi erken kapatmak için yeterli bakiye yok! Gereken: $${"%,d".format(cost)}") }
+            return false
+        }
+
+        val news = NewsArticle(
+            id = "loan_early_${current.year}_${current.month}_${Random.nextInt(100, 999)}",
+            title = "⚡ ERKEN ÖDEME: ${loan.type.title} Borcu Kapatıldı!",
+            text = "${loan.type.title} borcu $${"%,d".format(cost)} peşin ödenerek erken kapatıldı ($${"%,d".format(loan.earlyPayoffDiscountAmount)} faiz indirimi kazanıldı). Kredi notunuz +25 puan arttı!",
+            category = "Şirket",
+            year = current.year,
+            month = current.month
+        )
+
+        _state.update { state ->
+            state.copy(
+                budget = state.budget - cost,
+                activeLoans = state.activeLoans.filterNot { it.id == loanId },
+                creditScore = (state.creditScore + 25).coerceIn(300, 900),
+                newsList = listOf(news) + state.newsList,
+                noticeMessage = "${loan.type.title} erken kapatıldı ($${"%,d".format(loan.earlyPayoffDiscountAmount)} faiz indirimi)!"
+            )
+        }
+        autoSaveGame()
+        return true
+    }
+
+    fun liquidatePatents(): Boolean {
+        val current = _state.value
+        if (current.unlockedTech.isEmpty()) {
+            _state.update { it.copy(noticeMessage = "Devredilebilecek tamamlanmış Ar-Ge patenti bulunmuyor!") }
+            return false
+        }
+        if (current.patentLiquidationCooldown > 0) {
+            _state.update { it.copy(noticeMessage = "Patent devir anlaşması bekleme süresinde! (${current.patentLiquidationCooldown} dönem kaldı)") }
+            return false
+        }
+
+        val cashYield = 850000L + (current.unlockedTech.size * 50000L)
+        val repPenalty = 4
+
+        val news = NewsArticle(
+            id = "patent_deal_${current.year}_${current.month}_${Random.nextInt(100, 999)}",
+            title = "📜 PATENT LİSANS SATIŞI: Endüstri Konsorsiyumuna Devir",
+            text = "Ar-Ge patentlerinizin kullanım hakkı sektör üreticilerine lisanslanarak şirkete $${"%,d".format(cashYield)} acil nakit sağlandı. Şirket itibarı -$repPenalty puan geriledi.",
+            category = "Şirket",
+            year = current.year,
+            month = current.month
+        )
+
+        _state.update { state ->
+            state.copy(
+                budget = state.budget + cashYield,
+                reputation = (state.reputation - repPenalty).coerceIn(0, 100),
+                patentLiquidationCooldown = 12, // 6 ay bekleme
+                newsList = listOf(news) + state.newsList,
+                noticeMessage = "Patent lisans devrinden $${"%,d".format(cashYield)} acil nakit sağlandı (-$repPenalty İtibar)."
+            )
+        }
+        autoSaveGame()
+        return true
+    }
+
+    fun seekVentureCapital(): Boolean {
+        val current = _state.value
+        if (current.equitySoldPercent >= 25) {
+            _state.update { it.copy(noticeMessage = "Maksimum hisse devir sınırına (%25) ulaştınız! Şirket kontrolünü korumak için daha fazla hisse devredilemez.") }
+            return false
+        }
+
+        val equitySlice = 5
+        val cashYield = 1800000L + (current.reputation * 20000L)
+
+        val news = NewsArticle(
+            id = "vc_fund_${current.year}_${current.month}_${Random.nextInt(100, 999)}",
+            title = "💼 RİSK SERMAYESİ: %$equitySlice Hisse Karşılığı Fon Girişi",
+            text = "Teknoloji yatırım fonu, şirketin %$equitySlice hissesi karşılığında $${"%,d".format(cashYield)} tutarında sermaye yatırımı gerçekleştirdi.",
+            category = "Şirket",
+            year = current.year,
+            month = current.month
+        )
+
+        _state.update { state ->
+            state.copy(
+                budget = state.budget + cashYield,
+                equitySoldPercent = state.equitySoldPercent + equitySlice,
+                newsList = listOf(news) + state.newsList,
+                noticeMessage = "%$equitySlice hisse karşılığında $${"%,d".format(cashYield)} yatırım fonu sağlandı!"
+            )
+        }
+        autoSaveGame()
+        return true
+    }
+
+    fun emergencyLiquidateStock(modelId: String): Boolean {
+        val current = _state.value
+        val model = current.activeModels.firstOrNull { it.id == modelId } ?: return false
+        if (model.remainingStock <= 0) {
+            _state.update { it.copy(noticeMessage = "Bu model için depoda tasfiye edilecek stok kalmadı!") }
+            return false
+        }
+
+        val unitWholesalePrice = (model.specs.price * 0.5f).toInt().coerceAtLeast(1)
+        val totalGained = model.remainingStock.toLong() * unitWholesalePrice.toLong()
+        val liquidatedQty = model.remainingStock
+
+        val updatedModels = current.activeModels.map {
+            if (it.id == modelId) {
+                it.copy(
+                    remainingStock = 0,
+                    totalSold = it.totalSold + liquidatedQty,
+                    totalRevenue = it.totalRevenue + totalGained
+                )
+            } else it
+        }
+
+        val news = NewsArticle(
+            id = "stock_liq_${current.year}_${current.month}_${Random.nextInt(100, 999)}",
+            title = "📦 ACİL STOK TASFİYESİ: ${model.specs.name}",
+            text = "${model.specs.name} modelinin depodaki ${"%,d".format(liquidatedQty)} adet stoğu toptancılara %50 indirimle toptan satıldı ve $${"%,d".format(totalGained)} acil nakit elde edildi.",
+            category = "Şirket",
+            year = current.year,
+            month = current.month
+        )
+
+        _state.update { state ->
+            state.copy(
+                budget = state.budget + totalGained,
+                activeModels = updatedModels,
+                newsList = listOf(news) + state.newsList,
+                noticeMessage = "${model.specs.name} stokları tasfiye edildi (+$${"%,d".format(totalGained)})!"
+            )
+        }
+        autoSaveGame()
+        return true
     }
 }

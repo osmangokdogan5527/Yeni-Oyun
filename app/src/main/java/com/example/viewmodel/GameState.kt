@@ -845,7 +845,11 @@ data class GameState(
     val unlockedAchievementIds: List<String> = emptyList(),
     val lastUnlockedAchievementIds: List<String> = emptyList(),
     val activeSupplyChainEvent: SupplyChainEvent? = null,
-    val reputationMomentum: Float = 0f // Kademeli itibar sürüklenmesinin kesirli birikimi (ani zıplama yerine yumuşak geçiş için)
+    val reputationMomentum: Float = 0f, // Kademeli itibar sürüklenmesinin kesirli birikimi (ani zıplama yerine yumuşak geçiş için)
+    val activeLoans: List<BankLoan> = emptyList(),
+    val creditScore: Int = 750, // 300 - 900 Kredi Notu (Düzenli geri ödemelerle yükselir, kredi faizlerini düşürür)
+    val equitySoldPercent: Int = 0, // Yatırımcılara satılan toplam hisse payı (%25'e kadar)
+    val patentLiquidationCooldown: Int = 0 // Patent satışı bekleme süresi (Dönem cinsinden)
 ) {
     val currentOfficeTier: OfficeTier
         get() = OFFICE_TIERS.firstOrNull { it.level == officeLevel } ?: OFFICE_TIERS.first()
@@ -869,7 +873,10 @@ data class GameState(
     val osMaintenanceExpense: Long 
         get() = (if (customOs.type != OsType.STOCK_ANDROID) customOs.type.monthlyMaintenance else 0L) + customOs.updateGuarantee.monthlyCost
 
-    val totalMonthlyExpenses: Long get() = totalSalaries + officeExpense + factoryMaintenance + osMaintenanceExpense
+    val totalLoanPeriodPayments: Long get() = activeLoans.sumOf { it.periodPayment }
+    val totalDebt: Long get() = activeLoans.sumOf { it.remainingBalance }
+
+    val totalMonthlyExpenses: Long get() = totalSalaries + officeExpense + factoryMaintenance + osMaintenanceExpense + (totalLoanPeriodPayments * 2)
 
     val activeUserBase: Int 
         get() = activeModels.sumOf { it.totalSold }
