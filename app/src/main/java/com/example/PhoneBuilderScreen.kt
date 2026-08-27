@@ -69,6 +69,7 @@ fun PhoneBuilderScreen(
     year: Int,
     existingSeries: List<String> = emptyList(),
     customOs: com.example.viewmodel.CustomOsState? = null,
+    customChipsets: List<com.example.viewmodel.CustomChipset> = emptyList(),
     currentTrend: com.example.viewmodel.MarketTrend? = null,
     companyName: String = "Apex Mobile",
     companyLogoStyle: String = "Minimal Elmas",
@@ -152,7 +153,16 @@ fun PhoneBuilderScreen(
     )
 
     // --- DONANIM BİLEŞENLERİ ---
-    val ALL_PROCESSORS = listOf(
+    val customChipOptions = customChipsets.filter { !it.isArchived }.map { chip ->
+        ComponentOption(
+            name = "👑 ${chip.name} (${chip.tier.title.substringBefore(" (")})",
+            cost = chip.unitCost,
+            desc = "Öz Tasarım • ${chip.processNode.nodeName} • ${chip.coreCount} Çekirdek • ${chip.performanceScore} Puan",
+            availableFrom = chip.createdYear
+        )
+    }
+
+    val ALL_PROCESSORS = customChipOptions + listOf(
         ComponentOption("Qualcomm S2", 25, "Performans: 150 (2010)", 2010),
         ComponentOption("MediaTek MT65", 15, "Performans: 100 (2010)", 2010),
         ComponentOption("Qualcomm S4", 40, "Performans: 250 (2012)", 2012, requiredTech = "Qualcomm S4 Çip Entegrasyonu"),

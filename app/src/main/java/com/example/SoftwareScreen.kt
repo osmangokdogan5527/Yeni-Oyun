@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.ChipsetStudioView
 import com.example.ui.theme.*
 import com.example.viewmodel.*
 
@@ -105,42 +106,56 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
                         onClick = { selectedTab = 0 },
                         text = {
                             Text(
-                                "İşletim Sistemimiz",
-                                fontSize = 12.sp,
+                                "İşletim Sistemi",
+                                fontSize = 11.sp,
                                 fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                         },
-                        icon = { Icon(Icons.Default.PhoneAndroid, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                        icon = { Icon(Icons.Default.PhoneAndroid, contentDescription = null, modifier = Modifier.size(17.dp)) }
                     )
                     Tab(
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 },
                         text = {
                             Text(
-                                "Ekosistem & Finans",
-                                fontSize = 12.sp,
+                                "Öz Yonga & OEM (${state.customChipsets.size})",
+                                fontSize = 11.sp,
                                 fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                         },
-                        icon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                        icon = { Icon(Icons.Default.Memory, contentDescription = null, modifier = Modifier.size(17.dp)) }
                     )
                     Tab(
                         selected = selectedTab == 2,
                         onClick = { selectedTab = 2 },
                         text = {
                             Text(
-                                "Küresel Rekabet (${viewModel.rivalOperatingSystems.size})",
-                                fontSize = 12.sp,
+                                "Ekosistem",
+                                fontSize = 11.sp,
                                 fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                         },
-                        icon = { Icon(Icons.Default.Public, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                        icon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, modifier = Modifier.size(17.dp)) }
+                    )
+                    Tab(
+                        selected = selectedTab == 3,
+                        onClick = { selectedTab = 3 },
+                        text = {
+                            Text(
+                                "Küresel Rekabet",
+                                fontSize = 11.sp,
+                                fontWeight = if (selectedTab == 3) FontWeight.Bold else FontWeight.Normal,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        icon = { Icon(Icons.Default.Public, contentDescription = null, modifier = Modifier.size(17.dp)) }
                     )
                 }
             }
@@ -197,7 +212,7 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
                                 }
 
                                 Text(
-                                    text = "Kendi bağımsız işletim sisteminizi sıfırdan tasarlamak, açık veya kapalı kaynak mimarisini belirlemek, üçüncü taraf üreticilere lisans satmak ve dünya çapında uygulama mağazası kurmak devasa bir endüstriyel Ar-Ge yatırımı gerektirir.",
+                                    text = "Kendi bağımsız mobil işletim sisteminizi geliştirmek; çekirdek mimarisini sıfırdan tasarlamayı, global uygulama mağazası kurmayı ve üreticilere lisanslamayı kapsayan kapsamlı bir Ar-Ge yatırımı gerektirir.",
                                     color = Color(0xFFE2E8F0),
                                     fontSize = 12.sp,
                                     lineHeight = 18.sp
@@ -339,8 +354,23 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
                 }
             }
 
-            // --- TAB 1: EKOSİSTEM & FİNANSMAN ---
+            // --- TAB 1: ÖZ YONGA & OEM SATIŞ (SILICON FOUNDRY) ---
             if (selectedTab == 1) {
+                item {
+                    ChipsetStudioView(
+                        state = state,
+                        onSaveChipset = { viewModel.saveCustomChipset(it) },
+                        onDeleteChipset = { viewModel.deleteCustomChipset(it) },
+                        onUnarchiveChipset = { viewModel.unarchiveCustomChipset(it) },
+                        onToggleOemSale = { id, active, price ->
+                            viewModel.toggleChipsetOemSale(id, active, price)
+                        }
+                    )
+                }
+            }
+
+            // --- TAB 2: EKOSİSTEM & FİNANSMAN ---
+            if (selectedTab == 2) {
                 // 1. REVENUE METRICS OVERVIEW
                 item {
                     EcosystemRevenueOverviewCard(customOs = customOs, state = state)
@@ -380,8 +410,8 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
                 }
             }
 
-            // --- TAB 2: KÜRESEL OS REKABETİ & TEKNOLOJİ MATRİSİ ---
-            if (selectedTab == 2) {
+            // --- TAB 3: KÜRESEL OS REKABETİ & TEKNOLOJİ MATRİSİ ---
+            if (selectedTab == 3) {
                 item {
                     GlobalOsRaceHeaderCard(customOs = customOs)
                 }
@@ -888,8 +918,8 @@ fun DevTeamAllocationSection(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("Üretilen Aylık XP: +${(customOs.assignedDevs * 25) + (totalEngineers * 4)} XP", fontSize = 11.sp, color = Color(0xFF10B981), fontWeight = FontWeight.Bold)
-            Text("Toplam XP: ${customOs.devXp}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Dönem Başı Yazılım Puanı: +${(customOs.assignedDevs * 15) + (totalEngineers * 2)} XP", fontSize = 11.sp, color = Color(0xFF10B981), fontWeight = FontWeight.Bold)
+            Text("Toplam Yazılım Deneyimi: ${customOs.devXp} XP", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -988,7 +1018,7 @@ fun EcosystemRevenueOverviewCard(customOs: CustomOsState, state: GameState) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("Son Ay Toplam Ekosistem Geliri", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Son Dönem Ekosistem Geliri", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
                             "+$${"%,d".format(totalMonthlyOsRevenue)}",
                             fontSize = 18.sp,
@@ -1274,7 +1304,7 @@ fun GlobalDevConCard(
             }
 
             Text(
-                "Dünya çapında on binlerce yazılımcıyı bir araya getirerek yeni API ve yapay zeka araçlarını tanıtın. +120,000 yeni uygulama, +12 Ekosistem puanı ve +8 Marka İtibarı kazandırır.",
+                "Dünya çapında binlerce yazılımcıyı bir araya getirerek yeni API ve yazılım geliştirme araçlarını tanıtın. +60.000 yeni uygulama, +10 Ekosistem puanı ve +6 Marka İtibarı kazandırır.",
                 color = Color(0xFFCBD5E1),
                 fontSize = 11.sp,
                 lineHeight = 16.sp

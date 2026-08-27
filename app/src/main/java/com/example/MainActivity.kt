@@ -175,8 +175,10 @@ fun GameTopBar(
                                 modifier = Modifier.size(12.dp)
                             )
                         }
+                        val monthName = GameViewModel.getMonthName(state.month)
+                        val periodLabel = if (state.period == 1) "1-15 $monthName" else "16-30 $monthName"
                         Text(
-                            text = "${state.month}. Ay / ${state.year}",
+                            text = "$periodLabel / ${state.year}",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.primary
@@ -204,11 +206,11 @@ fun GameTopBar(
                     Button(
                         onClick = onAdvanceTime,
                         modifier = Modifier.height(36.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(18.dp)
                     ) {
-                        Text("İleri (1 Ay) ⏩", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("İlerle (2 Hafta) ⏩", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -368,6 +370,7 @@ fun MainApp(viewModel: GameViewModel = viewModel()) {
                     year = state.year,
                     existingSeries = existingSeriesList,
                     customOs = state.customOs,
+                    customChipsets = state.customChipsets,
                     currentTrend = state.currentTrend,
                     companyName = state.companyName,
                     companyLogoStyle = state.companyLogoStyle,

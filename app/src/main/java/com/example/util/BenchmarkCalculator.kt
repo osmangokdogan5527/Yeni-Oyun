@@ -42,10 +42,12 @@ object BenchmarkCalculator {
         val yearBase = ((specs.techScore - 2010).coerceAtLeast(0) * 4.7f).roundToInt().coerceIn(15, 90)
 
         val processorBonus = when {
+            specs.processor.contains("👑") || specs.processor.contains("Amiral") -> 12
             specs.processor.contains("Kuantum") -> 10
             specs.processor.contains("Gen 3") || specs.processor.contains("D9300") -> 8
             specs.processor.contains("Gen 1") || specs.processor.contains("D9000") -> 6
-            specs.processor.contains("In-House") -> 5
+            specs.processor.contains("In-House") || specs.processor.contains("⚖️") -> 6
+            specs.processor.contains("🏷️") || specs.processor.contains("Lite") -> 2
             else -> 0
         }
 

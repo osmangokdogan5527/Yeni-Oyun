@@ -372,6 +372,7 @@ data class ActiveModel(
     val remainingStock: Int,
     val totalSold: Int = 0,
     val totalRevenue: Long = 0,
+    val periodsOnMarket: Int = 0, // 2 periyot = 1 ay
     val monthsOnMarket: Int = 0,
     val reviewScore: Int,
     val launchYear: Int,
@@ -388,8 +389,11 @@ data class ActiveModel(
     val maxMonthsOnMarket: Int
         get() = if (reviewScore >= 60) 24 else 12
 
+    val maxPeriodsOnMarket: Int
+        get() = maxMonthsOnMarket * 2
+
     val isCompleted: Boolean
-        get() = remainingStock <= 0 || monthsOnMarket >= maxMonthsOnMarket
+        get() = remainingStock <= 0 || periodsOnMarket >= maxPeriodsOnMarket || (periodsOnMarket == 0 && monthsOnMarket >= maxMonthsOnMarket)
 }
 
 @Serializable
@@ -518,6 +522,7 @@ data class GameState(
     val reputation: Int = 0,
     val year: Int = 2010,
     val month: Int = 1,
+    val period: Int = 1, // 1: Ayın 1. Yarısı (1-15 Gün / 2 Hafta), 2: Ayın 2. Yarısı (16-30 Gün / 2 Hafta)
     val modelCount: Int = 0,
     val techLevel: String = "Giriş",
     val manufacturedPhones: List<PhoneSpecs> = emptyList(),
@@ -853,6 +858,10 @@ data class GameState(
     val playerMarketSharePercent: Float = 0f,
     val totalMarketMonthlyVolume: Int = 800000,
     val customOs: CustomOsState = CustomOsState(),
+    val customChipsets: List<CustomChipset> = emptyList(),
+    val totalChipsetOemRevenue: Long = 0L,
+    val lastPeriodChipsetOemRevenue: Long = 0L,
+    val lastPeriodChipsetsSold: Int = 0,
     val activeTechExpo: TechExpoEvent? = null,
     val pastTechExpos: List<TechExpoEvent> = emptyList()
 ) {
@@ -1281,10 +1290,31 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    companion object {
+        fun getMonthName(month: Int): String = when (month) {
+            1 -> "Ocak"
+            2 -> "Şubat"
+            3 -> "Mart"
+            4 -> "Nisan"
+            5 -> "Mayıs"
+            6 -> "Haziran"
+            7 -> "Temmuz"
+            8 -> "Ağustos"
+            9 -> "Eylül"
+            10 -> "Ekim"
+            11 -> "Kasım"
+            12 -> "Aralık"
+            else -> "$month. Ay"
+        }
+    }
+
     fun advanceTime() {
         val currentState = _state.value
-        val newMonth = if (currentState.month == 12) 1 else currentState.month + 1
-        val newYear = if (currentState.month == 12) currentState.year + 1 else currentState.year
+        val isSecondHalf = currentState.period == 2
+        val newPeriod = if (isSecondHalf) 1 else 2
+        val newMonth = if (isSecondHalf) (if (currentState.month == 12) 1 else currentState.month + 1) else currentState.month
+        val newYear = if (isSecondHalf && currentState.month == 12) currentState.year + 1 else currentState.year
+        val periodName = if (newPeriod == 1) "1. Yarı (1-15 Gün)" else "2. Yarı (16-30 Gün)"
 
         var totalMonthlyRevenue = 0L
         var totalMonthlyUnitsSold = 0
@@ -1293,79 +1323,82 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val newNewsList = currentState.newsList.toMutableList()
         val finishedModelsNews = mutableListOf<NewsArticle>()
 
-        // Update Market Trends
+        // Update Market Trends (Progresses every full month / 2 periods)
         var updatedTrend = currentState.currentTrend
-        if (updatedTrend.remainingMonths <= 1) {
-            val newGeneratedTrend = generateNewTrend(newYear, updatedTrend.category)
-            updatedTrend = newGeneratedTrend
-            newNewsList.add(
-                NewsArticle(
-                    id = "trend_news_${newYear}_${newMonth}_${Random.nextInt(100, 999)}",
-                    title = "🔥 YENİ TÜKETİCİ TRENDİ: ${newGeneratedTrend.title}",
-                    text = "${newGeneratedTrend.description} Bu trende uygun cihazlar pazarda +%50 daha fazla talep görecek! (${newGeneratedTrend.category.tip})",
-                    category = "Pazar",
-                    year = newYear,
-                    month = newMonth
+        if (isSecondHalf) {
+            if (updatedTrend.remainingMonths <= 1) {
+                val newGeneratedTrend = generateNewTrend(newYear, updatedTrend.category)
+                updatedTrend = newGeneratedTrend
+                newNewsList.add(
+                    NewsArticle(
+                        id = "trend_news_${newYear}_${newMonth}_${Random.nextInt(100, 999)}",
+                        title = "🔥 YENİ TÜKETİCİ TRENDİ: ${newGeneratedTrend.title}",
+                        text = "${newGeneratedTrend.description} Bu trende uygun cihazlar pazarda +%50 daha fazla talep görecek! (${newGeneratedTrend.category.tip})",
+                        category = "Pazar",
+                        year = newYear,
+                        month = newMonth
+                    )
                 )
-            )
-        } else {
-            updatedTrend = updatedTrend.copy(remainingMonths = updatedTrend.remainingMonths - 1)
+            } else {
+                updatedTrend = updatedTrend.copy(remainingMonths = updatedTrend.remainingMonths - 1)
+            }
         }
 
-        // Process monthly sales over 12 or 24-month cycle for each active model
+        // Process bi-weekly sales (2-week cycle, 24 periods per year) for each active model
         val updatedActiveModels = currentState.activeModels.map { model ->
-            if (model.monthsOnMarket < model.maxMonthsOnMarket && model.remainingStock > 0) {
-                val newMonths = model.monthsOnMarket + 1
+            if (!model.isCompleted && model.remainingStock > 0) {
+                val newPeriods = model.periodsOnMarket + 1
+                val newMonths = newPeriods / 2
                 
-                // Base monthly sales target based on max months (12 or 24)
-                val baseMonthlyBatch = model.totalStock / model.maxMonthsOnMarket.toFloat()
+                // Base bi-weekly batch (half of monthly)
+                val basePeriodBatch = model.totalStock / (model.maxMonthsOnMarket * 2).toFloat()
                 
                 // Quality, reputation and active marketing campaign demand multiplier
                 val qualityFactor = (model.reviewScore / 55.0f).coerceIn(0.4f, 2.0f)
                 
                 // 1. ZORLUK & İTİBAR DENGESİ: Düşük itibarda satışlar daha zor ve gerçekçi
                 val repFactor = when {
-                    currentState.reputation < 20 -> 0.35f + (currentState.reputation / 20.0f) * 0.30f // 0.35x - 0.65x (Erken aşamada marka bilinirliği düşük)
-                    currentState.reputation < 50 -> 0.65f + ((currentState.reputation - 20) / 30.0f) * 0.40f // 0.65x - 1.05x (Büyüyen marka)
-                    currentState.reputation < 80 -> 1.05f + ((currentState.reputation - 50) / 30.0f) * 0.45f // 1.05x - 1.50x (Pazar devi)
-                    else -> 1.50f + ((currentState.reputation - 80) / 20.0f) * 0.50f // 1.50x - 2.00x (Küresel mega lider)
+                    currentState.reputation < 20 -> 0.35f + (currentState.reputation / 20.0f) * 0.30f // 0.35x - 0.65x
+                    currentState.reputation < 50 -> 0.65f + ((currentState.reputation - 20) / 30.0f) * 0.40f // 0.65x - 1.05x
+                    currentState.reputation < 80 -> 1.05f + ((currentState.reputation - 50) / 30.0f) * 0.45f // 1.05x - 1.50x
+                    else -> 1.50f + ((currentState.reputation - 80) / 20.0f) * 0.50f // 1.50x - 2.00x
                 }
 
-                // 2. FİYAT DUYARLILIĞI (PRICE ELASTICITY): Düşük itibarda fahiş kâr marjına talep cezası
+                // 2. FİYAT DUYARLILIĞI (PRICE ELASTICITY)
                 val estimatedUnitCost = model.specs.unitCost.coerceAtLeast(40)
                 val markupRatio = model.specs.price.toFloat() / estimatedUnitCost.toFloat()
                 val priceElasticityFactor = when {
-                    markupRatio > 2.6f && currentState.reputation < 35 -> 0.40f // Fahiş fiyat & düşük itibar = %60 talep cezası!
-                    markupRatio > 2.0f && currentState.reputation < 50 -> 0.65f // %35 talep cezası
+                    markupRatio > 2.6f && currentState.reputation < 35 -> 0.40f
+                    markupRatio > 2.0f && currentState.reputation < 50 -> 0.65f
                     markupRatio > 1.7f && currentState.reputation < 25 -> 0.75f
-                    markupRatio <= 1.3f -> 1.25f // Uygun fiyat / F-P patlaması = +%25 satış hacmi
+                    markupRatio <= 1.3f -> 1.25f
                     else -> 1.0f
                 }
 
-                // 3. SERİ DEVAMI & NESİL SADAKATİ: Model serisi devam ettikçe kemik kitle oluşur
+                // 3. SERİ DEVAMI & NESİL SADAKATİ
                 val seriesLoyaltyFactor = if (model.specs.generation > 1) {
-                    1.0f + ((model.specs.generation - 1).coerceAtMost(6) * 0.06f) // Her nesilde +%6 sadık kitle talebi
+                    1.0f + ((model.specs.generation - 1).coerceAtMost(6) * 0.06f)
                 } else 1.0f
 
-                // 4. MODEL SINIFI (TIER) ETKİSİ: Standart, Pro, Ultra, Lite dinamikleri
+                // 4. MODEL SINIFI (TIER) ETKİSİ
                 val tierDemandFactor = when (model.specs.tier) {
-                    ModelTier.LITE -> 1.30f // Hızlı sürüm ve yüksek hacim
+                    ModelTier.LITE -> 1.30f
                     ModelTier.STANDARD -> 1.0f
-                    ModelTier.PRO -> if (currentState.reputation >= 30) 0.95f else 0.60f // Pro amiral gemisi için itibar şart
-                    ModelTier.ULTRA -> if (currentState.reputation >= 50) 0.85f else 0.40f // Ultra tepe model için güçlü marka şart
+                    ModelTier.PRO -> if (currentState.reputation >= 30) 0.95f else 0.60f
+                    ModelTier.ULTRA -> if (currentState.reputation >= 50) 0.85f else 0.40f
                 }
 
                 val campaignFactor = if (model.activeCampaign != null && model.activeCampaign.remainingMonths > 0) {
                     1.0f + (model.activeCampaign.type.boostPercent / 100.0f)
                 } else 1.0f
 
-                // Trend Bonus (Dynamic realistic boost +10% to +25% depending on era trend)
+                // Trend Bonus
                 val isTrendActive = model.matchesTrend || checkTrendMatch(model.specs, updatedTrend)
                 val trendFactor = if (isTrendActive) (updatedTrend?.bonusMultiplier ?: 1.15f) else 1.0f
 
                 // Design & Color Variety Sales Appeal Multiplier
                 val extraColors = (model.specs.selectedColors.size - 1).coerceAtLeast(0)
-                val colorFactor = 1.0f + (extraColors * 0.04f) // +4% boost per extra color
+                val colorFactor = 1.0f + (extraColors * 0.04f)
                 val designFactor = when {
                     model.specs.material == "Titanyum" || model.specs.backFinish == "Vegan Deri" -> 1.10f
                     model.specs.material == "Cam" || model.specs.backFinish == "Karbon Fiber" -> 1.06f
@@ -1384,13 +1417,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     else -> 1.0f
                 }
 
-                // Lifecycle Sales Curve Factor:
-                // Months 1-2: Slow warm-up / early adopters (0.35x -> 0.65x)
-                // Months 3-6: Massive peak / viral boom / mainstream frenzy (2.2x -> 1.8x)
-                // Months 7+: Sharp drop-off / market saturation (0.25x -> 0.08x)
+                // Lifecycle Sales Curve Factor (over periods)
                 val lifecycleSalesCurve = when (newMonths) {
-                    1 -> 0.35f
-                    2 -> 0.65f
+                    0, 1 -> 0.45f
+                    2 -> 0.80f
                     3 -> 2.20f
                     4 -> 2.40f
                     5 -> 2.00f
@@ -1401,19 +1431,18 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     10 -> 0.15f
                     11 -> 0.10f
                     12 -> 0.05f
-                    else -> 0.04f // 2nd year if extended
+                    else -> 0.04f
                 }
 
                 val demandFactor = qualityFactor * repFactor * priceElasticityFactor * seriesLoyaltyFactor * tierDemandFactor * campaignFactor * trendFactor * colorFactor * designFactor * osSynergyFactor * lifecycleSalesCurve
                 
-                // Monthly units sold
-                val calculatedUnits = (baseMonthlyBatch * demandFactor).toInt().coerceAtLeast(1)
-                val unitsSoldThisMonth = calculatedUnits.coerceAtMost(model.remainingStock)
+                // 2-week units sold (0 if demand is zero or below)
+                val calculatedUnits = (basePeriodBatch * demandFactor).toInt().coerceAtLeast(0)
+                val unitsSoldThisPeriod = calculatedUnits.coerceAtMost(model.remainingStock)
+                val revenueThisPeriod = unitsSoldThisPeriod.toLong() * model.specs.price
                 
-                val revenueThisMonth = unitsSoldThisMonth.toLong() * model.specs.price
-                
-                totalMonthlyRevenue += revenueThisMonth
-                totalMonthlyUnitsSold += unitsSoldThisMonth
+                totalMonthlyRevenue += revenueThisPeriod
+                totalMonthlyUnitsSold += unitsSoldThisPeriod
 
                 var isExtendedNewsSent = model.isExtendedNewsSent
                 if (newMonths == 12 && model.maxMonthsOnMarket == 24 && !model.isExtendedNewsSent) {
@@ -1431,20 +1460,23 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 val updatedCampaign = model.activeCampaign?.let { camp ->
-                    if (camp.remainingMonths > 1) camp.copy(remainingMonths = camp.remainingMonths - 1) else null
+                    if (isSecondHalf) {
+                        if (camp.remainingMonths > 1) camp.copy(remainingMonths = camp.remainingMonths - 1) else null
+                    } else camp
                 }
 
                 val updatedModel = model.copy(
-                    remainingStock = model.remainingStock - unitsSoldThisMonth,
-                    totalSold = model.totalSold + unitsSoldThisMonth,
-                    totalRevenue = model.totalRevenue + revenueThisMonth,
+                    remainingStock = model.remainingStock - unitsSoldThisPeriod,
+                    totalSold = model.totalSold + unitsSoldThisPeriod,
+                    totalRevenue = model.totalRevenue + revenueThisPeriod,
+                    periodsOnMarket = newPeriods,
                     monthsOnMarket = newMonths,
                     isExtendedNewsSent = isExtendedNewsSent,
                     activeCampaign = updatedCampaign,
                     matchesTrend = isTrendActive
                 )
 
-                // Check if model completed its sales cycle or sold out this month
+                // Check if model completed its sales cycle or sold out
                 if (updatedModel.isCompleted && !model.isCompleted) {
                     finishedModelsNews.add(
                         NewsArticle(
@@ -1458,8 +1490,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
 
-                // Geri Çağırma (Recall) Kontrolü: İlk 3 ay boyunca, üretim anında
-                // hesaplanan riske göre modelin geri çağrılıp çağrılmayacağı kontrol edilir.
+                // Geri Çağırma (Recall) Kontrolü
                 val (modelAfterRecallCheck, recallOutcome) = checkForRecall(updatedModel, newYear, newMonth)
                 if (recallOutcome != null) {
                     totalRecallCost += recallOutcome.compensationCost
@@ -1486,17 +1517,17 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         val activeInstalledBase = updatedActiveModels.sumOf { it.totalSold }
 
-        // --- CUSTOM OS MONTHLY EVOLUTION & ADOPTION LOGIC ---
+        // --- CUSTOM OS BI-WEEKLY EVOLUTION & ADOPTION LOGIC ---
         var updatedCustomOs = currentState.customOs
-        var appStoreRevenueThisMonth = 0L
-        var licenseRevenueThisMonth = 0L
+        var appStoreRevenueThisPeriod = 0L
+        var licenseRevenueThisPeriod = 0L
 
         if (updatedCustomOs.isCustomActive) {
             val devCount = updatedCustomOs.assignedDevs.coerceAtMost(currentState.engineers)
             
-            // 1. Developers produce monthly XP and increase optimization score
-            val monthlyXpGain = (devCount * 25) + (currentState.engineers * 4)
-            val newDevXp = updatedCustomOs.devXp + monthlyXpGain
+            // 1. Developers produce XP and increase optimization score (bi-weekly)
+            val periodXpGain = ((devCount * 25) + (currentState.engineers * 4)) / 2
+            val newDevXp = updatedCustomOs.devXp + periodXpGain
             
             val newOptScore = (20 + (devCount * 4) + (updatedCustomOs.majorVersionCount * 8) + (newDevXp / 120)).coerceIn(15, 100)
             
@@ -1510,63 +1541,61 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val licenseType = updatedCustomOs.licenseType
             
             if (licenseType == OsLicenseType.OPEN_SOURCE) {
-                // Open Source expands rapidly as popularity and ecosystem grows
                 if (updatedCustomOs.popularityPercent >= 4.0f && adopters < 2) adopters = 2
                 if (updatedCustomOs.popularityPercent >= 10.0f && adopters < 4) adopters = 4
                 if (updatedCustomOs.popularityPercent >= 20.0f && adopters < 7) adopters = 7
                 if (updatedCustomOs.popularityPercent >= 35.0f && adopters < 12) adopters = 12
                 if (updatedCustomOs.popularityPercent >= 50.0f && adopters < 18) adopters = 18
             } else {
-                // Closed Proprietary has selective partners if license fee is reasonable
                 if (updatedCustomOs.perDeviceLicenseFee <= 25 && updatedCustomOs.popularityPercent >= 8.0f && adopters < 1) adopters = 1
                 if (updatedCustomOs.perDeviceLicenseFee <= 20 && updatedCustomOs.popularityPercent >= 18.0f && adopters < 2) adopters = 2
                 if (updatedCustomOs.perDeviceLicenseFee <= 15 && updatedCustomOs.popularityPercent >= 30.0f && adopters < 4) adopters = 4
                 if (updatedCustomOs.perDeviceLicenseFee <= 10 && updatedCustomOs.popularityPercent >= 45.0f && adopters < 7) adopters = 7
             }
 
-            // Monthly device production by third party adopters
-            val thirdPartyMonthlyProduction = if (adopters > 0) {
-                val perPartnerVolume = (10000 + (newYear - 2010) * 3500) * (updatedCustomOs.popularityPercent / 10f).coerceAtLeast(0.4f)
+            // Bi-weekly device production by third party adopters
+            val thirdPartyPeriodProduction = if (adopters > 0) {
+                val perPartnerVolume = ((10000 + (newYear - 2010) * 3500) * (updatedCustomOs.popularityPercent / 10f).coerceAtLeast(0.4f)) / 2f
                 (adopters * perPartnerVolume * licenseType.adoptionSpeedMultiplier).toLong()
             } else 0L
 
-            val newThirdPartyActiveDevices = updatedCustomOs.thirdPartyActiveDevices + thirdPartyMonthlyProduction
+            val newThirdPartyActiveDevices = updatedCustomOs.thirdPartyActiveDevices + thirdPartyPeriodProduction
 
-            // 4. Popularity increment (Gradual, realistic adoption curve - starts low, grows over time)
+            // 4. Popularity increment
             val devGrowthFactor = (devCount * 0.15f)
             val versionFactor = (updatedCustomOs.majorVersionCount * 0.20f)
-            val playerSalesFactor = (totalMonthlyUnitsSold / 30000f)
+            val playerSalesFactor = (totalMonthlyUnitsSold / 15000f)
             val adoptionBonus = (adopters * 0.30f * licenseType.adoptionSpeedMultiplier)
-            val popularityDelta = (devGrowthFactor + versionFactor + playerSalesFactor + adoptionBonus + 0.15f) * 0.35f
+            val popularityDelta = (devGrowthFactor + versionFactor + playerSalesFactor + adoptionBonus + 0.15f) * 0.18f
             
             val newPopularity = (updatedCustomOs.popularityPercent + popularityDelta).coerceIn(1.0f, 85.0f)
             val newEcosystemScore = (15 + (newPopularity * 0.8f).toInt() + (devCount * 3) + (updatedCustomOs.majorVersionCount * 5)).coerceIn(10, 100)
 
-            // 5. App Store Revenue & License Revenue Calculation
+            // 5. App Store Revenue & License Revenue Calculation (Bi-weekly)
             val totalEcosystemDevices = activePlayerUserBase + newThirdPartyActiveDevices
             if (totalEcosystemDevices > 0) {
-                val baseUserRate = updatedCustomOs.type.storeRevenuePerUser
+                val baseUserRate = updatedCustomOs.type.storeRevenuePerUser / 2f
                 val commissionMultiplier = (updatedCustomOs.commissionRate.percent / 20.0f) * updatedCustomOs.commissionRate.marketLoyaltyBonus
                 val popMultiplier = (newPopularity / 20.0f).coerceIn(0.25f, 2.5f)
                 val storeModuleBonus = 1.0f + (updatedCustomOs.appStoreLevel - 1) * 0.25f
                 
-                appStoreRevenueThisMonth = (totalEcosystemDevices * baseUserRate * commissionMultiplier * popMultiplier * licenseType.storeRevenueMultiplier * storeModuleBonus / 3.5f).toLong()
+                appStoreRevenueThisPeriod = (totalEcosystemDevices * baseUserRate * commissionMultiplier * popMultiplier * licenseType.storeRevenueMultiplier * storeModuleBonus / 3.5f).toLong()
             }
 
             // 6. Cloud & Ecosystem Subscription Revenue
-            val cloudRevenueThisMonth = if (updatedCustomOs.cloudLevel > 1 && totalEcosystemDevices > 0) {
+            val cloudRevenueThisPeriod = if (updatedCustomOs.cloudLevel > 1 && totalEcosystemDevices > 0) {
                 val payingUsersRatio = 0.08f + (updatedCustomOs.cloudLevel * 0.04f)
                 val cloudUsers = (totalEcosystemDevices * payingUsersRatio).toLong()
-                (cloudUsers * 1.5f).toLong() // $1.5 per active cloud subscriber
+                (cloudUsers * 0.75f).toLong() // $0.75 per 2-weeks ($1.5/mo)
             } else 0L
 
-            if (licenseType == OsLicenseType.CLOSED_PROPRIETARY && updatedCustomOs.perDeviceLicenseFee > 0 && thirdPartyMonthlyProduction > 0) {
-                licenseRevenueThisMonth = thirdPartyMonthlyProduction * updatedCustomOs.perDeviceLicenseFee
+            if (licenseType == OsLicenseType.CLOSED_PROPRIETARY && updatedCustomOs.perDeviceLicenseFee > 0 && thirdPartyPeriodProduction > 0) {
+                licenseRevenueThisPeriod = thirdPartyPeriodProduction * updatedCustomOs.perDeviceLicenseFee
             }
 
             // 7. Store Apps Catalog Growth
             val appsFromDevFund = (updatedCustomOs.devFundBalance / 80000L).coerceAtLeast(0L)
-            val newAppsAdded = (1200L * updatedCustomOs.appStoreLevel) + (devCount * 600L) + (updatedCustomOs.ecosystemScore * 450L) + appsFromDevFund
+            val newAppsAdded = ((1200L * updatedCustomOs.appStoreLevel) + (devCount * 600L) + (updatedCustomOs.ecosystemScore * 450L) + appsFromDevFund) / 2L
             val newTotalApps = updatedCustomOs.totalStoreApps + newAppsAdded
 
             // 8. Dynamic Customer Loyalty calculation
@@ -1597,25 +1626,50 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 thirdPartyActiveDevices = newThirdPartyActiveDevices,
                 totalStoreApps = newTotalApps,
                 customerLoyaltyPercent = calculatedLoyalty,
-                totalAppStoreRevenueToDate = updatedCustomOs.totalAppStoreRevenueToDate + appStoreRevenueThisMonth,
-                totalLicenseRevenueToDate = updatedCustomOs.totalLicenseRevenueToDate + licenseRevenueThisMonth,
-                totalCloudRevenueToDate = updatedCustomOs.totalCloudRevenueToDate + cloudRevenueThisMonth,
-                lastMonthAppStoreIncome = appStoreRevenueThisMonth,
-                lastMonthLicenseIncome = licenseRevenueThisMonth,
-                lastMonthCloudRevenue = cloudRevenueThisMonth
+                totalAppStoreRevenueToDate = updatedCustomOs.totalAppStoreRevenueToDate + appStoreRevenueThisPeriod,
+                totalLicenseRevenueToDate = updatedCustomOs.totalLicenseRevenueToDate + licenseRevenueThisPeriod,
+                totalCloudRevenueToDate = updatedCustomOs.totalCloudRevenueToDate + cloudRevenueThisPeriod,
+                lastMonthAppStoreIncome = appStoreRevenueThisPeriod * 2,
+                lastMonthLicenseIncome = licenseRevenueThisPeriod * 2,
+                lastMonthCloudRevenue = cloudRevenueThisPeriod * 2
             )
         }
 
-        val totalCombinedRevenue = totalMonthlyRevenue + appStoreRevenueThisMonth + licenseRevenueThisMonth + (updatedCustomOs.lastMonthCloudRevenue)
-        val totalExpenses = currentState.totalMonthlyExpenses
-        val netIncome = totalCombinedRevenue - totalExpenses
+        // --- CUSTOM CHIPSET / IN-HOUSE SILICON OEM SALES LOGIC ---
+        var periodChipsetIncome = 0L
+        var periodChipsetsSold = 0
+        val updatedChipsets = currentState.customChipsets.map { chip ->
+            if (chip.isOemSaleActive) {
+                val profitPerUnit = (chip.oemSalePrice - chip.unitCost).coerceAtLeast(0)
+                val perfPerDollar = (chip.performanceScore.toFloat() / chip.oemSalePrice.coerceAtLeast(10).toFloat())
+                val marketReputationFactor = (currentState.reputation / 50f).coerceIn(0.5f, 2.0f)
+                val tierDemand = chip.tier.marketVolumeMultiplier
+                val baseOrders = (7500 * tierDemand * marketReputationFactor * (perfPerDollar / 14f)).toInt().coerceIn(1500, 95000)
+                val periodIncome = baseOrders.toLong() * profitPerUnit.toLong()
 
-        // Competitors AI Simulation & Releases
+                periodChipsetIncome += periodIncome
+                periodChipsetsSold += baseOrders
+
+                chip.copy(
+                    totalUnitsSoldToThirdParties = chip.totalUnitsSoldToThirdParties + baseOrders,
+                    totalOemRevenueEarned = chip.totalOemRevenueEarned + periodIncome,
+                    lastPeriodUnitsSold = baseOrders,
+                    lastPeriodOemIncome = periodIncome
+                )
+            } else {
+                chip.copy(lastPeriodUnitsSold = 0, lastPeriodOemIncome = 0L)
+            }
+        }
+
+        val totalCombinedRevenue = totalMonthlyRevenue + appStoreRevenueThisPeriod + licenseRevenueThisPeriod + (updatedCustomOs.lastMonthCloudRevenue / 2) + periodChipsetIncome
+        val periodExpenses = (currentState.totalMonthlyExpenses / 2).coerceAtLeast(0)
+        val netIncome = totalCombinedRevenue - periodExpenses
+
+        // Competitors AI Simulation & Releases (Every 6 periods = 3 months, or random chance)
         var updatedCompetitorReleases = currentState.competitorReleases.toMutableList()
         var updatedCompetitors = currentState.competitors.toMutableList()
 
-        // Every 3 months (or randomly), a competitor launches a new phone
-        val shouldCompetitorLaunch = (newMonth % 3 == 0) || (Random.nextInt(100) < 30)
+        val shouldCompetitorLaunch = (newMonth % 3 == 0 && newPeriod == 1) || (Random.nextInt(100) < 15)
         if (shouldCompetitorLaunch && updatedCompetitors.isNotEmpty()) {
             val randomCompIndex = Random.nextInt(updatedCompetitors.size)
             val comp = updatedCompetitors[randomCompIndex]
@@ -1672,7 +1726,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
                 newNewsList.add(
                     NewsArticle(
-                        id = "comp_launch_${newYear}_${newMonth}_${Random.nextInt(100, 999)}",
+                        id = "comp_launch_${newYear}_${newMonth}_${newPeriod}_${Random.nextInt(100, 999)}",
                         title = releaseHeadline,
                         text = releaseNewsText,
                         category = "Sektör",
@@ -1684,7 +1738,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 updatedCompetitorReleases.add(
                     0,
                     CompetitorReleaseHistory(
-                        id = "rel_${comp.id}_${newYear}_${newMonth}",
+                        id = "rel_${comp.id}_${newYear}_${newMonth}_${newPeriod}",
                         companyName = comp.name,
                         logoEmoji = comp.logoEmoji,
                         modelName = modelName,
@@ -1704,15 +1758,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
-        // Global Market Sizing (grows over years from 800k in 2010 to 2.5M in 2026+)
-        val baseMarketSize = (800000 + (newYear - 2010) * 100000 + (newMonth * 15000)).coerceAtLeast(600000)
+        // Global Market Sizing (Bi-weekly volume)
+        val baseMarketSize = ((800000 + (newYear - 2010) * 100000 + (newMonth * 15000)) / 2).coerceAtLeast(300000)
         val totalMarketVolume = baseMarketSize
 
         // Calculate player market share
         val playerSharePercent = ((totalMonthlyUnitsSold.toFloat() / totalMarketVolume.toFloat()) * 100f).coerceIn(0f, 95f)
 
-        // Remaining market share distributed to 20 competitors based on their relative base weights
-        val remainingShare = (100f - playerSharePercent).coerceAtLeast(5f)
+        // Remaining market share distributed to competitors (Total player + competitors = 100%)
+        val remainingShare = (100f - playerSharePercent).coerceAtLeast(0f)
         val compWeights = mapOf(
             "Samsung" to 0.215f,
             "Apple" to 0.195f,
@@ -1736,17 +1790,23 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             "Fairphone" to 0.005f
         )
 
+        val totalWeight = updatedCompetitors.sumOf { comp ->
+            val raw = compWeights[comp.name] ?: (1.0f / updatedCompetitors.size.coerceAtLeast(1))
+            raw.coerceAtLeast(0f).toDouble()
+        }.toFloat()
+
         updatedCompetitors = updatedCompetitors.map { comp ->
-            val weight = compWeights[comp.name] ?: (1.0f / updatedCompetitors.size)
-            val compShare = remainingShare * weight
-            val compSales = (totalMarketVolume * (compShare / 100f)).toInt()
+            val rawWeight = (compWeights[comp.name] ?: (1.0f / updatedCompetitors.size.coerceAtLeast(1))).coerceAtLeast(0f)
+            val normalizedWeight = if (totalWeight > 0f) rawWeight / totalWeight else (1.0f / updatedCompetitors.size.coerceAtLeast(1))
+            val compShare = remainingShare * normalizedWeight
+            val compSales = (totalMarketVolume * (compShare / 100f)).toInt().coerceAtLeast(0)
             comp.copy(
                 marketSharePercent = compShare,
-                monthlySales = compSales
+                monthlySales = compSales * 2
             )
         }.toMutableList()
 
-        // Process Active Research progress
+        // Process Active Research progress (Steps every 2-week period)
         var currentActiveResearch = currentState.activeResearch
         var updatedUnlockedTech = currentState.unlockedTech
         val researchNewsList = mutableListOf<NewsArticle>()
@@ -1771,7 +1831,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
                 researchNewsList.add(
                     NewsArticle(
-                        id = "news_tech_finish_${newYear}_${newMonth}_${Random.nextInt(100, 999)}",
+                        id = "news_tech_finish_${newYear}_${newMonth}_${newPeriod}_${Random.nextInt(100, 999)}",
                         title = "AR-GE BAŞARISI: $completedTechName Tamamlandı",
                         text = "Şirketinizin Ar-Ge ekibi $completedTechName entegrasyonunu tamamladı ve yeni modellerde kullanıma sundu.",
                         category = "Teknoloji",
@@ -1805,7 +1865,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 researchReports.add(
                     MarketReport(
                         title = "Sıradaki Ar-Ge Başlatıldı: ${nextCandidate.techName}",
-                        text = "Kuyruktaki ${nextCandidate.techName} araştırması otomatik olarak başlatıldı ($${"%,d".format(nextCandidate.cost)} harcandı). Tahmini süre: $duration Ay.",
+                        text = "Kuyruktaki ${nextCandidate.techName} araştırması otomatik olarak başlatıldı ($${"%,d".format(nextCandidate.cost)} harcandı). Tahmini süre: $duration Dönem (2 Hafta x $duration).",
                         profit = -nextCandidate.cost,
                         unitsSold = 0,
                         reviewScore = 0
@@ -1813,7 +1873,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 )
                 researchNewsList.add(
                     NewsArticle(
-                        id = "news_tech_auto_${newYear}_${newMonth}_${Random.nextInt(100, 999)}",
+                        id = "news_tech_auto_${newYear}_${newMonth}_${newPeriod}_${Random.nextInt(100, 999)}",
                         title = "OTOMATİK AR-GE BAŞLADI: ${nextCandidate.techName}",
                         text = "Ar-Ge ekibi sıradaki '${nextCandidate.techName}' projesi üzerinde çalışmaya başladı.",
                         category = "Teknoloji",
@@ -1824,26 +1884,30 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
-        // Fetch historical sector news for this year/month
-        val periodicNews = getHistoricalNewsForYearMonth(newYear, newMonth)
-        newNewsList.addAll(periodicNews)
+        // Fetch historical sector news for this year/month (only once per month on period 1)
+        if (newPeriod == 1) {
+            val periodicNews = getHistoricalNewsForYearMonth(newYear, newMonth)
+            newNewsList.addAll(periodicNews)
+        }
         newNewsList.addAll(finishedModelsNews)
         newNewsList.addAll(researchNewsList)
 
         val activeCount = updatedActiveModels.count { !it.isCompleted }
 
-        val storeNote = if (appStoreRevenueThisMonth > 0) " 🌐 ${updatedCustomOs.name} Mağaza Geliri: $${"%,d".format(appStoreRevenueThisMonth)}." else ""
-        val licenseNote = if (licenseRevenueThisMonth > 0) " 🔒 OEM Lisans Satış Geliri: $${"%,d".format(licenseRevenueThisMonth)}." else ""
+        val storeNote = if (appStoreRevenueThisPeriod > 0) " 🌐 ${updatedCustomOs.name} Mağaza Geliri: $${"%,d".format(appStoreRevenueThisPeriod)}." else ""
+        val licenseNote = if (licenseRevenueThisPeriod > 0) " 🔒 OEM Lisans Satış Geliri: $${"%,d".format(licenseRevenueThisPeriod)}." else ""
+        val chipsetNote = if (periodChipsetIncome > 0) " ⚡ OEM Yonga Satış Kârı: +$${"%,d".format(periodChipsetIncome)} (${"%,d".format(periodChipsetsSold)} adet)." else ""
 
         val report = MarketReport(
-            title = "Aylık Finansal Rapor ($newMonth/$newYear)",
-            text = "$newMonth. Ay, $newYear yılı tamamlandı. Satıştaki $activeCount modelden bu ay ${"%,d".format(totalMonthlyUnitsSold)} adet cihaz satıldı (Pazar Payı: %${"%.1f".format(playerSharePercent)}). Cihaz Satış Geliri: $${"%,d".format(totalMonthlyRevenue)}.$storeNote$licenseNote Aylık Giderler: $${"%,d".format(totalExpenses)}. Net Gelir: $${"%,d".format(netIncome)}.",
+            title = "2 Haftalık Finansal Rapor (${getMonthName(newMonth)} $newYear - $periodName)",
+            text = "$newYear yılı ${getMonthName(newMonth)} ayı $periodName tamamlandı. Satıştaki $activeCount modelden bu 2 haftalık dönemde ${"%,d".format(totalMonthlyUnitsSold)} adet cihaz satıldı (Pazar Payı: %${"%.1f".format(playerSharePercent)}). Cihaz Satış Geliri: $${"%,d".format(totalMonthlyRevenue)}.$storeNote$licenseNote$chipsetNote Dönemlik Giderler: $${"%,d".format(periodExpenses)}. Net Gelir: $${"%,d".format(netIncome)}.",
             profit = netIncome,
             unitsSold = totalMonthlyUnitsSold,
             reviewScore = 0
         )
 
-        val isYearEndExpo = (newMonth == 12)
+        // Tech Expo Grand Awards Ceremony held at the end of December (Period 2)
+        val isYearEndExpo = (newMonth == 12 && newPeriod == 2)
         var triggeredExpoEvent: TechExpoEvent? = null
         var expoPrizeTotal = 0L
         var expoRepGain = 0
@@ -1875,12 +1939,17 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         _state.update {
             it.copy(
+                period = newPeriod,
                 month = newMonth,
                 year = newYear,
                 budget = it.budget + netIncome - autoStartResearchCost + expoPrizeTotal - totalRecallCost,
                 reputation = (it.reputation + expoRepGain - totalRecallReputationPenalty).coerceIn(0, 100),
-                monthlyIncome = totalCombinedRevenue,
+                monthlyIncome = totalCombinedRevenue * 2, // Equivalent monthly rate
                 customOs = updatedCustomOs,
+                customChipsets = updatedChipsets,
+                totalChipsetOemRevenue = it.totalChipsetOemRevenue + periodChipsetIncome,
+                lastPeriodChipsetOemRevenue = periodChipsetIncome,
+                lastPeriodChipsetsSold = periodChipsetsSold,
                 activeModels = updatedActiveModels,
                 unlockedTech = updatedUnlockedTech,
                 activeResearch = currentActiveResearch,
@@ -1891,7 +1960,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 competitors = updatedCompetitors,
                 competitorReleases = updatedCompetitorReleases,
                 playerMarketSharePercent = playerSharePercent,
-                totalMarketMonthlyVolume = totalMarketVolume,
+                totalMarketMonthlyVolume = totalMarketVolume * 2,
                 activeTechExpo = triggeredExpoEvent,
                 pastTechExpos = if (triggeredExpoEvent != null) listOf(triggeredExpoEvent) + it.pastTechExpos else it.pastTechExpos,
                 techLevel = if (updatedUnlockedTech.size >= 15) "Yapay Zeka" else if (updatedUnlockedTech.size >= 5) "İleri Düzey" else "Giriş"
@@ -1900,8 +1969,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         autoSaveGame()
 
-        // Periodically fetch dynamic AI news (every 3 months)
-        if (newMonth % 3 == 0) {
+        // Periodically fetch dynamic AI news (every 6 periods = 3 months)
+        if (newMonth % 3 == 0 && newPeriod == 1) {
             viewModelScope.launch {
                 val trendTitle = updatedTrend?.title ?: "Yeni Nesil Akıllı Telefonlar"
                 val compNames = updatedCompetitors.map { it.name }
@@ -2207,7 +2276,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _state.update { 
             it.copy(
                 budget = it.budget - totalCost,
-                reputation = (it.reputation + (reviewScore - 50) / 10).coerceIn(0, 100),
+                reputation = (it.reputation + ((reviewScore - 65) / 12).coerceAtLeast(0)).coerceIn(0, 100),
                 modelCount = it.modelCount + 1,
                 manufacturedPhones = it.manufacturedPhones + specs,
                 activeModels = it.activeModels + newActiveModel,
@@ -2257,17 +2326,22 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         cost += when(specs.style) { "Modern" -> 10; "Klasik" -> 5; "Oyuncu" -> 15; "Dayanıklı" -> 20; else -> 5 }
 
         // Processor
-        cost += when {
-            specs.processor.contains("Kuantum") -> 300
-            specs.processor.contains("Gen 3") || specs.processor.contains("D9300") -> 240
-            specs.processor.contains("Gen 1") || specs.processor.contains("D9000") -> 180
-            specs.processor.contains("In-House") -> 150
-            specs.processor.contains("865") || specs.processor.contains("D800") -> 140
-            specs.processor.contains("845") || specs.processor.contains("G90") -> 110
-            specs.processor.contains("820") || specs.processor.contains("Helio") -> 85
-            specs.processor.contains("801") || specs.processor.contains("Atom") -> 60
-            specs.processor.contains("S4") || specs.processor.contains("MT67") -> 40
-            else -> 20
+        val customChip = _state.value.customChipsets.find { specs.processor.contains(it.name) }
+        cost += if (customChip != null) {
+            customChip.unitCost
+        } else {
+            when {
+                specs.processor.contains("Kuantum") -> 300
+                specs.processor.contains("Gen 3") || specs.processor.contains("D9300") -> 240
+                specs.processor.contains("Gen 1") || specs.processor.contains("D9000") -> 180
+                specs.processor.contains("In-House") -> 150
+                specs.processor.contains("865") || specs.processor.contains("D800") -> 140
+                specs.processor.contains("845") || specs.processor.contains("G90") -> 110
+                specs.processor.contains("820") || specs.processor.contains("Helio") -> 85
+                specs.processor.contains("801") || specs.processor.contains("Atom") -> 60
+                specs.processor.contains("S4") || specs.processor.contains("MT67") -> 40
+                else -> 20
+            }
         }
 
         // RAM Capacity
@@ -3020,19 +3094,19 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         val customOs = currentState.customOs
         val newDevConCount = customOs.devConCount + 1
-        val newApps = 120000L
+        val newApps = 60000L
         val updatedOs = customOs.copy(
             devConCount = newDevConCount,
             totalStoreApps = customOs.totalStoreApps + newApps,
-            ecosystemScore = (customOs.ecosystemScore + 12).coerceAtMost(100),
-            popularityPercent = (customOs.popularityPercent + 4.5f).coerceAtMost(90f),
-            customerLoyaltyPercent = (customOs.customerLoyaltyPercent + 6f).coerceAtMost(98f)
+            ecosystemScore = (customOs.ecosystemScore + 10).coerceAtMost(100),
+            popularityPercent = (customOs.popularityPercent + 3.0f).coerceAtMost(90f),
+            customerLoyaltyPercent = (customOs.customerLoyaltyPercent + 5f).coerceAtMost(98f)
         )
 
         val news = NewsArticle(
             id = "devcon_${currentState.year}_${currentState.month}_${Random.nextInt(100, 999)}",
             title = "🌐 KÜRESEL GELİŞTİRİCİ KONFERANSI: ${customOs.name} DevCon $newDevConCount!",
-            text = "Dünyanın dört bir yanından on binlerce yazılım geliştiricisi şirketimizin ${customOs.name} DevCon etkinliğine katıldı. Yeni API'lar, yapay zeka araçları ve $newApps yeni uygulama mağazaya katılıyor!",
+            text = "Dünyanın dört bir yanından binlerce yazılım geliştiricisi şirketimizin ${customOs.name} DevCon etkinliğine katıldı. Yeni API'lar, geliştirici araçları ve ${"%,d".format(newApps)} yeni uygulama mağazaya katılıyor!",
             category = "Şirket",
             year = currentState.year,
             month = currentState.month
@@ -3040,7 +3114,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         val report = MarketReport(
             title = "${customOs.name} DevCon Konferansı",
-            text = "Küresel geliştirici konferansı düzenlendi ($${"%,d".format(cost)} harcandı). +$newApps yeni uygulama çekildi, ekosistem puanı +12 arttı.",
+            text = "Küresel geliştirici konferansı düzenlendi ($${"%,d".format(cost)} harcandı). +${"%,d".format(newApps)} yeni uygulama çekildi, ekosistem puanı +10 arttı.",
             profit = -cost,
             unitsSold = 0,
             reviewScore = 98
@@ -3049,11 +3123,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _state.update {
             it.copy(
                 budget = it.budget - cost,
-                reputation = (it.reputation + 8).coerceIn(0, 100),
+                reputation = (it.reputation + 6).coerceIn(0, 100),
                 customOs = updatedOs,
                 newsList = it.newsList + news,
                 reports = it.reports + report,
-                noticeMessage = "🎉 Küresel Geliştirici Konferansı (DevCon) büyük başarıyla tamamlandı! (+8 İtibar, +12 Ekosistem)"
+                noticeMessage = "🎉 Küresel Geliştirici Konferansı (DevCon) başarıyla tamamlandı! (+6 İtibar, +10 Ekosistem)"
             )
         }
     }
@@ -3315,5 +3389,123 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             brandColorHex = 0xFF00A4EF
         )
     )
+
+    fun saveCustomChipset(chipset: CustomChipset) {
+        val currentState = _state.value
+        val existingIndex = currentState.customChipsets.indexOfFirst { it.id == chipset.id }
+        val isNew = existingIndex < 0
+        val cost = if (isNew) chipset.tapeOutCost else 0L
+
+        if (isNew && currentState.budget < cost) {
+            _state.update { it.copy(noticeMessage = "❌ Yetersiz bütçe! Yonga tasarımı için $${"%,d".format(cost)} gerekiyor.") }
+            return
+        }
+
+        val updatedList = if (isNew) {
+            currentState.customChipsets + chipset
+        } else {
+            currentState.customChipsets.map { if (it.id == chipset.id) chipset else it }
+        }
+
+        if (isNew) {
+            val repBonus = when (chipset.tier) {
+                ChipsetTier.ENTRY_LITE -> 2
+                ChipsetTier.MID_RANGE -> 4
+                ChipsetTier.FLAGSHIP_PRO -> 7
+            }
+
+            val news = NewsArticle(
+                id = "chip_news_${System.currentTimeMillis()}",
+                title = "⚡ ÖZ YONGA SETİ TAMAMLANDI: ${chipset.name} (${chipset.tier.title})",
+                text = "${currentState.companyName} Ar-Ge laboratuvarı ${chipset.name} özel mobil yongasını başarıyla tasarladı! ${chipset.processNode.nodeName}, ${chipset.coreCount} Çekirdek ve ${chipset.performanceScore} sentetik güç puanıyla üretim bandına hazır.",
+                category = "Şirket",
+                year = currentState.year,
+                month = currentState.month
+            )
+
+            val report = MarketReport(
+                title = "Öz Yonga Tasarımı: ${chipset.name}",
+                text = "${chipset.name} yongası için $${"%,d".format(cost)} Ar-Ge maske yatırımı yapıldı. Birim üretim maliyeti: $${chipset.unitCost}. Güç Puanı: ${chipset.performanceScore}.",
+                profit = -cost,
+                unitsSold = 0,
+                reviewScore = 95
+            )
+
+            _state.update {
+                it.copy(
+                    budget = it.budget - cost,
+                    reputation = (it.reputation + repBonus).coerceIn(0, 100),
+                    customChipsets = updatedList,
+                    newsList = it.newsList + news,
+                    reports = it.reports + report,
+                    noticeMessage = "🎉 ${chipset.name} özel yongası başarıyla üretildi! (+${repBonus} İtibar)"
+                )
+            }
+        } else {
+            // Düzenleme / Revizyon: Tape-out maliyeti tekrar alınmaz, ID ve telefon referansları korunur
+            _state.update {
+                it.copy(
+                    customChipsets = updatedList,
+                    noticeMessage = "✏️ ${chipset.name} yongası başarıyla güncellendi (Revizyon Maliyeti: $0)."
+                )
+            }
+        }
+        autoSaveGame()
+    }
+
+    fun deleteCustomChipset(chipsetId: String) {
+        _state.update { state ->
+            val chip = state.customChipsets.find { c -> c.id == chipsetId } ?: return@update state
+            val isUsedInAnyPhone = state.activeModels.any { it.specs.processor.contains(chip.name) } ||
+                    state.manufacturedPhones.any { it.processor.contains(chip.name) }
+
+            if (isUsedInAnyPhone) {
+                // Telefonlar tarafından kullanıldığı için fiziksel silinmez, arşivlenir
+                val updated = state.customChipsets.map {
+                    if (it.id == chipsetId) it.copy(isArchived = true, isOemSaleActive = false) else it
+                }
+                state.copy(
+                    customChipsets = updated,
+                    noticeMessage = "📦 ${chip.name} yongası cihaz modellerinde kullanıldığı için arşivlendi. Eski telefonların maliyet ve donanım verileri korundu."
+                )
+            } else {
+                // Hiçbir telefonda kullanılmadıysa fiziksel silinebilir
+                state.copy(
+                    customChipsets = state.customChipsets.filterNot { c -> c.id == chipsetId },
+                    noticeMessage = "🗑️ ${chip.name} yongası başarıyla silindi."
+                )
+            }
+        }
+        autoSaveGame()
+    }
+
+    fun unarchiveCustomChipset(chipsetId: String) {
+        _state.update { state ->
+            val chip = state.customChipsets.find { c -> c.id == chipsetId }
+            val updated = state.customChipsets.map {
+                if (it.id == chipsetId) it.copy(isArchived = false) else it
+            }
+            state.copy(
+                customChipsets = updated,
+                noticeMessage = chip?.let { "♻️ ${it.name} yongası tekrar aktif edildi." }
+            )
+        }
+        autoSaveGame()
+    }
+
+    fun toggleChipsetOemSale(chipsetId: String, isOemSaleActive: Boolean, oemSalePrice: Int) {
+        _state.update { state ->
+            val updated = state.customChipsets.map { chip ->
+                if (chip.id == chipsetId) {
+                    chip.copy(isOemSaleActive = isOemSaleActive, oemSalePrice = oemSalePrice)
+                } else chip
+            }
+            state.copy(
+                customChipsets = updated,
+                noticeMessage = if (isOemSaleActive) "🌐 OEM Çip Satışı Aktif Edildi ($$oemSalePrice / adet)." else "🔒 OEM Çip Satışı Durduruldu."
+            )
+        }
+        autoSaveGame()
+    }
 }
 

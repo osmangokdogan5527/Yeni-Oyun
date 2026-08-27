@@ -14,28 +14,28 @@ enum class AwardCategory(
         "🏆 Yılın Amiral Gemisi",
         "👑",
         "Yıl boyunca piyasaya sürülen en yüksek inceleme ve teknoloji puanına sahip akıllı telefon.",
-        35,
+        8,
         1500000L
     ),
     VALUE_CHAMPION(
         "💰 Fiyat/Performans Kralı",
         "🎯",
         "En yüksek fiyat/performans dengesini sunup tüketici memnuniyetini maksimize eden cihaz.",
-        25,
+        5,
         1000000L
     ),
     INNOVATION_AWARD(
         "💡 Yılın İnovasyonu Ödülü",
         "⚡",
         "Katlanabilir ekran, şeffaf gövde veya yapay zeka gibi sektörde çığır açan donanım yeniliği.",
-        30,
+        6,
         1200000L
     ),
     BEST_DESIGN(
         "🎨 En İyi Endüstriyel Tasarım",
         "✨",
         "Malzeme kalitesi, premium çerçeve ve kusursuz ergonomik estetik başarısı.",
-        20,
+        4,
         800000L
     )
 }
