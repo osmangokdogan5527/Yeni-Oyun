@@ -139,6 +139,8 @@ fun PhoneBuilderScreen(
     var selectedStorage by remember { mutableStateOf(currentStorages.first { it.requiredTech == null || unlockedTech.contains(it.requiredTech) }.name) }
     var selectedSdCard by remember { mutableStateOf(currentSdCards.first { it.requiredTech == null || unlockedTech.contains(it.requiredTech) }.name) }
     var selectedDisplay by remember { mutableStateOf(currentDisplays.first { it.requiredTech == null || unlockedTech.contains(it.requiredTech) }.name) }
+    var screenSizeInch by remember { mutableFloatStateOf(6.1f) }
+    var thicknessMm by remember { mutableFloatStateOf(8.0f) }
     var selectedGlass by remember { mutableStateOf(currentGlasses.first { it.requiredTech == null || unlockedTech.contains(it.requiredTech) }.name) }
     var selectedCamera by remember { mutableStateOf(currentCameras.first { it.requiredTech == null || unlockedTech.contains(it.requiredTech) }.name) }
     var selectedCellularNetwork by remember { mutableStateOf(currentCellularNetworks.first { it.requiredTech == null || unlockedTech.contains(it.requiredTech) }.name) }
@@ -256,6 +258,8 @@ fun PhoneBuilderScreen(
                                 storage = selectedStorage,
                                 sdCardSupport = selectedSdCard,
                                 display = selectedDisplay,
+                                screenSizeInch = screenSizeInch,
+                                thicknessMm = thicknessMm,
                                 glass = selectedGlass,
                                 camera = selectedCamera,
                                 connectivity = "$selectedCellularNetwork, $selectedChargingPort, $selectedWirelessConnectivity",
@@ -347,6 +351,8 @@ fun PhoneBuilderScreen(
             storage = selectedStorage,
             sdCardSupport = selectedSdCard,
             display = selectedDisplay,
+            screenSizeInch = screenSizeInch,
+            thicknessMm = thicknessMm,
             glass = selectedGlass,
             camera = selectedCamera,
             connectivity = "$selectedCellularNetwork, $selectedChargingPort, $selectedWirelessConnectivity",
@@ -448,6 +454,8 @@ fun PhoneBuilderScreen(
                     material = selectedMaterial,
                     camera = selectedCamera,
                     display = selectedDisplay,
+                    screenSizeInch = screenSizeInch,
+                    thicknessMm = thicknessMm,
                     chargingPort = selectedChargingPort,
                     cellularNetwork = selectedCellularNetwork,
                     colorHex = previewColor.hexValue,
@@ -596,6 +604,8 @@ fun PhoneBuilderScreen(
                         currentChargingPorts = currentChargingPorts,
                         currentWirelessConnectivity = currentWirelessConnectivity,
                         selectedDisplay = selectedDisplay,
+                        screenSizeInch = screenSizeInch,
+                        thicknessMm = thicknessMm,
                         selectedGlass = selectedGlass,
                         selectedCamera = selectedCamera,
                         selectedAudio = selectedAudio,
@@ -606,6 +616,8 @@ fun PhoneBuilderScreen(
                         selectedWirelessConnectivity = selectedWirelessConnectivity,
                         unlockedTech = unlockedTech,
                         onDisplayChange = { selectedDisplay = it },
+                        onScreenSizeChange = { screenSizeInch = it },
+                        onThicknessChange = { thicknessMm = it },
                         onGlassChange = { selectedGlass = it },
                         onCameraChange = { selectedCamera = it },
                         onAudioChange = { selectedAudio = it },

@@ -2,12 +2,15 @@ package com.example
 
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.unit.dp
 
 internal fun DrawScope.drawBackChassis(
@@ -99,8 +102,12 @@ internal fun DrawScope.drawBackChassis(
             start = Offset(0f, 0f), end = Offset(size.width, size.height)
         )
         "Karbon Fiber" -> Brush.radialGradient(
-            listOf(Color(0xFF1E293B), Color(0xFF0F172A), baseColor.copy(alpha = 0.8f)),
-            center = Offset(size.width / 2, size.height / 2), radius = size.height * 0.7f
+            listOf(
+                Color(0xFF181B20),
+                Color(0xFF0A0C0F),
+                baseColor.copy(alpha = 0.16f)
+            ),
+            center = Offset(size.width * 0.4f, size.height * 0.3f), radius = size.height * 0.9f
         )
         "Vegan Deri" -> Brush.verticalGradient(
             listOf(baseColor, baseColor.copy(alpha = 0.95f), baseColor.copy(alpha = 0.85f))
@@ -139,13 +146,72 @@ internal fun DrawScope.drawBackChassis(
             )
         }
         "Karbon Fiber" -> {
-            for (i in -8..20) {
-                val offset = i * 16.dp.toPx()
-                drawLine(
-                    color = Color.White.copy(alpha = 0.08f),
-                    start = Offset(backMargin, offset),
-                    end = Offset(offset + size.width, backMargin + size.height),
-                    strokeWidth = 1.2.dp.toPx()
+            // Gerçekçi 2x2 dokuma (twill weave) karbon fiber deseni: küçük kareler halinde
+            // dönüşümlü açık/koyu "iplik" hücreleri + epoksi cam kaplama parlaklığı + kenar vinyeti.
+            val clipShape = Path().apply {
+                addRoundRect(
+                    RoundRect(
+                        rect = Rect(
+                            left = backMargin,
+                            top = backMargin,
+                            right = backMargin + backRect.width,
+                            bottom = backMargin + backRect.height
+                        ),
+                        cornerRadius = CornerRadius(backCorner, backCorner)
+                    )
+                )
+            }
+            clipPath(clipShape) {
+                val cell = 6.dp.toPx()
+                var row = 0
+                var y = backMargin
+                while (y < backMargin + backRect.height) {
+                    var col = 0
+                    var x = backMargin
+                    while (x < backMargin + backRect.width) {
+                        val phase = (row + col) % 4
+                        when (phase) {
+                            0 -> drawRect(color = Color.White.copy(alpha = 0.09f), topLeft = Offset(x, y), size = Size(cell, cell))
+                            1 -> drawRect(color = Color.White.copy(alpha = 0.04f), topLeft = Offset(x, y), size = Size(cell, cell))
+                            2 -> drawRect(color = Color.Black.copy(alpha = 0.30f), topLeft = Offset(x, y), size = Size(cell, cell))
+                            else -> drawRect(color = Color.Black.copy(alpha = 0.14f), topLeft = Offset(x, y), size = Size(cell, cell))
+                        }
+                        // İplik demeti (tow) çapraz parıltısı — dokumaya derinlik katar
+                        drawLine(
+                            color = Color.White.copy(alpha = if (phase < 2) 0.10f else 0.04f),
+                            start = Offset(x, y + cell),
+                            end = Offset(x + cell, y),
+                            strokeWidth = 0.6.dp.toPx()
+                        )
+                        x += cell
+                        col++
+                    }
+                    y += cell
+                    row++
+                }
+
+                // Epoksi Cam Kaplama Parlaklığı (Glossy Clear-Coat)
+                val glossPath = Path().apply {
+                    moveTo(backMargin, backMargin + backRect.height * 0.12f)
+                    lineTo(backMargin + backRect.width * 0.6f, backMargin)
+                    lineTo(backMargin + backRect.width * 0.8f, backMargin)
+                    lineTo(backMargin + backRect.width * 0.18f, backMargin + backRect.height * 0.42f)
+                    close()
+                }
+                drawPath(
+                    path = glossPath,
+                    brush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.20f), Color.Transparent))
+                )
+
+                // Kenar Vinyeti (Derinlik Hissi)
+                drawRect(
+                    brush = Brush.radialGradient(
+                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.38f)),
+                        center = Offset(backMargin + backRect.width / 2, backMargin + backRect.height / 2),
+                        radius = backRect.width * 0.85f
+                    ),
+                    topLeft = Offset(backMargin, backMargin),
+                    size = backRect
                 )
             }
         }

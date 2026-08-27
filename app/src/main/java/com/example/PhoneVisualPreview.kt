@@ -1,14 +1,22 @@
 package com.example
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AspectRatio
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.CropSquare
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Smartphone
+import androidx.compose.material.icons.outlined.Tv
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,6 +37,8 @@ fun PhoneVisualPreview(
     material: String,
     camera: String,
     display: String,
+    screenSizeInch: Float = 6.1f,
+    thicknessMm: Float = 8.0f,
     chargingPort: String = "USB-C 3.1 & DisplayPort Çıkışı",
     cellularNetwork: String = "5G Sub-6 Şebeke",
     colorHex: Long,
@@ -45,11 +55,17 @@ fun PhoneVisualPreview(
     // 4 Mod: "Çift", "Arka", "Ön", "Port"
     var viewMode by remember { mutableStateOf("Çift") }
 
+    // Seçilen fiziksel boyuta göre görsel ölçek: 5.4"-6.9" aralığı ~0.90x-1.08x arasına haritalanır
+    val sizeScale = 0.90f + ((screenSizeInch - 5.4f) / (6.9f - 5.4f)).coerceIn(0f, 1f) * 0.18f
+    // Kalınlığa göre gölge derinliği ve kenar vurgusu: ince telefonlar zarif/az gölgeli, kalın telefonlar "ağır" görünür
+    val thicknessRatio = ((thicknessMm - 6.5f) / (9.5f - 6.5f)).coerceIn(0f, 1f)
+    val depthElevation = 22.dp + (thicknessRatio * 20).dp
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxWidth()
     ) {
-        // --- 4'LÜ ETKİLEŞİMLİ STÜDYO GÖRÜNÜM SEÇİCİ ---
+        // --- 4'LÜ ETKİLEŞİMLİ STÜDYO GÖRÜNÜM SEÇİCİ (sade: ikon + kısa metin) ---
         Row(
             modifier = Modifier
                 .background(Color(0xFF0F172A), RoundedCornerShape(22.dp))
@@ -58,25 +74,35 @@ fun PhoneVisualPreview(
             horizontalArrangement = Arrangement.spacedBy(3.dp)
         ) {
             val modes = listOf(
-                Pair("Çift", "✨ Stüdyo Çift"),
-                Pair("Arka", "📱 Arka Kapak"),
-                Pair("Ön", "📺 Ön Ekran"),
-                Pair("Port", "⚡ Kenar & Port")
+                Triple("Çift", Icons.Outlined.AutoAwesome, "Stüdyo"),
+                Triple("Arka", Icons.Outlined.Smartphone, "Arka"),
+                Triple("Ön", Icons.Outlined.Tv, "Ön Ekran"),
+                Triple("Port", Icons.Outlined.Bolt, "Port")
             )
-            modes.forEach { (modeKey, label) ->
+            modes.forEach { (modeKey, icon, label) ->
                 val isSel = viewMode == modeKey
-                Box(
+                Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(18.dp))
                         .background(if (isSel) MaterialTheme.colorScheme.primary else Color.Transparent)
                         .clickable { viewMode = modeKey }
-                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                        .padding(horizontal = 10.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = label,
+                        tint = if (isSel) Color.White else Color(0xFF94A3B8),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
                     Text(
                         text = label,
                         color = if (isSel) Color.White else Color(0xFF94A3B8),
                         fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium,
-                        fontSize = 11.sp
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }
@@ -121,9 +147,9 @@ fun PhoneVisualPreview(
                             modifier = Modifier
                                 .align(Alignment.Center)
                                 .offset(x = 58.dp, y = (-6).dp)
-                                .size(width = 168.dp, height = 340.dp)
+                                .size(width = 168.dp * sizeScale, height = 340.dp * sizeScale)
                                 .shadow(
-                                    elevation = 22.dp,
+                                    elevation = depthElevation,
                                     shape = RoundedCornerShape(38.dp),
                                     spotColor = Color(colorHex).copy(alpha = 0.55f),
                                     ambientColor = Color.Black.copy(alpha = 0.75f)
@@ -148,9 +174,9 @@ fun PhoneVisualPreview(
                             modifier = Modifier
                                 .align(Alignment.Center)
                                 .offset(x = (-30).dp, y = 12.dp)
-                                .size(width = 196.dp, height = 400.dp)
+                                .size(width = 196.dp * sizeScale, height = 400.dp * sizeScale)
                                 .shadow(
-                                    elevation = 36.dp,
+                                    elevation = depthElevation + 12.dp,
                                     shape = RoundedCornerShape(42.dp),
                                     spotColor = Color(0xFF38BDF8).copy(alpha = 0.55f),
                                     ambientColor = Color.Black.copy(alpha = 0.9f)
@@ -174,9 +200,9 @@ fun PhoneVisualPreview(
                     // Tam Boyut Arka Kapak & Kamera Görünümü
                     Box(
                         modifier = Modifier
-                            .size(width = 210.dp, height = 415.dp)
+                            .size(width = 210.dp * sizeScale, height = 415.dp * sizeScale)
                             .shadow(
-                                elevation = 32.dp,
+                                elevation = depthElevation + 8.dp,
                                 shape = RoundedCornerShape(42.dp),
                                 spotColor = Color(colorHex).copy(alpha = 0.7f),
                                 ambientColor = Color.Black.copy(alpha = 0.8f)
@@ -201,9 +227,9 @@ fun PhoneVisualPreview(
                     // Tam Ekran Ön Ekran (OLED)
                     Box(
                         modifier = Modifier
-                            .size(width = 210.dp, height = 415.dp)
+                            .size(width = 210.dp * sizeScale, height = 415.dp * sizeScale)
                             .shadow(
-                                elevation = 32.dp,
+                                elevation = depthElevation + 8.dp,
                                 shape = RoundedCornerShape(42.dp),
                                 spotColor = Color(colorHex).copy(alpha = 0.65f),
                                 ambientColor = Color.Black.copy(alpha = 0.8f)
@@ -226,7 +252,7 @@ fun PhoneVisualPreview(
                     // Yan Profil & Alt Port Detayı
                     Box(
                         modifier = Modifier
-                            .size(width = 260.dp, height = 380.dp)
+                            .size(width = 260.dp * sizeScale, height = 380.dp)
                             .shadow(
                                 elevation = 24.dp,
                                 shape = RoundedCornerShape(20.dp),
@@ -248,36 +274,44 @@ fun PhoneVisualPreview(
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // --- BAŞTAN AŞAĞI ÖZELLİK ŞERİDİ: Telefonun her bölgesini spesifikasyona göre özetler ---
+        // --- SADE ÖZELLİK ŞERİDİ: gerçek Material ikonları, nötr tek renk, geniş satır aralığı ---
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Color(0xFF0F172A).copy(alpha = 0.85f), RoundedCornerShape(14.dp))
                 .border(1.dp, Color(0xFF334155), RoundedCornerShape(14.dp))
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            SpecRow(icon = "📱", label = "Ekran", value = "$display • $notchStyle")
-            SpecRow(icon = "🎛️", label = "Çerçeve", value = "$frameStyle • $material")
-            SpecRow(icon = "🎨", label = "Arka Kapak", value = "$backFinish • $colorName", valueColor = Color(colorHex))
-            SpecRow(icon = "📷", label = "Kamera", value = "$camera • $cameraBumpStyle")
-            SpecRow(icon = "⚡", label = "Port & Şebeke", value = "$chargingPort • $cellularNetwork")
+            SpecRow(icon = Icons.Outlined.Smartphone, label = "Ekran", value = "$display • $notchStyle")
+            SpecRow(icon = Icons.Outlined.AspectRatio, label = "Boyut", value = "${"%.1f".format(screenSizeInch)}\" • ${"%.1f".format(thicknessMm)}mm kalınlık")
+            SpecRow(icon = Icons.Outlined.CropSquare, label = "Çerçeve", value = "$frameStyle • $material")
+            SpecRow(icon = Icons.Outlined.Palette, label = "Arka Kapak", value = "$backFinish • $colorName", valueColor = Color(colorHex))
+            SpecRow(icon = Icons.Outlined.CameraAlt, label = "Kamera", value = "$camera • $cameraBumpStyle")
+            SpecRow(icon = Icons.Outlined.Bolt, label = "Port & Şebeke", value = "$chargingPort • $cellularNetwork")
         }
     }
 }
 
 @Composable
-private fun SpecRow(icon: String, label: String, value: String, valueColor: Color = Color(0xFFE2E8F0)) {
+private fun SpecRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: String, valueColor: Color = Color(0xFFE2E8F0)) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(text = icon, fontSize = 13.sp, modifier = Modifier.width(22.dp))
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Color(0xFF64748B),
+            modifier = Modifier.size(15.dp)
+        )
+        Spacer(modifier = Modifier.width(9.dp))
         Text(
             text = label,
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF64748B),
-            modifier = Modifier.width(58.dp)
+            modifier = Modifier.width(64.dp),
+            maxLines = 1
         )
         Text(
             text = value,

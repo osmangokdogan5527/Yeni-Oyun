@@ -6,6 +6,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.outlined.Savings
+import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -93,8 +96,8 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(5.dp)
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 // Row 1: Sabit Kesinti & Dağılım
                 Row(
@@ -102,31 +105,30 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
+                    Column {
                         Text(
-                            "Aylık Sabit Kesinti:",
-                            fontSize = 11.sp,
+                            "Aylık Sabit Kesinti",
+                            fontSize = 10.5.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Slate700
                         )
                         Text(
                             "-$${"%,d".format(state.totalMonthlyExpenses)}",
-                            fontSize = 13.sp,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.error
                         )
                     }
 
                     Text(
-                        text = "Maaş: $${"%,d".format(state.totalSalaries)} • Kira: $${"%,d".format(state.officeExpense)} • Bakım: $${"%,d".format(state.factoryMaintenance)}",
+                        text = "Maaş $${"%,d".format(state.totalSalaries)} • Kira $${"%,d".format(state.officeExpense)} • Bakım $${"%,d".format(state.factoryMaintenance)}",
                         fontSize = 9.5.sp,
-                        color = Slate600,
+                        color = Slate500,
                         fontWeight = FontWeight.Medium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.End
                     )
                 }
 
@@ -135,77 +137,24 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                 // Row 2: 3 Balanced Metric Badges
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                        shape = RoundedCornerShape(6.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Text("🏷️ ", fontSize = 10.sp)
-                            Text(
-                                "%${"%.1f".format(state.unitCostDiscountPercent)} Tasarruf",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Green500,
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-
-                    Surface(
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                        shape = RoundedCornerShape(6.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Text("⭐ ", fontSize = 10.sp)
-                            Text(
-                                "+${state.qaScoreBonus} QA Puanı",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-
-                    Surface(
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                        shape = RoundedCornerShape(6.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Text("⚡ ", fontSize = 10.sp)
-                            Text(
-                                "${viewModel.calculateResearchDuration(state.engineers)} Ay Ar-Ge",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Slate900,
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
+                    CompactMetric(
+                        icon = Icons.Outlined.Savings,
+                        value = "%${"%.1f".format(state.unitCostDiscountPercent)}",
+                        label = "Tasarruf"
+                    )
+                    CompactMetric(
+                        icon = Icons.Outlined.VerifiedUser,
+                        value = "+${state.qaScoreBonus}",
+                        label = "QA Puanı"
+                    )
+                    CompactMetric(
+                        icon = Icons.Outlined.Bolt,
+                        value = "${viewModel.calculateResearchDuration(state.engineers)}",
+                        label = "Dönem/Ar-Ge"
+                    )
                 }
             }
         }
@@ -432,6 +381,18 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
 }
 
 @Composable
+fun CompactMetric(icon: androidx.compose.ui.graphics.vector.ImageVector, value: String, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, contentDescription = null, tint = Slate500, modifier = Modifier.size(15.dp))
+        Spacer(modifier = Modifier.width(5.dp))
+        Column {
+            Text(value, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Slate900, maxLines = 1, softWrap = false)
+            Text(label, fontSize = 9.sp, color = Slate500, maxLines = 1, softWrap = false)
+        }
+    }
+}
+
+@Composable
 fun EmployeeCategoryCard(
     title: String,
     icon: ImageVector,
@@ -443,67 +404,79 @@ fun EmployeeCategoryCard(
     onHire: (Int) -> Unit,
     onFire: (Int) -> Unit
 ) {
+    var expanded by remember { mutableStateOf(false) }
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded },
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(34.dp)
-                            .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(8.dp)),
+                            .size(36.dp)
+                            .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(9.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(18.dp))
                     }
                     Column {
                         Text(title, fontWeight = FontWeight.Bold, fontSize = 13.5.sp, color = Slate900)
-                        Text(salaryText, fontSize = 10.5.sp, color = Slate600)
+                        Text(impactText, fontSize = 11.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary)
                     }
                 }
 
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = "$currentCount Kişi",
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = "$currentCount",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = if (expanded) "Daralt" else "Genişlet",
+                        tint = Slate400,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(roleDesc, fontSize = 11.sp, color = Slate600, lineHeight = 15.sp)
-
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(impactText, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            if (marginalText != null) {
-                Text(
-                    text = marginalText,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Slate500
-                )
+            if (expanded) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(roleDesc, fontSize = 11.sp, color = Slate600, lineHeight = 15.sp)
+                Text(salaryText, fontSize = 10.5.sp, color = Slate500, modifier = Modifier.padding(top = 2.dp))
+                if (marginalText != null) {
+                    Text(
+                        text = marginalText,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Slate500,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),

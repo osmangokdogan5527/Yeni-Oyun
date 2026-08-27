@@ -300,6 +300,8 @@ data class PhoneSpecs(
     val storage: String = "16 GB",
     val sdCardSupport: String = "MicroSD (32 GB)",
     val display: String,
+    val screenSizeInch: Float = 6.1f,
+    val thicknessMm: Float = 8.0f,
     val camera: String,
     val batteryCapacity: String,
     val batteryType: String,

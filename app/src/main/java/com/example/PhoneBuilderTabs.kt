@@ -234,6 +234,8 @@ fun PhoneBuilderScreenCameraTab(
     currentChargingPorts: List<ComponentOption>,
     currentWirelessConnectivity: List<ComponentOption>,
     selectedDisplay: String,
+    screenSizeInch: Float,
+    thicknessMm: Float,
     selectedGlass: String,
     selectedCamera: String,
     selectedAudio: String,
@@ -244,6 +246,8 @@ fun PhoneBuilderScreenCameraTab(
     selectedWirelessConnectivity: String,
     unlockedTech: List<String>,
     onDisplayChange: (String) -> Unit,
+    onScreenSizeChange: (Float) -> Unit,
+    onThicknessChange: (Float) -> Unit,
     onGlassChange: (String) -> Unit,
     onCameraChange: (String) -> Unit,
     onAudioChange: (String) -> Unit,
@@ -262,6 +266,63 @@ fun PhoneBuilderScreenCameraTab(
         onOptionSelected = onDisplayChange,
         onLockedClick = onLockedClick
     )
+
+    // --- EKRAN BOYUTU & GÖVDE KALINLIĞI ---
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, Slate200)
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Text("Fiziksel Boyut", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Slate900)
+
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Ekran Boyutu", fontWeight = FontWeight.Medium, fontSize = 12.sp, color = Slate700)
+                    Text("${"%.1f".format(screenSizeInch)}\"", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 13.sp)
+                }
+                Slider(
+                    value = screenSizeInch,
+                    onValueChange = onScreenSizeChange,
+                    valueRange = 5.4f..6.9f,
+                    steps = 14
+                )
+                val sizeHint = when {
+                    screenSizeInch < 5.8f -> "Kompakt — tek elle kullanım, gençlerde popüler"
+                    screenSizeInch < 6.4f -> "Standart — geniş kitleye hitap eden dengeli boyut"
+                    screenSizeInch < 6.8f -> "Büyük — medya/oyun odaklı kullanıcılar için"
+                    else -> "Phablet — maksimum ekran, taşınabilirlikten ödün verir"
+                }
+                Text(sizeHint, fontSize = 10.sp, color = Slate500)
+            }
+
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Gövde Kalınlığı", fontWeight = FontWeight.Medium, fontSize = 12.sp, color = Slate700)
+                    Text("${"%.1f".format(thicknessMm)} mm", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 13.sp)
+                }
+                Slider(
+                    value = thicknessMm,
+                    onValueChange = onThicknessChange,
+                    valueRange = 6.5f..9.5f,
+                    steps = 11
+                )
+                val thicknessHint = when {
+                    thicknessMm < 7.2f -> "Ultra İnce — premium his, ama daha düşük batarya/dayanıklılık"
+                    thicknessMm < 8.2f -> "Standart — çoğu amiral gemide kullanılan denge"
+                    else -> "Kalın — daha büyük batarya kapasitesine ve dayanıklılığa izin verir"
+                }
+                Text(thicknessHint, fontSize = 10.sp, color = Slate500)
+            }
+        }
+    }
 
     SelectionGroup(
         title = "Koruyucu Ön Cam",
