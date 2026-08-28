@@ -1,5 +1,5 @@
 {
-  "name": "Smartphone Tycoon",
+  "name": "Mobile Empire Manager",
   "description": "A text-based AI-driven smartphone company simulation game.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

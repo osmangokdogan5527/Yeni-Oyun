@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Smartphone Tycoon"
+rootProject.name = "Mobile Empire Manager"
 
 include(":app")
