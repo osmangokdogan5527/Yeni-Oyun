@@ -516,12 +516,12 @@ data class ActiveModel(
 @Serializable
 enum class TrendCategory(val title: String, val icon: String, val tip: String) {
     HIGH_REFRESH_DISPLAY("Yüksek Yenileme Hızlı Ekran", "⚡", "120Hz/144Hz/240Hz ekran veya Oyuncu tarzı kullanın."),
-    CAMERA_PRO("Gelişmiş Kamera & Özçekim", "📸", "Çift, Üçlü veya Periskop/200MP kamera seçin."),
-    LONG_BATTERY("Yüksek Kapasiteli Batarya", "🔋", "4500mAh+ kapasite veya Katı Hal batarya seçin."),
+    CAMERA_PRO("Gelişmiş Kamera & Özçekim", "📸", "HD, Çift, Üçlü veya Periskop kamera seçin."),
+    LONG_BATTERY("Yüksek Kapasiteli Batarya", "🔋", "Yüksek mAh kapasiteli batarya veya hızlı şarj seçin."),
     BUDGET_VALUE("Ekonomik Fiyat / Performans", "🏷️", "Cihaz satış fiyatını $400 veya altına ayarlayın."),
-    PREMIUM_BUILD("Titanyum & Cam Premium Kasa", "💎", "Titanyum veya Cam kasa malzemesi kullanın."),
-    AI_PROCESSOR("Yapay Zeka & Güçlü İşlemci", "🧠", "Qualcomm Gen / In-House / Kuantum çip veya 12GB+ RAM seçin."),
-    FAST_CONNECTIVITY("5G & Hızlı Bağlantı", "📶", "5G, Wi-Fi 6E/7 veya Uydu bağlantısı seçin.")
+    PREMIUM_BUILD("Premium Kasa & Arka Kapak", "💎", "Alüminyum veya Cam kasa malzemesi kullanın."),
+    AI_PROCESSOR("Yapay Zeka & Güçlü İşlemci", "🧠", "Yüksek performanslı işlemci veya 12GB+ RAM seçin."),
+    FAST_CONNECTIVITY("Hızlı Mobil Şebeke & Bağlantı", "📶", "4G LTE, 5G veya hızlı Wi-Fi bağlantısı seçin.")
 }
 
 @Serializable
@@ -532,8 +532,15 @@ data class MarketTrend(
     val category: TrendCategory,
     val bonusMultiplier: Float = 1.5f,
     val remainingMonths: Int = 4,
-    val totalDurationMonths: Int = 4
-)
+    val totalDurationMonths: Int = 4,
+    val tip: String = ""
+) {
+    val bonusPercent: Int
+        get() = kotlin.math.round((bonusMultiplier - 1.0f) * 100).toInt()
+
+    val effectiveTip: String
+        get() = if (tip.isNotBlank()) tip else category.tip
+}
 
 // --- M&A (Mergers and Acquisitions) Classes ---
 

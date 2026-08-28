@@ -169,15 +169,15 @@ fun calculateProductionCost(
 
     // Audio
     cost += when {
-        specs.audio.contains("AI") -> 100
-        specs.audio.contains("Kayıpsız") -> 80
-        specs.audio.contains("Uzamsal") -> 60
-        specs.audio.contains("Asimetrik") -> 45
-        specs.audio.contains("Dolby") -> 35
-        specs.audio.contains("Jaksız") -> 25
-        specs.audio.contains("Ön Stereo") -> 20
-        specs.audio.contains("Beats") -> 10
-        else -> 5
+        specs.audio.contains("AI") || specs.audio.contains("Yapay Zeka") -> 45
+        specs.audio.contains("Kayıpsız") -> 35
+        specs.audio.contains("Uzamsal") -> 28
+        specs.audio.contains("Asimetrik") -> 22
+        specs.audio.contains("Dolby") -> 18
+        specs.audio.contains("Jaksız") || specs.audio.contains("Tip-C") -> 14
+        specs.audio.contains("Ön Stereo") -> 10
+        specs.audio.contains("Beats") -> 6
+        else -> 3
     }
 
     // Battery Capacity
@@ -187,24 +187,25 @@ fun calculateProductionCost(
         specs.batteryCapacity.contains("5000") -> 30
         specs.batteryCapacity.contains("4500") -> 25
         specs.batteryCapacity.contains("4000") -> 20
-        specs.batteryCapacity.contains("3600") -> 16
+        specs.batteryCapacity.contains("3600") || specs.batteryCapacity.contains("3500") -> 16
         specs.batteryCapacity.contains("3200") -> 12
         specs.batteryCapacity.contains("3100") -> 10
-        else -> 2
+        specs.batteryCapacity.contains("2500") -> 8
+        else -> 5
     }
 
     // Battery Type & Charging
     cost += when {
-        specs.batteryType.contains("Katı Hal 240W") -> 150
-        specs.batteryType.contains("Katı Hal 100W") -> 100
-        specs.batteryType.contains("Si-Ca") -> 85
-        specs.batteryType.contains("120W") -> 60
-        specs.batteryType.contains("65W") -> 40
-        specs.batteryType.contains("25W") -> 25
-        specs.batteryType.contains("20W") -> 20
-        specs.batteryType.contains("15W") -> 15
-        specs.batteryType.contains("10W") -> 8
-        else -> 5
+        specs.batteryType.contains("240W") -> 65
+        specs.batteryType.contains("200W") || specs.batteryType.contains("Si-Ca") || specs.batteryType.contains("Silisyum") -> 50
+        specs.batteryType.contains("100W") -> 42
+        specs.batteryType.contains("120W") -> 35
+        specs.batteryType.contains("65W") -> 25
+        specs.batteryType.contains("25W") -> 18
+        specs.batteryType.contains("20W") -> 14
+        specs.batteryType.contains("15W") || specs.batteryType.contains("18W") -> 8
+        specs.batteryType.contains("10W") -> 5
+        else -> 2
     }
 
     // Multi-color setup cost: +$3 per extra color option beyond 1
@@ -259,15 +260,15 @@ fun checkForRecall(model: ActiveModel, year: Int, month: Int): Pair<ActiveModel,
         (model.remainingStock.toLong() * (model.specs.unitCost / 2))
     val reputationPenalty = (((70 - model.reviewScore).coerceAtLeast(15)) / 3).coerceIn(3, 15)
 
-    val recalledModel = model.copy(
-        remainingStock = 0,
-        isRecalled = true,
-        recalledYear = year,
-        recalledMonth = month
+    // Note: Do not wipe stock or permanently set isRecalled = true here.
+    // The player will choose their crisis resolution strategy (Full Recall, Free Service, or Software Patch) in the Crisis Dialog.
+    // We set recallRiskPercent = 0 to avoid repeated triggering of the detection loop.
+    val updatedModel = model.copy(
+        recallRiskPercent = 0
     )
 
-    return recalledModel to RecallOutcome(
-        model = recalledModel,
+    return updatedModel to RecallOutcome(
+        model = updatedModel,
         compensationCost = compensationCost,
         reputationPenalty = reputationPenalty
     )

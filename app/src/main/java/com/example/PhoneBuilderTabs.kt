@@ -569,17 +569,44 @@ fun PhoneBuilderProductionTab(
             Text("Aynı seriyi devam ettirmek marka sadakatini ve tekrar eden müşteri satışlarını artırır.", fontSize = 11.sp, color = Slate600)
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = seriesMode == 0 && existingSeries.isNotEmpty(),
-                    onClick = { if (existingSeries.isNotEmpty()) onSeriesModeChange(0) },
-                    label = { Text("Mevcut Seriden Devam Et") },
-                    enabled = existingSeries.isNotEmpty()
-                )
-                FilterChip(
-                    selected = seriesMode == 1 || existingSeries.isEmpty(),
-                    onClick = { onSeriesModeChange(1) },
-                    label = { Text("Yeni Seri Başlat") }
-                )
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (seriesMode == 0 && existingSeries.isNotEmpty()) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, if (seriesMode == 0 && existingSeries.isNotEmpty()) MaterialTheme.colorScheme.primary else Slate300),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable(enabled = existingSeries.isNotEmpty()) { onSeriesModeChange(0) }
+                ) {
+                    Text(
+                        text = "Mevcut Seriden Devam Et",
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        fontWeight = if (seriesMode == 0 && existingSeries.isNotEmpty()) FontWeight.Bold else FontWeight.Medium,
+                        fontSize = 11.5.sp,
+                        color = if (seriesMode == 0 && existingSeries.isNotEmpty()) MaterialTheme.colorScheme.primary else if (existingSeries.isEmpty()) Slate400 else MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(vertical = 10.dp, horizontal = 4.dp),
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (seriesMode == 1 || existingSeries.isEmpty()) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, if (seriesMode == 1 || existingSeries.isEmpty()) MaterialTheme.colorScheme.primary else Slate300),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onSeriesModeChange(1) }
+                ) {
+                    Text(
+                        text = "Yeni Seri Başlat",
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        fontWeight = if (seriesMode == 1 || existingSeries.isEmpty()) FontWeight.Bold else FontWeight.Medium,
+                        fontSize = 11.5.sp,
+                        color = if (seriesMode == 1 || existingSeries.isEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(vertical = 10.dp, horizontal = 4.dp),
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
             }
 
             if (seriesMode == 0 && existingSeries.isNotEmpty()) {
@@ -635,17 +662,24 @@ fun PhoneBuilderProductionTab(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("🏆 Model Segmenti & Seri İsimlendirmesi", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text(
+                    text = "🏆 Model Segmenti",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
                 Surface(
                     color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(6.dp)
+                    shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
                         text = "${selectedTier.badge} ${selectedTier.title}",
-                        fontSize = 11.sp,
+                        fontSize = 11.5.sp,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                        maxLines = 1,
+                        softWrap = false,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                     )
                 }
             }
@@ -655,41 +689,77 @@ fun PhoneBuilderProductionTab(
                 color = Slate600
             )
 
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                ModelTier.entries.forEach { tier ->
-                    val isTierSelected = selectedTier == tier
-
-                    OutlinedButton(
-                        onClick = {
-                            onTierChange(tier)
-                            val suggestedPrice = when (tier) {
-                                ModelTier.LITE -> 349f
-                                ModelTier.STANDARD -> 599f
-                                ModelTier.PRO -> 899f
-                                ModelTier.ULTRA -> 1199f
-                            }
-                            onPriceChange(suggestedPrice)
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = if (isTierSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-                        ),
-                        border = BorderStroke(
-                            width = if (isTierSelected) 2.dp else 1.dp,
-                            color = if (isTierSelected) MaterialTheme.colorScheme.primary else Slate300
-                        ),
-                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
+                val chunkedTiers = ModelTier.entries.chunked(2)
+                chunkedTiers.forEach { rowTiers ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = tier.title,
-                                fontWeight = if (isTierSelected) FontWeight.Bold else FontWeight.Medium,
-                                fontSize = 11.sp,
-                                color = if (isTierSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                            )
+                        rowTiers.forEach { tier ->
+                            val isTierSelected = selectedTier == tier
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isTierSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                                border = BorderStroke(
+                                    width = if (isTierSelected) 2.dp else 1.dp,
+                                    color = if (isTierSelected) MaterialTheme.colorScheme.primary else Slate300
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable {
+                                        onTierChange(tier)
+                                        val suggestedPrice = when (tier) {
+                                            ModelTier.LITE -> 349f
+                                            ModelTier.STANDARD -> 599f
+                                            ModelTier.PRO -> 899f
+                                            ModelTier.ULTRA -> 1199f
+                                        }
+                                        onPriceChange(suggestedPrice)
+                                    }
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(tier.badge, fontSize = 18.sp)
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = tier.title,
+                                            fontWeight = if (isTierSelected) FontWeight.Bold else FontWeight.SemiBold,
+                                            fontSize = 12.sp,
+                                            color = if (isTierSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
+                                        Text(
+                                            text = when (tier) {
+                                                ModelTier.LITE -> "Ekonomik Giriş"
+                                                ModelTier.STANDARD -> "Dengeli Ana Akım"
+                                                ModelTier.PRO -> "Amiral Gemisi"
+                                                ModelTier.ULTRA -> "Zirve Prestij"
+                                            },
+                                            fontSize = 10.sp,
+                                            color = if (isTierSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else Slate500,
+                                            maxLines = 1
+                                        )
+                                    }
+                                    if (isTierSelected) {
+                                        Icon(
+                                            Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }

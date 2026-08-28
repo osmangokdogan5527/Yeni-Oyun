@@ -26,6 +26,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.Slate300
 import com.example.ui.theme.Slate400
+import com.example.util.ComponentRating
+import com.example.util.HardwareRatingHelper
+import com.example.util.HardwareTier
 import com.example.viewmodel.CompetitorCompany
 import com.example.viewmodel.CompetitorReleaseHistory
 import com.example.viewmodel.GameState
@@ -305,6 +308,34 @@ fun VsDuelComparisonDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    val playerProc = playerModel?.specs?.processor ?: "—"
+                    val playerRam = playerModel?.specs?.ram ?: "—"
+                    val playerCam = playerModel?.specs?.camera ?: "—"
+                    val playerBat = "${playerModel?.specs?.batteryCapacity ?: "—"} ${playerModel?.specs?.batteryType ?: ""}"
+                    val playerDisp = playerModel?.specs?.display ?: "—"
+
+                    val playerProcRating = HardwareRatingHelper.getProcessorRating(playerProc)
+                    val compProcRating = HardwareRatingHelper.getProcessorRating(release.processor)
+
+                    val playerRamRating = HardwareRatingHelper.getRamRating(playerRam)
+                    val compRamRating = HardwareRatingHelper.getRamRating(release.ram)
+
+                    val playerCamRating = HardwareRatingHelper.getCameraRating(playerCam)
+                    val compCamRating = HardwareRatingHelper.getCameraRating(release.camera)
+
+                    val playerBatRating = HardwareRatingHelper.getBatteryRating(playerBat)
+                    val compBatRating = HardwareRatingHelper.getBatteryRating(release.battery)
+
+                    val playerDispRating = HardwareRatingHelper.getDisplayRating(playerDisp)
+                    val compDispRating = HardwareRatingHelper.getDisplayRating(release.display)
+
+                    val playerHwIndex = HardwareRatingHelper.calculateHardwarePowerIndex(
+                        playerProc, playerRam, playerCam, playerBat, playerDisp
+                    )
+                    val compHwIndex = HardwareRatingHelper.calculateHardwarePowerIndex(
+                        release.processor, release.ram, release.camera, release.battery, release.display
+                    )
+
                     // Player Card
                     Card(
                         modifier = Modifier.weight(1f),
@@ -340,19 +371,35 @@ fun VsDuelComparisonDialog(
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 "$${playerModel?.specs?.price ?: 0}",
-                                fontSize = 14.sp,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold
                             )
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = MaterialTheme.colorScheme.primary
+                                ) {
+                                    Text(
+                                        "⭐ ${playerModel?.reviewScore ?: 0}/100",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(3.dp))
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
-                                color = MaterialTheme.colorScheme.primary
+                                color = Color(0xFF1E293B)
                             ) {
                                 Text(
-                                    "${playerModel?.reviewScore ?: 0}/100",
-                                    fontSize = 11.sp,
+                                    "⚡ $playerHwIndex Donanım",
+                                    fontSize = 9.5.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    color = Color(0xFF38BDF8),
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                                 )
                             }
                         }
@@ -409,19 +456,35 @@ fun VsDuelComparisonDialog(
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 "$${release.price}",
-                                fontSize = 14.sp,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold
                             )
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                ) {
+                                    Text(
+                                        "⭐ ${release.score}/100",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(3.dp))
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = Color(0xFF1E293B)
                             ) {
                                 Text(
-                                    "${release.score}/100",
-                                    fontSize = 11.sp,
+                                    "⚡ $compHwIndex Donanım",
+                                    fontSize = 9.5.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    color = Color(0xFFFBBF24),
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                                 )
                             }
                         }
@@ -429,6 +492,27 @@ fun VsDuelComparisonDialog(
                 }
 
                 // Specs Breakdown Comparison Table
+                val playerProc = playerModel?.specs?.processor ?: "—"
+                val playerRam = playerModel?.specs?.ram ?: "—"
+                val playerCam = playerModel?.specs?.camera ?: "—"
+                val playerBat = "${playerModel?.specs?.batteryCapacity ?: "—"} ${playerModel?.specs?.batteryType ?: ""}"
+                val playerDisp = playerModel?.specs?.display ?: "—"
+
+                val playerProcRating = HardwareRatingHelper.getProcessorRating(playerProc)
+                val compProcRating = HardwareRatingHelper.getProcessorRating(release.processor)
+
+                val playerRamRating = HardwareRatingHelper.getRamRating(playerRam)
+                val compRamRating = HardwareRatingHelper.getRamRating(release.ram)
+
+                val playerCamRating = HardwareRatingHelper.getCameraRating(playerCam)
+                val compCamRating = HardwareRatingHelper.getCameraRating(release.camera)
+
+                val playerBatRating = HardwareRatingHelper.getBatteryRating(playerBat)
+                val compBatRating = HardwareRatingHelper.getBatteryRating(release.battery)
+
+                val playerDispRating = HardwareRatingHelper.getDisplayRating(playerDisp)
+                val compDispRating = HardwareRatingHelper.getDisplayRating(release.display)
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -440,33 +524,43 @@ fun VsDuelComparisonDialog(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         DuelSpecRow(
-                            title = "İşlemci / Çip",
-                            playerVal = playerModel?.specs?.processor ?: "—",
-                            compVal = release.processor
+                            title = "İşlemci / Çip (CPU & GPU)",
+                            playerVal = playerProc,
+                            compVal = release.processor,
+                            playerRating = playerProcRating,
+                            compRating = compProcRating
                         )
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
                         DuelSpecRow(
                             title = "Bellek (RAM)",
-                            playerVal = playerModel?.specs?.ram ?: "—",
-                            compVal = release.ram
+                            playerVal = playerRam,
+                            compVal = release.ram,
+                            playerRating = playerRamRating,
+                            compRating = compRamRating
                         )
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
                         DuelSpecRow(
                             title = "Kamera Sistemi",
-                            playerVal = playerModel?.specs?.camera ?: "—",
-                            compVal = release.camera
+                            playerVal = playerCam,
+                            compVal = release.camera,
+                            playerRating = playerCamRating,
+                            compRating = compCamRating
                         )
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
                         DuelSpecRow(
                             title = "Batarya & Pil",
-                            playerVal = "${playerModel?.specs?.batteryCapacity ?: "—"} ${playerModel?.specs?.batteryType ?: ""}",
-                            compVal = release.battery
+                            playerVal = playerBat,
+                            compVal = release.battery,
+                            playerRating = playerBatRating,
+                            compRating = compBatRating
                         )
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
                         DuelSpecRow(
                             title = "Ekran Teknolojisi",
-                            playerVal = playerModel?.specs?.display ?: "—",
-                            compVal = release.display
+                            playerVal = playerDisp,
+                            compVal = release.display,
+                            playerRating = playerDispRating,
+                            compRating = compDispRating
                         )
                     }
                 }
@@ -487,34 +581,101 @@ fun VsDuelComparisonDialog(
 fun DuelSpecRow(
     title: String,
     playerVal: String,
-    compVal: String
+    compVal: String,
+    playerRating: ComponentRating,
+    compRating: ComponentRating
 ) {
+    val compResult = HardwareRatingHelper.compareScores(playerRating.score, compRating.score)
+
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = title,
-            fontSize = 10.5.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.height(2.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                fontSize = 10.5.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            // Advantage Badge
+            Surface(
+                shape = RoundedCornerShape(4.dp),
+                color = when (compResult) {
+                    1 -> Color(0xFF10B981).copy(alpha = 0.15f)
+                    -1 -> Color(0xFFEF4444).copy(alpha = 0.15f)
+                    else -> Color(0xFF64748B).copy(alpha = 0.15f)
+                }
+            ) {
+                Text(
+                    text = when (compResult) {
+                        1 -> "🟢 Siz Üstünsünüz"
+                        -1 -> "🔴 Rakip Üstün"
+                        else -> "🟡 Dengeli"
+                    },
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = when (compResult) {
+                        1 -> Color(0xFF059669)
+                        -1 -> Color(0xFFDC2626)
+                        else -> Color(0xFF475569)
+                    },
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(3.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = playerVal,
-                fontSize = 11.5.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.weight(1f)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = compVal,
-                fontSize = 11.5.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f)
-            )
+            // Player Column
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = playerVal,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = playerRating.tier.badgeColor.copy(alpha = 0.15f),
+                    modifier = Modifier.padding(top = 2.dp)
+                ) {
+                    Text(
+                        text = "⚡ ${playerRating.score} Puan • ${playerRating.tier.code}",
+                        fontSize = 9.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = playerRating.tier.badgeColor,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Competitor Column
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = compVal,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = compRating.tier.badgeColor.copy(alpha = 0.15f),
+                    modifier = Modifier.padding(top = 2.dp)
+                ) {
+                    Text(
+                        text = "⚡ ${compRating.score} Puan • ${compRating.tier.code}",
+                        fontSize = 9.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = compRating.tier.badgeColor,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                    )
+                }
+            }
         }
     }
 }

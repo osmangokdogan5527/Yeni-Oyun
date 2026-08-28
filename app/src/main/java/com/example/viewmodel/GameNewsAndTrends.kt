@@ -40,7 +40,8 @@ fun checkTrendMatch(specs: PhoneSpecs, trend: MarketTrend?): Boolean {
             specs.camera.contains("Çift") || specs.camera.contains("Üçlü") || specs.camera.contains("Periskop") || specs.camera.contains("200MP") || specs.camera.contains("GenAI") || specs.camera.contains("16-20") || specs.camera.contains("13 MP")
         }
         TrendCategory.LONG_BATTERY -> {
-            specs.batteryCapacity.contains("4500") || specs.batteryCapacity.contains("5000") || specs.batteryCapacity.contains("5500") || specs.batteryCapacity.contains("7000") || specs.batteryCapacity.contains("3600") || specs.batteryCapacity.contains("4000") || specs.batteryType.contains("Katı Hal")
+            val mah = Regex("""\d+""").find(specs.batteryCapacity)?.value?.toIntOrNull() ?: 1500
+            mah >= 3100 || specs.batteryType.contains("Katı Hal") || specs.batteryType.contains("Si-Ca") || specs.batteryType.contains("Silisyum")
         }
         TrendCategory.BUDGET_VALUE -> {
             specs.price <= 400
@@ -65,26 +66,242 @@ fun checkTrendMatch(specs: PhoneSpecs, trend: MarketTrend?): Boolean {
 fun generateNewTrend(year: Int, currentCategory: TrendCategory? = null): MarketTrend {
     val pool = when {
         year <= 2013 -> listOf(
-            MarketTrend("tr_cam_${Random.nextInt(100, 999)}", "Özçekim & HD Kamera Çılgınlığı", "Sosyal medya patlamasıyla tüketiciler yüksek çözünürlüklü ön/arka kamera istiyor.", TrendCategory.CAMERA_PRO, 1.20f, 4, 4),
-            MarketTrend("tr_prem_${Random.nextInt(100, 999)}", "İnce & Alüminyum Gövde Modası", "Plastikten sıkılan kullanıcılar metal ve cam şıklığını arıyor.", TrendCategory.PREMIUM_BUILD, 1.15f, 4, 4),
-            MarketTrend("tr_budg_${Random.nextInt(100, 999)}", "Ekonomik Akıllı Telefon Akını", "Gelişmekte olan pazarlarda $400 altı bütçe dostu cihazlar kapışılıyor.", TrendCategory.BUDGET_VALUE, 1.10f, 4, 4),
-            MarketTrend("tr_bat_${Random.nextInt(100, 999)}", "Tüm Gün Yeten Batarya Arayışı", "Büyük ekranlarla artan enerji ihtiyacı için yüksek mAh piller aranıyor.", TrendCategory.LONG_BATTERY, 1.15f, 4, 4),
-            MarketTrend("tr_conn_${Random.nextInt(100, 999)}", "4G LTE Hızlı Bağlantı Talebi", "Hızlı internet isteyen mobil kullanıcılar 4G destekli telefonları tercih ediyor.", TrendCategory.FAST_CONNECTIVITY, 1.20f, 4, 4)
+            MarketTrend(
+                id = "tr_cam_${Random.nextInt(100, 999)}",
+                title = "Özçekim & HD Kamera Çılgınlığı",
+                description = "Sosyal medya patlamasıyla tüketiciler yüksek çözünürlüklü ön/arka kamera istiyor.",
+                category = TrendCategory.CAMERA_PRO,
+                bonusMultiplier = 1.20f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "13MP HD veya 20MP OIS kamera seçin."
+            ),
+            MarketTrend(
+                id = "tr_prem_${Random.nextInt(100, 999)}",
+                title = "İnce & Alüminyum Gövde Modası",
+                description = "Plastikten sıkılan kullanıcılar metal şıklığını ve ince tasarımı arıyor.",
+                category = TrendCategory.PREMIUM_BUILD,
+                bonusMultiplier = 1.15f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "Alüminyum gövde veya ince tasarım çizgileri kullanın."
+            ),
+            MarketTrend(
+                id = "tr_budg_${Random.nextInt(100, 999)}",
+                title = "Ekonomik Akıllı Telefon Akını",
+                description = "Gelişmekte olan pazarlarda $400 altı bütçe dostu cihazlar kapışılıyor.",
+                category = TrendCategory.BUDGET_VALUE,
+                bonusMultiplier = 1.10f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "Cihaz satış fiyatını $400 veya altına ayarlayın."
+            ),
+            MarketTrend(
+                id = "tr_bat_${Random.nextInt(100, 999)}",
+                title = "Tüm Gün Yeten Batarya Arayışı",
+                description = "Büyük ekranlarla artan enerji ihtiyacı için 3000mAh+ piller aranıyor.",
+                category = TrendCategory.LONG_BATTERY,
+                bonusMultiplier = 1.15f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "3100mAh veya 3200mAh kapasiteli batarya seçin."
+            ),
+            MarketTrend(
+                id = "tr_conn_${Random.nextInt(100, 999)}",
+                title = "4G LTE Hızlı Bağlantı Talebi",
+                description = "Hızlı internet isteyen mobil kullanıcılar 4G destekli telefonları tercih ediyor.",
+                category = TrendCategory.FAST_CONNECTIVITY,
+                bonusMultiplier = 1.20f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "4G LTE şebeke desteği kullanın."
+            )
         )
         year in 2014..2019 -> listOf(
-            MarketTrend("tr_disp_${Random.nextInt(100, 999)}", "Yüksek Yenileme Hızı & Oyuncu Ekranları", "Mobil oyunlar popülerleştikçe akıcı ekranlar ve oyuncu tasarımı revaçta.", TrendCategory.HIGH_REFRESH_DISPLAY, 1.15f, 4, 4),
-            MarketTrend("tr_cam2_${Random.nextInt(100, 999)}", "Çoklu Kamera & Portre Modu Modası", "Arka planı bulanıklaştıran çift ve üçlü kameralar tüketicilerin 1 numaralı tercihi.", TrendCategory.CAMERA_PRO, 1.20f, 4, 4),
-            MarketTrend("tr_prem2_${Random.nextInt(100, 999)}", "Cam & Çerçevesiz Tasarım Yarışı", "Cam arka kapaklar ve lüks metal çerçeveler vitrinleri süslüyor.", TrendCategory.PREMIUM_BUILD, 1.15f, 4, 4),
-            MarketTrend("tr_bat2_${Random.nextInt(100, 999)}", "Mega Kapasiteli Batarya Çılgınlığı", "Kullanıcılar 2 gün şarj istemeyen 4500mAh+ devasa pillere yöneliyor.", TrendCategory.LONG_BATTERY, 1.15f, 4, 4),
-            MarketTrend("tr_budg2_${Random.nextInt(100, 999)}", "Fiyat / Performans Patlaması", "Orta segmentte amiral gemisi hissi veren ucuz modeller kapışılıyor.", TrendCategory.BUDGET_VALUE, 1.10f, 4, 4)
+            MarketTrend(
+                id = "tr_disp_${Random.nextInt(100, 999)}",
+                title = "Canlı AMOLED & Oyuncu Tasarımı",
+                description = "Mobil oyunlar popülerleştikçe canlı ekranlar ve agresif gövde hatları revaçta.",
+                category = TrendCategory.HIGH_REFRESH_DISPLAY,
+                bonusMultiplier = 1.15f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "AMOLED / 2K ekran veya Oyuncu tarzı kullanın."
+            ),
+            MarketTrend(
+                id = "tr_cam2_${Random.nextInt(100, 999)}",
+                title = "Çoklu Kamera & Portre Modu Modası",
+                description = "Arka planı bulanıklaştıran çift ve üçlü kameralar tüketicilerin 1 numaralı tercihi.",
+                category = TrendCategory.CAMERA_PRO,
+                bonusMultiplier = 1.20f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "Çift veya Üçlü kamera sistemi kullanın."
+            ),
+            MarketTrend(
+                id = "tr_prem2_${Random.nextInt(100, 999)}",
+                title = "Cam & Çerçevesiz Tasarım Yarışı",
+                description = "Cam arka kapaklar ve lüks metal çerçeveler vitrinleri süslüyor.",
+                category = TrendCategory.PREMIUM_BUILD,
+                bonusMultiplier = 1.15f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "Cam arka kapak veya Alüminyum kasa kullanın."
+            ),
+            MarketTrend(
+                id = "tr_bat2_${Random.nextInt(100, 999)}",
+                title = "Mega Kapasiteli Batarya & Hızlı Şarj",
+                description = "Kullanıcılar 2 gün şarj istemeyen 3600mAh - 4500mAh pillere ve hızlı şarja yöneliyor.",
+                category = TrendCategory.LONG_BATTERY,
+                bonusMultiplier = 1.15f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "3600mAh - 4500mAh batarya veya 20W+ hızlı şarj seçin."
+            ),
+            MarketTrend(
+                id = "tr_conn2_${Random.nextInt(100, 999)}",
+                title = "USB-C & Hızlı Veri Bağlantısı",
+                description = "Simetrik USB-C portu ve çift bant Wi-Fi 5 standart hale geliyor.",
+                category = TrendCategory.FAST_CONNECTIVITY,
+                bonusMultiplier = 1.15f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "USB-C simetrik port veya Wi-Fi 5 bağlantısı kullanın."
+            ),
+            MarketTrend(
+                id = "tr_budg2_${Random.nextInt(100, 999)}",
+                title = "Fiyat / Performans Patlaması",
+                description = "Orta segmentte amiral gemisi hissi veren ucuz modeller kapışılıyor.",
+                category = TrendCategory.BUDGET_VALUE,
+                bonusMultiplier = 1.10f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "Cihaz satış fiyatını $400 veya altına ayarlayın."
+            )
+        )
+        year in 2020..2023 -> listOf(
+            MarketTrend(
+                id = "tr_disp2_${Random.nextInt(100, 999)}",
+                title = "120Hz Ultra Akıcı OLED Ekranlar",
+                description = "Takılmasız 120Hz LTPO ekranlar ve akıcı paneller tüm segmentlerde talep ediliyor.",
+                category = TrendCategory.HIGH_REFRESH_DISPLAY,
+                bonusMultiplier = 1.20f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "120Hz LTPO AMOLED panel veya Oyuncu stili kullanın."
+            ),
+            MarketTrend(
+                id = "tr_cam3_${Random.nextInt(100, 999)}",
+                title = "108MP - 200MP Periskop Fotoğrafçılık",
+                description = "Profesyonel seviye 100x periskop zoom ve 8K kayıt yeteneği aranıyor.",
+                category = TrendCategory.CAMERA_PRO,
+                bonusMultiplier = 1.20f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "108MP Periskop veya 200MP kamera seçin."
+            ),
+            MarketTrend(
+                id = "tr_prem3_${Random.nextInt(100, 999)}",
+                title = "Titanyum Alaşım & Zırhlı Gövde Trendi",
+                description = "Uzay endüstrisi sınıfı titanyum gövde modelleri prestij sembolü oldu.",
+                category = TrendCategory.PREMIUM_BUILD,
+                bonusMultiplier = 1.15f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "Titanyum kasa veya zırhlı gövde kullanın."
+            ),
+            MarketTrend(
+                id = "tr_conn3_${Random.nextInt(100, 999)}",
+                title = "5G Ultra Hızlı Mobil Şebeke Çılgınlığı",
+                description = "Kesintisiz küresel 5G Sub-6 ve mmWave bağlantısı kullanıcıların gözdesi.",
+                category = TrendCategory.FAST_CONNECTIVITY,
+                bonusMultiplier = 1.20f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "5G Sub-6 veya 5G mmWave şebeke seçin."
+            ),
+            MarketTrend(
+                id = "tr_ai_${Random.nextInt(100, 999)}",
+                title = "NPU Yapay Zeka & Güçlü İşlemci Çipleri",
+                description = "NPU birimli işlemciler ve 12GB+ RAM satın alma tercihlerini belirliyor.",
+                category = TrendCategory.AI_PROCESSOR,
+                bonusMultiplier = 1.25f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "NPU işlemci, Qualcomm Gen / In-House çip veya 12GB+ RAM seçin."
+            ),
+            MarketTrend(
+                id = "tr_bat3_${Random.nextInt(100, 999)}",
+                title = "5000mAh+ Dev Batarya & 120W Şarj",
+                description = "Dakikalar içinde dolan 120W çift hücre ve 5000mAh bataryalar revaçta.",
+                category = TrendCategory.LONG_BATTERY,
+                bonusMultiplier = 1.20f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "5000mAh+ batarya veya 65W+ hızlı şarj seçin."
+            )
         )
         else -> listOf(
-            MarketTrend("tr_ai_${Random.nextInt(100, 999)}", "Cihaz Üstü Yapay Zeka (AI) Çipleri", "NPU birimli işlemciler ve yüksek RAM kapasitesi satın alma tercihlerini belirliyor.", TrendCategory.AI_PROCESSOR, 1.25f, 4, 4),
-            MarketTrend("tr_disp2_${Random.nextInt(100, 999)}", "120Hz-240Hz Ultra Akıcı OLED Ekranlar", "Takılmasız LTPO ekranlar ve oyuncu dizaynları tüm segmentlerde talep ediliyor.", TrendCategory.HIGH_REFRESH_DISPLAY, 1.20f, 4, 4),
-            MarketTrend("tr_cam3_${Random.nextInt(100, 999)}", "1-İnç Sensörler & Periskop Zoom", "Profesyonel seviye fotoğrafçılık ve 8K kayıt yeteneği aranıyor.", TrendCategory.CAMERA_PRO, 1.20f, 4, 4),
-            MarketTrend("tr_prem3_${Random.nextInt(100, 999)}", "Titanyum Alaşım & Zırhlı Gövde Trendi", "Uzay endüstrisi sınıfı titanyum gövde modelleri prestij sembolü oldu.", TrendCategory.PREMIUM_BUILD, 1.15f, 4, 4),
-            MarketTrend("tr_conn2_${Random.nextInt(100, 999)}", "5G & Uydu İletişimi Çılgınlığı", "Kesintisiz küresel bağlantı ve acil durum uydu iletişimi gözde.", TrendCategory.FAST_CONNECTIVITY, 1.20f, 4, 4),
-            MarketTrend("tr_bat3_${Random.nextInt(100, 999)}", "Katı Hal Batarya & 5000mAh+ Güç", "Isınmayan ve günlerce dayanan yeni nesil bataryalar pazarı sallıyor.", TrendCategory.LONG_BATTERY, 1.20f, 4, 4)
+            MarketTrend(
+                id = "tr_ai2_${Random.nextInt(100, 999)}",
+                title = "Cihaz Üstü Üretken Yapay Zeka (GenAI)",
+                description = "Yerel çalışan üretken yapay zeka modelleri ve devasa RAM kapasitesi aranıyor.",
+                category = TrendCategory.AI_PROCESSOR,
+                bonusMultiplier = 1.25f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "GenAI hızlandırıcılı çip, Kuantum işlemci veya 16GB+ RAM seçin."
+            ),
+            MarketTrend(
+                id = "tr_bat4_${Random.nextInt(100, 999)}",
+                title = "Katı Hal Batarya & 240W Şarj Devrimi",
+                description = "Alev almayan katı hal bataryalar ve 7000mAh dev kapasiteler pazarı sallıyor.",
+                category = TrendCategory.LONG_BATTERY,
+                bonusMultiplier = 1.25f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "Katı Hal batarya veya 7000mAh batarya seçin."
+            ),
+            MarketTrend(
+                id = "tr_conn4_${Random.nextInt(100, 999)}",
+                title = "Doğrudan Uydu SOS & Wi-Fi 7 İletişimi",
+                description = "Şebekesiz uydu iletişimi ve 30Gbps teorik hızlı Wi-Fi 7 standart oluyor.",
+                category = TrendCategory.FAST_CONNECTIVITY,
+                bonusMultiplier = 1.20f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "Doğrudan Uydu Şebekesi veya Wi-Fi 7 kullanın."
+            ),
+            MarketTrend(
+                id = "tr_cam4_${Random.nextInt(100, 999)}",
+                title = "GenAI ISP & 3D Mekansal Video Kameraları",
+                description = "Yapay zeka render destekli kameralar ve 3D mekansal video kayıtları revaçta.",
+                category = TrendCategory.CAMERA_PRO,
+                bonusMultiplier = 1.20f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "GenAI ISP veya 3D Mekansal Video kamera seçin."
+            ),
+            MarketTrend(
+                id = "tr_disp3_${Random.nextInt(100, 999)}",
+                title = "240Hz & Tandem OLED Ekran Teknolojisi",
+                description = "Göz alıcı parlaklıktaki Tandem OLED ve holografik paneller kapışılıyor.",
+                category = TrendCategory.HIGH_REFRESH_DISPLAY,
+                bonusMultiplier = 1.20f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "Tandem OLED, Holografik 3D veya 240Hz ekran seçin."
+            ),
+            MarketTrend(
+                id = "tr_prem4_${Random.nextInt(100, 999)}",
+                title = "Havacılık Sınıfı Titanyum & Zırh+ Gövde",
+                description = "Armor+ zırh kaplama ve hafif titanyum gövdeler tepe segmenti domine ediyor.",
+                category = TrendCategory.PREMIUM_BUILD,
+                bonusMultiplier = 1.15f,
+                remainingMonths = 4,
+                totalDurationMonths = 4,
+                tip = "Titanyum kasa ve Gorilla Armor koruma seçin."
+            )
         )
     }
 
@@ -262,6 +479,14 @@ fun getCompetitorHardwareSpecs(companyName: String, year: Int): CompetitorModelH
             year in 2020..2022 -> CompetitorModelHardware("Snapdragon 8 Gen 1", "12 GB", "108 MP 100x Uzay Zoom", "5000 mAh", "6.8\" Edge QHD+ 120Hz")
             else -> CompetitorModelHardware("Snapdragon 8 Elite Galaxy", "16 GB LPDDR5X", "200 MP ISOCELL 100x Zoom", "5500 mAh", "6.8\" Düz Titanyum 120Hz AMOLED")
         }
+        cleanName.contains("oneplus") -> when {
+            year <= 2013 -> CompetitorModelHardware("Snapdragon 600 Quad", "2 GB", "13 MP Kamera", "2600 mAh", "5.0\" Full HD IPS")
+            year in 2014..2015 -> CompetitorModelHardware("Snapdragon 801 Flagship", "3 GB", "13 MP Sony IMX214", "3100 mAh", "5.5\" FHD IPS")
+            year in 2016..2017 -> CompetitorModelHardware("Snapdragon 820/835", "6 GB", "16 MP Dash Charge", "3400 mAh", "5.5\" Optic AMOLED")
+            year in 2018..2019 -> CompetitorModelHardware("Snapdragon 845/855", "8 GB", "48 MP OIS Warp Charge", "3700 mAh", "6.41\" Fluid AMOLED 90Hz")
+            year in 2020..2022 -> CompetitorModelHardware("Snapdragon 8 Gen 1 Pro", "12 GB", "50 MP Hasselblad Kamera", "5000 mAh (80W)", "6.7\" Fluid AMOLED 120Hz")
+            else -> CompetitorModelHardware("Snapdragon 8 Gen 3 / 8 Elite", "16 GB LPDDR5X", "50 MP Hasselblad Periskop", "5400 mAh (100W)", "6.82\" 2K 120Hz LTPO")
+        }
         cleanName.contains("xiaomi") -> when {
             year <= 2013 -> CompetitorModelHardware("Snapdragon S4 / 800", "2 GB", "13 MP Sony Sensör", "3050 mAh", "5.0\" IPS 1080p")
             year in 2014..2018 -> CompetitorModelHardware("Snapdragon 845 Flagship", "6 GB", "12 MP Çift AI Kamera", "3400 mAh", "6.21\" AMOLED Çentikli")
@@ -280,11 +505,39 @@ fun getCompetitorHardwareSpecs(companyName: String, year: Int): CompetitorModelH
             year in 2020..2022 -> CompetitorModelHardware("Kirin 9000 5nm 5G", "8-12 GB", "50 MP Ultra Vision XMAGE", "4400 mAh (66W)", "6.76\" 90Hz Horizon OLED")
             else -> CompetitorModelHardware("Kirin 9010 XMAGE Engine", "16 GB", "50 MP Geri Çekilebilir 1-İnç", "5200 mAh (100W)", "6.8\" 120Hz Dört Kavisli LTPO")
         }
+        cleanName.contains("sony") -> when {
+            year <= 2013 -> CompetitorModelHardware("Snapdragon S4 Pro", "2 GB", "13 MP Exmor RS", "2330 mAh", "5.0\" Full HD")
+            year in 2014..2017 -> CompetitorModelHardware("Snapdragon 801/820", "3-4 GB", "20.7 MP 4K Video", "3200 mAh", "5.2\" Triluminos FHD")
+            year in 2018..2021 -> CompetitorModelHardware("Snapdragon 855/888", "8-12 GB", "12 MP Üçlü ZEISS T*", "4000 mAh", "6.5\" 4K HDR OLED 120Hz")
+            else -> CompetitorModelHardware("Snapdragon 8 Gen 3 ZEISS", "16 GB", "48 MP Exmor-T Pro Sensör", "5000 mAh", "6.5\" 120Hz LTPO OLED")
+        }
+        cleanName.contains("asus") -> when {
+            year <= 2015 -> CompetitorModelHardware("Intel Atom Z3580 Quad", "4 GB", "13 MP PixelMaster", "3000 mAh", "5.5\" IPS FHD")
+            year in 2016..2019 -> CompetitorModelHardware("Snapdragon 845/855+ ROG", "8-12 GB", "48 MP Sony Sensör", "6000 mAh", "6.59\" 120Hz AMOLED")
+            year in 2020..2022 -> CompetitorModelHardware("Snapdragon 8 Gen 1 ROG", "16 GB", "50 MP Sony IMX766", "6000 mAh (65W)", "6.78\" 165Hz AMOLED")
+            else -> CompetitorModelHardware("Snapdragon 8 Gen 3 Ultimate", "24 GB", "50 MP Gimbal OIS", "5500 mAh (65W)", "6.78\" 165Hz LTPO OLED")
+        }
+        cleanName.contains("oppo") || cleanName.contains("realme") || cleanName.contains("vivo") -> when {
+            year <= 2013 -> CompetitorModelHardware("Snapdragon 600 / MT6589", "2 GB", "13 MP Dönen Kamera", "2500 mAh", "5.0\" IPS 1080p")
+            year in 2014..2017 -> CompetitorModelHardware("Snapdragon 801 / VOOC", "3-4 GB", "16 MP Schneider-Kreuznach", "3000 mAh (VOOC)", "5.5\" AMOLED")
+            year in 2018..2021 -> CompetitorModelHardware("Snapdragon 855 / 865 5G", "8-12 GB", "48-64 MP Çift/Üçlü OIS", "4200 mAh (65W)", "6.5\" 90Hz-120Hz OLED")
+            else -> CompetitorModelHardware("MediaTek D9300 / 8 Gen 3", "16 GB", "50 MP 1-İnç Hasselblad/ZEISS", "5400 mAh (100W)", "6.78\" 120Hz 1.5K LTPO")
+        }
+        cleanName.contains("nothing") -> when {
+            year <= 2022 -> CompetitorModelHardware("Snapdragon 778G+ 5G", "8 GB", "50 MP Çift Sony IMX766", "4500 mAh (33W)", "6.55\" 120Hz OLED")
+            year in 2023..2024 -> CompetitorModelHardware("Snapdragon 8+ Gen 1", "12 GB", "50 MP Sony IMX890 OIS", "4700 mAh (45W)", "6.7\" 120Hz LTPO OLED")
+            else -> CompetitorModelHardware("Snapdragon 8 Gen 3 AI", "16 GB", "50 MP Üçlü Pro Glyph", "5000 mAh (65W)", "6.7\" 144Hz LTPO OLED")
+        }
+        cleanName.contains("nokia") -> when {
+            year <= 2012 -> CompetitorModelHardware("Snapdragon S4 Dual", "1 GB", "41 MP PureView Carl Zeiss", "2000 mAh", "4.5\" PureMotion HD+")
+            year in 2013..2017 -> CompetitorModelHardware("Snapdragon 800 / 835", "3-4 GB", "20 MP PureView OIS", "3000 mAh", "5.0\"-5.3\" QHD IPS")
+            else -> CompetitorModelHardware("Snapdragon 778G / 865", "6-8 GB", "64 MP ZEISS Dörtlü", "4500 mAh", "6.67\" FHD+ 120Hz")
+        }
         else -> when {
-            year <= 2013 -> CompetitorModelHardware("Dört Çekirdekli Mobil İşlemci", "2 GB", "8-13 MP Kamera", "2500 mAh", "4.7\"-5.0\" HD Ekran")
-            year in 2014..2018 -> CompetitorModelHardware("Sekiz Çekirdekli Performans Çipi", "4-6 GB", "16 MP Çift Kamera", "3500 mAh", "5.5\"-6.0\" Full HD+")
-            year in 2019..2022 -> CompetitorModelHardware("Amiral Gemisi 5G Çipset", "8-12 GB", "50-64 MP OIS Kamera", "4500 mAh (65W)", "6.5\" 120Hz AMOLED")
-            else -> CompetitorModelHardware("Yeni Nesil 3nm/4nm AI Çip", "12-16 GB", "50-200 MP Gelişmiş Lens", "5000+ mAh Hızlı Şarj", "6.7\" 120Hz-165Hz OLED")
+            year <= 2013 -> CompetitorModelHardware("Snapdragon S4 / MT6589", "2 GB", "8-13 MP Kamera", "2500 mAh", "4.7\"-5.0\" HD Ekran")
+            year in 2014..2018 -> CompetitorModelHardware("Snapdragon 801 / Helio X10", "3-4 GB", "16 MP Çift Kamera", "3200 mAh", "5.5\" Full HD")
+            year in 2019..2022 -> CompetitorModelHardware("Snapdragon 865 / D800 5G", "8-12 GB", "50-64 MP OIS Kamera", "4500 mAh (65W)", "6.5\" 120Hz AMOLED")
+            else -> CompetitorModelHardware("Snapdragon 8 Gen 3 / D9300", "12-16 GB", "50-200 MP Gelişmiş Lens", "5000+ mAh Hızlı Şarj", "6.7\" 120Hz OLED")
         }
     }
 }

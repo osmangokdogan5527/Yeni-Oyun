@@ -196,21 +196,23 @@ fun PhoneBuilderScreen(
                 title = { 
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text("Model Tasarım Stüdyosu", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                            Text("Model Tasarım Stüdyosu", fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                             Surface(
                                 color = MaterialTheme.colorScheme.primaryContainer,
                                 shape = RoundedCornerShape(6.dp)
                             ) {
                                 Text(
                                     text = selectedTier.title,
-                                    fontSize = 10.sp,
+                                    fontSize = 10.5.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
                             }
                         }
-                        Text("Birim Maliyet: $$unitCost • Toplam: $${"%,d".format(totalCost).replace(',', '.')}", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
+                        Text("Birim Maliyet: $$unitCost • Toplam: $${"%,d".format(totalCost).replace(',', '.')}", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, maxLines = 1)
                         val sectionNames = listOf("Tasarım", "Yonga & RAM", "Ekran & Kamera", "OS Seçimi", "Seri & Üretim")
                         Text(
                             "Cihazlar  ›  Yeni Model  ›  ${sectionNames.getOrElse(selectedTabSection) { "Tasarım" }}",
@@ -476,7 +478,7 @@ fun PhoneBuilderScreen(
                                 fontSize = 18.sp
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            val trendBonusPct = ((currentTrend.bonusMultiplier - 1.0f) * 100).toInt()
+                            val trendBonusPct = currentTrend.bonusPercent
                             Column {
                                 Text(
                                     text = if (isLiveTrendMatched) "PAZAR TRENDİ YAKALANDI (+%$trendBonusPct SATIŞ)" else "PAZAR TRENDİ: ${currentTrend.title}",
@@ -485,7 +487,7 @@ fun PhoneBuilderScreen(
                                     color = if (isLiveTrendMatched) Color(0xFFA5D6A7) else Color(0xFFFFD54F)
                                 )
                                 Text(
-                                    text = if (isLiveTrendMatched) "Cihazınız ${currentTrend.category.title} talebini karşılıyor!" else "İpucu: ${currentTrend.category.tip}",
+                                    text = if (isLiveTrendMatched) "Cihazınız ${currentTrend.category.title} talebini karşılıyor!" else "İpucu: ${currentTrend.effectiveTip}",
                                     fontSize = 10.sp,
                                     color = Color.White
                                 )
@@ -496,7 +498,7 @@ fun PhoneBuilderScreen(
                             shape = RoundedCornerShape(6.dp),
                             color = if (isLiveTrendMatched) Color(0xFF4CAF50) else Color(0xFFFF9800)
                         ) {
-                            val trendBonusPct = ((currentTrend.bonusMultiplier - 1.0f) * 100).toInt()
+                            val trendBonusPct = currentTrend.bonusPercent
                             Text(
                                 text = if (isLiveTrendMatched) "UYUMLU" else "%$trendBonusPct BONUS",
                                 fontSize = 10.sp,

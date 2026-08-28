@@ -85,24 +85,24 @@ val ALL_MATERIALS = listOf(
 )
 
 val BASE_PROCESSORS = listOf(
-    ComponentOption("Qualcomm S2", 25, "Performans: 150 (2010)", 2010),
-    ComponentOption("MediaTek MT65", 15, "Performans: 100 (2010)", 2010),
-    ComponentOption("Qualcomm S4", 40, "Performans: 250 (2012)", 2012, requiredTech = "Qualcomm S4 Çip Entegrasyonu"),
-    ComponentOption("MediaTek MT67", 25, "Performans: 180 (2012)", 2012, requiredTech = "MediaTek MT67 Çip Entegrasyonu"),
-    ComponentOption("Qualcomm 801", 60, "Performans: 400 (2014)", 2014, requiredTech = "Qualcomm 801 Çip Entegrasyonu"),
-    ComponentOption("Intel Atom X5", 45, "Performans: 350 (2014)", 2014, requiredTech = "Intel Atom X5 Çip Entegrasyonu"),
-    ComponentOption("Qualcomm 820", 85, "Performans: 600 (2016)", 2016, requiredTech = "Qualcomm 820 Çip Entegrasyonu"),
-    ComponentOption("MediaTek Helio", 60, "Performans: 500 (2016)", 2016, requiredTech = "MediaTek Helio Çip Entegrasyonu"),
-    ComponentOption("Qualcomm 845", 110, "Performans: 900 (2018)", 2018, requiredTech = "Qualcomm 845 Çip Entegrasyonu"),
-    ComponentOption("MediaTek G90", 80, "Performans: 750 (2018)", 2018, requiredTech = "MediaTek G90 Çip Entegrasyonu"),
-    ComponentOption("Qualcomm 865", 140, "Performans: 1300 (2020)", 2020, requiredTech = "Qualcomm 865 Çip Entegrasyonu"),
-    ComponentOption("MediaTek D800", 100, "Performans: 1100 (2020)", 2020, requiredTech = "MediaTek D800 Çip Entegrasyonu"),
-    ComponentOption("Qualcomm 8 Gen 1", 180, "Performans: 1800 (2022)", 2022, requiredTech = "Qualcomm 8 Gen 1 Çip Entegrasyonu"),
-    ComponentOption("MediaTek D9000", 140, "Performans: 1600 (2022)", 2022, requiredTech = "MediaTek D9000 Çip Entegrasyonu"),
-    ComponentOption("Qualcomm 8 Gen 3", 240, "Performans: 2500 (2024)", 2024, requiredTech = "Qualcomm 8 Gen 3 Çip Entegrasyonu"),
-    ComponentOption("MediaTek D9300", 190, "Performans: 2300 (2024)", 2024, requiredTech = "MediaTek D9300 Çip Entegrasyonu"),
-    ComponentOption("In-House Ar-Ge", 150, "Özel Üretim Çip", 2015, requiredTech = "Özel Yonga Seti Entegrasyonu"),
-    ComponentOption("Kuantum İşlemci", 300, "Maksimum Güç", 2026, requiredTech = "Kuantum İşlemci Entegrasyonu")
+    ComponentOption("Qualcomm S2", 25, "Performans: 150 Puan • Tier E (Giriş)", 2010),
+    ComponentOption("MediaTek MT65", 15, "Performans: 100 Puan • Tier E (Giriş)", 2010),
+    ComponentOption("Qualcomm S4", 40, "Performans: 250 Puan • Tier D (Temel Hız)", 2012, requiredTech = "Qualcomm S4 Çip Entegrasyonu"),
+    ComponentOption("MediaTek MT67", 25, "Performans: 180 Puan • Tier D (Temel Hız)", 2012, requiredTech = "MediaTek MT67 Çip Entegrasyonu"),
+    ComponentOption("Qualcomm 801", 60, "Performans: 400 Puan • Tier C (Orta Segment)", 2014, requiredTech = "Qualcomm 801 Çip Entegrasyonu"),
+    ComponentOption("Intel Atom X5", 45, "Performans: 350 Puan • Tier C (Orta Segment)", 2014, requiredTech = "Intel Atom X5 Çip Entegrasyonu"),
+    ComponentOption("Qualcomm 820", 85, "Performans: 600 Puan • Tier B (Yüksek Hız)", 2016, requiredTech = "Qualcomm 820 Çip Entegrasyonu"),
+    ComponentOption("MediaTek Helio", 60, "Performans: 500 Puan • Tier B (Yüksek Hız)", 2016, requiredTech = "MediaTek Helio Çip Entegrasyonu"),
+    ComponentOption("Qualcomm 845", 110, "Performans: 900 Puan • Tier B+ (Amiral Gemisi)", 2018, requiredTech = "Qualcomm 845 Çip Entegrasyonu"),
+    ComponentOption("MediaTek G90", 80, "Performans: 750 Puan • Tier B (Oyun Odaklı)", 2018, requiredTech = "MediaTek G90 Çip Entegrasyonu"),
+    ComponentOption("Qualcomm 865", 140, "Performans: 1300 Puan • Tier A (Üst Düzey)", 2020, requiredTech = "Qualcomm 865 Çip Entegrasyonu"),
+    ComponentOption("MediaTek D800", 100, "Performans: 1100 Puan • Tier A (Üst Düzey)", 2020, requiredTech = "MediaTek D800 Çip Entegrasyonu"),
+    ComponentOption("Qualcomm 8 Gen 1", 180, "Performans: 1800 Puan • Tier S (Zirve Amiral)", 2022, requiredTech = "Qualcomm 8 Gen 1 Çip Entegrasyonu"),
+    ComponentOption("MediaTek D9000", 140, "Performans: 1600 Puan • Tier S (Zirve Amiral)", 2022, requiredTech = "MediaTek D9000 Çip Entegrasyonu"),
+    ComponentOption("Qualcomm 8 Gen 3", 240, "Performans: 2500 Puan • Tier S+ (Ultra Güç)", 2024, requiredTech = "Qualcomm 8 Gen 3 Çip Entegrasyonu"),
+    ComponentOption("MediaTek D9300", 190, "Performans: 2300 Puan • Tier S+ (Ultra Güç)", 2024, requiredTech = "MediaTek D9300 Çip Entegrasyonu"),
+    ComponentOption("In-House Ar-Ge", 150, "Özel Tasarım Çip • 1600 Puan (Tier S)", 2015, requiredTech = "Özel Yonga Seti Entegrasyonu"),
+    ComponentOption("Kuantum İşlemci", 300, "Maksimum Güç • 3500 Puan • Tier S++", 2026, requiredTech = "Kuantum İşlemci Entegrasyonu")
 )
 
 val ALL_RAM_CAPACITIES = listOf(
@@ -209,7 +209,7 @@ val ALL_CHARGING_PORTS = listOf(
 
 val ALL_WIRELESS_CONNECTIVITY = listOf(
     ComponentOption("Wi-Fi 4 (n) & Bluetooth 2.1", 3, "2.4 GHz Temel Bağlantı", availableFrom = 2010),
-    ComponentOption("Wi-Fi 4 & Bluetooth 4.0 LE", 5, "Düşük Enerji Tüketimi", availableFrom = 2011, requiredTech = "4G LTE Şebeke Entegrasyonu"),
+    ComponentOption("Wi-Fi 4 & Bluetooth 4.0 LE", 5, "Düşük Enerji Tüketimi", availableFrom = 2011),
     ComponentOption("Wi-Fi 5 (ac) Çift Bant", 9, "5 GHz Gigabit Wi-Fi & BT 5.0", availableFrom = 2014, requiredTech = "Wi-Fi 5 (ac) & Çift Bant Kablosuz"),
     ComponentOption("Wi-Fi 6 (ax) & BT 5.2", 14, "Düşük Gecikme & Yüksek Kapasite", availableFrom = 2019, requiredTech = "Wi-Fi 6 (ax) & Bluetooth 5.2"),
     ComponentOption("Wi-Fi 6E (6 GHz) & BT 5.3", 20, "Parazitsiz 6 GHz Geniş Bant", availableFrom = 2021, requiredTech = "Wi-Fi 6E & 6GHz Frekans Çipi"),
@@ -218,28 +218,37 @@ val ALL_WIRELESS_CONNECTIVITY = listOf(
 
 val ALL_AUDIO = listOf(
     ComponentOption("Mono Hoparlör", 3, "3.5mm Jak Var", availableFrom = 2010),
-    ComponentOption("Stereo Hoparlör", 8, "Dolby Atmos Jaklı", availableFrom = 2011, requiredTech = "Stereo Hoparlör & Dolby Atmos"),
-    ComponentOption("Hi-Fi Quad DAC", 15, "32-bit/384kHz Jaklı", availableFrom = 2013, requiredTech = "Hi-Fi Quad DAC & 32-bit Ses"),
-    ComponentOption("Simetrik Çift Hoparlör", 12, "3.5mm Jak Yok", availableFrom = 2016, requiredTech = "Simetrik Çift Hoparlör"),
-    ComponentOption("Stüdyo Akustik & Mekansal", 22, "Spatial Audio", availableFrom = 2020, requiredTech = "Stüdyo Akustik & Mekansal Ses"),
-    ComponentOption("Kayıpsız Kablosuz LDAC HD", 30, "Ultra HD Akustik", availableFrom = 2024, requiredTech = "Kayıpsız Kablosuz Ses (LDAC HD)")
+    ComponentOption("Gelişmiş Beats Mono Ses", 6, "Beats Audio Çipi & 3.5mm Jak", availableFrom = 2011, requiredTech = "Gelişmiş Beats Mono Ses Entegrasyonu"),
+    ComponentOption("Ön Stereo Hoparlör", 10, "Çift Ön Stereo & 3.5mm Jak", availableFrom = 2013, requiredTech = "Ön Stereo Hoparlör Entegrasyonu"),
+    ComponentOption("Tip-C Çift Stereo", 14, "Jaksız Simetrik Ses Çıkışı", availableFrom = 2015, requiredTech = "Tip-C Çift Stereo Entegrasyonu"),
+    ComponentOption("Dolby Atmos Ses", 18, "Sinematik Çevresel 3D Akustik", availableFrom = 2017, requiredTech = "Dolby Atmos Ses Entegrasyonu"),
+    ComponentOption("Asimetrik Güçlü Stereo", 22, "Yüksek Desibel & Bas Amfisi", availableFrom = 2019, requiredTech = "Asimetrik Güçlü Stereo Entegrasyonu"),
+    ComponentOption("Kafa Takipli Uzamsal Ses", 28, "3D Spatial Audio", availableFrom = 2021, requiredTech = "Kafa Takipli Uzamsal Ses Entegrasyonu"),
+    ComponentOption("24-bit Kayıpsız Bluetooth Ses", 35, "LDAC / AptX Lossless", availableFrom = 2023, requiredTech = "24-bit Kayıpsız Bluetooth Ses Entegrasyonu"),
+    ComponentOption("Yapay Zeka Ses Kalibrasyonu", 45, "AI NPU Akustik Optimizasyonu", availableFrom = 2025, requiredTech = "Yapay Zeka Ses Kalibrasyon Entegrasyonu")
 )
 
 val ALL_BATTERY_CAPACITIES = listOf(
-    ComponentOption("1500 mAh", 5, availableFrom = 2010),
-    ComponentOption("2500 mAh", 10, availableFrom = 2011, requiredTech = "2500 mAh Batarya Entegrasyonu"),
-    ComponentOption("3500 mAh", 16, availableFrom = 2013, requiredTech = "3500 mAh Batarya Entegrasyonu"),
-    ComponentOption("4500 mAh", 24, availableFrom = 2016, requiredTech = "4500 mAh Batarya Entegrasyonu"),
-    ComponentOption("5500 mAh", 34, availableFrom = 2019, requiredTech = "5500 mAh Batarya Entegrasyonu"),
-    ComponentOption("6500 mAh Silikon-Karbon", 50, availableFrom = 2023, requiredTech = "6500 mAh Silikon-Karbon Batarya"),
-    ComponentOption("8000 mAh Katı Hal", 75, availableFrom = 2025, requiredTech = "8000 mAh Katı Hal Batarya")
+    ComponentOption("1500 mAh", 5, "Temel Kapasite", availableFrom = 2010),
+    ComponentOption("3100 mAh", 10, "Genişletilmiş Hücre", availableFrom = 2011, requiredTech = "3100 mAh Batarya Entegrasyonu"),
+    ComponentOption("3200 mAh", 12, "Uzun Ömürlü Hücre", availableFrom = 2013, requiredTech = "3200 mAh Batarya Entegrasyonu"),
+    ComponentOption("3600 mAh", 16, "Yoğun Batarya Hücresi", availableFrom = 2015, requiredTech = "3600 mAh Batarya Entegrasyonu"),
+    ComponentOption("4000 mAh", 20, "Tam Gün Kullanım", availableFrom = 2017, requiredTech = "4000 mAh Batarya Entegrasyonu"),
+    ComponentOption("4500 mAh", 25, "Dev Batarya Modülü", availableFrom = 2019, requiredTech = "4500 mAh Batarya Entegrasyonu"),
+    ComponentOption("5000 mAh", 30, "Amiral Gemisi Batarya", availableFrom = 2021, requiredTech = "5000 mAh Batarya Entegrasyonu"),
+    ComponentOption("5500 mAh", 35, "Yüksek Yoğunluklu Hücre", availableFrom = 2023, requiredTech = "5500 mAh Batarya Entegrasyonu"),
+    ComponentOption("7000 mAh Dev Batarya", 45, "3 Günlük Dev Güç", availableFrom = 2025, requiredTech = "7000 mAh Dev Batarya Entegrasyonu")
 )
 
 val ALL_BATTERY_TYPES = listOf(
-    ComponentOption("5W Standart Şarj", 2, "Li-Ion", availableFrom = 2010),
-    ComponentOption("18W Hızlı Şarj", 6, "Quick Charge 2.0", availableFrom = 2012, requiredTech = "18W Hızlı Şarj Entegrasyonu"),
-    ComponentOption("15W Kablosuz Şarj", 12, "Qi Şarj Desteği", availableFrom = 2014, requiredTech = "15W Kablosuz Şarj Entegrasyonu"),
-    ComponentOption("65W Ultra Hızlı Şarj", 20, "25 Dk Tam Dolum", availableFrom = 2018, requiredTech = "65W Ultra Hızlı Şarj Entegrasyonu"),
-    ComponentOption("120W GaN Şarj", 32, "15 Dk Tam Dolum", availableFrom = 2020, requiredTech = "120W GaN Hızlı Şarj Entegrasyonu"),
-    ComponentOption("240W Hiper Şarj", 48, "9 Dk Tam Dolum", availableFrom = 2023, requiredTech = "240W Hiper Şarj Entegrasyonu")
+    ComponentOption("5W Standart Şarj", 2, "Li-Ion Standart", availableFrom = 2010),
+    ComponentOption("10W Hızlı Şarj", 5, "Temel Hızlı Şarj", availableFrom = 2011, requiredTech = "10W Hızlı Şarj Entegrasyonu"),
+    ComponentOption("15W QuickCharge", 8, "Qualcomm QC Protokolü", availableFrom = 2013, requiredTech = "15W QuickCharge Entegrasyonu"),
+    ComponentOption("20W Li-Po & 5W Kablosuz", 14, "Li-Po & Qi Şarj", availableFrom = 2015, requiredTech = "20W Li-Po & 5W Kablosuz Şarj Entegrasyonu"),
+    ComponentOption("25W Li-Po & 10W Kablosuz", 18, "Hızlı Kablosuz & Kablolu", availableFrom = 2017, requiredTech = "25W Li-Po & 10W Kablosuz Şarj Entegrasyonu"),
+    ComponentOption("65W Çift Hücre & Ters Şarj", 25, "25 Dk Şarj & Ters Şarj", availableFrom = 2019, requiredTech = "65W Çift Hücre & Ters Şarj Entegrasyonu"),
+    ComponentOption("120W Çift Hücre & 50W Kablosuz", 35, "15 Dk Ultra Şarj", availableFrom = 2021, requiredTech = "120W Çift Hücre & 50W Kablosuz Şarj Entegrasyonu"),
+    ComponentOption("100W Katı Hal Batarya", 42, "Güvenli Katı Hal Hücresi", availableFrom = 2022, requiredTech = "100W Katı Hal Batarya Entegrasyonu"),
+    ComponentOption("200W+ Silisyum-Karbon (Si-Ca)", 50, "Si-Ca Anotlu Ultra Hız", availableFrom = 2023, requiredTech = "200W+ Silisyum-Karbon Şarj Entegrasyonu"),
+    ComponentOption("240W Katı Hal & Qi2 Şarj", 65, "9 Dk Şarj & Manyetik Qi2", availableFrom = 2025, requiredTech = "240W Katı Hal & Qi2 Şarj Entegrasyonu")
 )

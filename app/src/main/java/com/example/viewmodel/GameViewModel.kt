@@ -8,6 +8,7 @@ import com.example.data.AppDatabase
 import com.example.data.GameSaveEntity
 import com.example.data.GameSaveRepository
 import com.example.util.BenchmarkCalculator
+import com.example.util.HardwareRatingHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -108,12 +109,49 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             if (autoSave != null) {
                 try {
                     val loaded = json.decodeFromString<GameState>(autoSave.gameStateJson)
-                    _state.value = loaded
+                    _state.value = sanitizeLoadedGameState(loaded)
                 } catch (e: Exception) {
                     // Fall back to default
                 }
             }
         }
+    }
+
+    private fun sanitizeLoadedGameState(loaded: GameState): GameState {
+        val sanitizedModels = loaded.activeModels.map { model ->
+            val resolvedWithFullRecall = loaded.activeHardwareCrises.any {
+                it.modelId == model.id && it.isResolved && it.resolutionChoice == CrisisResolutionStrategy.FULL_RECALL_REFUND.title
+            }
+            if (!resolvedWithFullRecall && model.isRecalled) {
+                val restoredStock = if (model.remainingStock == 0 && model.totalSold < model.totalStock) {
+                    model.totalStock - model.totalSold
+                } else model.remainingStock
+                model.copy(
+                    isRecalled = false,
+                    remainingStock = restoredStock.coerceAtLeast(0)
+                )
+            } else if (!model.isRecalled && model.remainingStock == 0 && model.totalSold < model.totalStock) {
+                // If model is not recalled but remainingStock was wiped by a crisis before
+                val restoredStock = model.totalStock - model.totalSold
+                model.copy(remainingStock = restoredStock.coerceAtLeast(0))
+            } else {
+                model
+            }
+        }
+
+        val sanitizedTrend = if (loaded.currentTrend.tip.isBlank()) {
+            when {
+                loaded.year <= 2013 && loaded.currentTrend.category == TrendCategory.PREMIUM_BUILD ->
+                    loaded.currentTrend.copy(tip = "Alüminyum gövde veya ince tasarım çizgileri kullanın.")
+                loaded.year in 2014..2019 && loaded.currentTrend.category == TrendCategory.PREMIUM_BUILD ->
+                    loaded.currentTrend.copy(tip = "Cam arka kapak veya Alüminyum kasa kullanın.")
+                loaded.year in 2014..2019 && loaded.currentTrend.category == TrendCategory.LONG_BATTERY ->
+                    loaded.currentTrend.copy(tip = "3600mAh - 4500mAh batarya veya hızlı şarj seçin.")
+                else -> loaded.currentTrend
+            }
+        } else loaded.currentTrend
+
+        return loaded.copy(activeModels = sanitizedModels, currentTrend = sanitizedTrend)
     }
 
     fun autoSaveGame() {
@@ -173,7 +211,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 val entity = saveRepository.getSave(slotId)
                 if (entity != null) {
                     val loaded = json.decodeFromString<GameState>(entity.gameStateJson)
-                    _state.value = loaded
+                    _state.value = sanitizeLoadedGameState(loaded)
                     _state.update { it.copy(noticeMessage = "${entity.slotName} başarıyla yüklendi!") }
                 } else {
                     _state.update { it.copy(noticeMessage = "Kayıt dosyası bulunamadı.") }
@@ -260,11 +298,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             if (updatedTrend.remainingMonths <= 1) {
                 val newGeneratedTrend = generateNewTrend(newYear, updatedTrend.category)
                 updatedTrend = newGeneratedTrend
+                val trendBonusPct = newGeneratedTrend.bonusPercent
                 newNewsList.add(
                     NewsArticle(
                         id = "trend_news_${newYear}_${newMonth}_${Random.nextInt(100, 999)}",
                         title = "🔥 YENİ TÜKETİCİ TRENDİ: ${newGeneratedTrend.title}",
-                        text = "${newGeneratedTrend.description} Bu trende uygun cihazlar pazarda +%50 daha fazla talep görecek! (${newGeneratedTrend.category.tip})",
+                        text = "${newGeneratedTrend.description} Bu trende uygun cihazlar pazarda +%$trendBonusPct daha fazla talep görecek! (${newGeneratedTrend.category.tip})",
                         category = "Pazar",
                         year = newYear,
                         month = newMonth
@@ -858,10 +897,33 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 // VS Duel with Player's Best Active Model
                 val playerBestModel = currentState.activeModels.filter { !it.isCompleted }.maxByOrNull { it.reviewScore }
                 val duelVerdict = if (playerBestModel != null) {
+                    val playerHwIndex = HardwareRatingHelper.calculateHardwarePowerIndex(
+                        processor = playerBestModel.specs.processor,
+                        ram = playerBestModel.specs.ramCapacity,
+                        camera = playerBestModel.specs.camera,
+                        battery = playerBestModel.specs.batteryCapacity,
+                        display = playerBestModel.specs.display
+                    )
+                    val compHwIndex = HardwareRatingHelper.calculateHardwarePowerIndex(
+                        processor = hardware.processor,
+                        ram = hardware.ram,
+                        camera = hardware.camera,
+                        battery = hardware.battery,
+                        display = hardware.display
+                    )
+                    val scoreDiff = playerBestModel.reviewScore - score
+                    val hwDiff = playerHwIndex - compHwIndex
+
                     when {
-                        playerBestModel.reviewScore >= score + 4 -> "🏆 Şirketiniz (${playerBestModel.specs.name}) Donanım ve Puan Olarak Ezdi!"
-                        playerBestModel.reviewScore >= score - 2 -> "⚖️ Kafa Kafaya Mücadele! İki Cihaz da Çok Güçlü."
-                        else -> "⚡ Rakip (${modelName}) Puan Olarak Öne Geçti!"
+                        scoreDiff >= 4 && hwDiff >= 40 -> "🏆 Şirketiniz (${playerBestModel.specs.name}) Hem Üstün Donanımı Hem de Yüksek Puanıyla Ezdi!"
+                        scoreDiff >= 4 && hwDiff <= -40 -> "🎯 Şirketiniz (${playerBestModel.specs.name}), Donanımda Geride Olsa da Yazılım ve Tasarımıyla Kazandı!"
+                        scoreDiff >= 4 -> "🏆 Şirketiniz (${playerBestModel.specs.name}) Yüksek Eleştirmen Puanıyla Öne Çıktı!"
+                        scoreDiff <= -4 && hwDiff >= 40 -> "💡 Şirketiniz Güçlü Donanıma Sahip, Ancak Rakip Fiyat/Optimizasyonla Puanı Kaptı."
+                        scoreDiff <= -4 && hwDiff <= -40 -> "⚡ Rakip (${modelName}) Üstün Donanımı ve Yüksek Puanıyla Ezdi!"
+                        scoreDiff <= -4 -> "⚡ Rakip (${modelName}) Eleştirmen Puanlarında Öne Geçti!"
+                        hwDiff >= 60 -> "💪 Donanım Canavarı Cihazınız (${playerBestModel.specs.name}) Saf Güçte Önde!"
+                        hwDiff <= -60 -> "⚠️ Rakip (${modelName}) Donanım Gücünde Fark Yarattı!"
+                        else -> "⚖️ Kafa Kafaya Mücadele! İki Cihaz da Çok Dengeli."
                     }
                 } else null
 
@@ -1614,7 +1676,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         val isTrendMatched = checkTrendMatch(specs, currentState.currentTrend)
-        val trendBonusNote = if (isTrendMatched) " 🔥 Aktif Pazar Trendi (${currentState.currentTrend.title}) yakalandı! +%50 Satış Bonusu devrede." else ""
+        val trendBonusPct = currentState.currentTrend.bonusPercent
+        val trendBonusNote = if (isTrendMatched) " 🔥 Aktif Pazar Trendi (${currentState.currentTrend.title}) yakalandı! +%$trendBonusPct Satış Bonusu devrede." else ""
         val colorNote = if (specs.selectedColors.size > 1) " 🎨 ${specs.selectedColors.size} Lansman Rengi sunuldu." else ""
         val osNote = if (specs.osType != "Saf Açık Kaynak") " 🌐 ${specs.osName} (${specs.osFocus}) yüklü." else ""
         val tierNote = if (specs.tier != ModelTier.STANDARD) " ${specs.tier.badge} ${specs.tier.title} Segmenti." else ""
@@ -2676,6 +2739,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val unitWholesalePrice = (model.specs.price * 0.5f).toInt().coerceAtLeast(1)
         val totalGained = model.remainingStock.toLong() * unitWholesalePrice.toLong()
         val liquidatedQty = model.remainingStock
+        val repPenalty = 3 // Spot piyasa ve toptan tasfiyeden kaynaklanan marka prestiji ve itibar kaybı
 
         val updatedModels = current.activeModels.map {
             if (it.id == modelId) {
@@ -2689,8 +2753,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         val news = NewsArticle(
             id = "stock_liq_${current.year}_${current.month}_${Random.nextInt(100, 999)}",
-            title = "📦 ACİL STOK TASFİYESİ: ${model.specs.name}",
-            text = "${model.specs.name} modelinin depodaki ${"%,d".format(liquidatedQty)} adet stoğu toptancılara %50 indirimle toptan satıldı ve $${"%,d".format(totalGained)} acil nakit elde edildi.",
+            title = "📦 ACİL SPOT STOK TASFİYESİ: ${model.specs.name}",
+            text = "${model.specs.name} modelinin depodaki ${"%,d".format(liquidatedQty)} adet stoğu spot toptancılara %50 indirimle tasfiye edildi ($${"%,d".format(totalGained)} acil nakit sağlandı). Spot pazara düşen ürünler marka değerini zedelediğinden şirket itibarı -$repPenalty puan düştü.",
             category = "Şirket",
             year = current.year,
             month = current.month
@@ -2699,9 +2763,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _state.update { state ->
             state.copy(
                 budget = state.budget + totalGained,
+                reputation = (state.reputation - repPenalty).coerceIn(0, 100),
                 activeModels = updatedModels,
                 newsList = listOf(news) + state.newsList,
-                noticeMessage = "${model.specs.name} stokları tasfiye edildi (+$${"%,d".format(totalGained)})!"
+                noticeMessage = "📦 ${model.specs.name} spot toptan tasfiye edildi (+$${"%,d".format(totalGained)}, -$repPenalty İtibar)!"
             )
         }
         autoSaveGame()
@@ -2747,9 +2812,32 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val updatedModels = current.activeModels.map {
             if (it.id == crisis.modelId) {
                 when (strategy) {
-                    CrisisResolutionStrategy.FULL_RECALL_REFUND -> it.copy(remainingStock = 0, isRecalled = true)
-                    CrisisResolutionStrategy.SOFTWARE_PATCH_LIMIT -> it.copy(reviewScore = (it.reviewScore - 6).coerceAtLeast(10))
-                    CrisisResolutionStrategy.FREE_SERVICE_REPAIR -> it.copy(reviewScore = (it.reviewScore + 2).coerceAtMost(100))
+                    CrisisResolutionStrategy.FULL_RECALL_REFUND -> it.copy(
+                        remainingStock = 0,
+                        isRecalled = true,
+                        recalledYear = current.year,
+                        recalledMonth = current.month
+                    )
+                    CrisisResolutionStrategy.SOFTWARE_PATCH_LIMIT -> {
+                        val restoredStock = if (it.remainingStock == 0 && it.totalSold < it.totalStock) {
+                            it.totalStock - it.totalSold
+                        } else it.remainingStock
+                        it.copy(
+                            isRecalled = false,
+                            remainingStock = restoredStock,
+                            reviewScore = (it.reviewScore - 6).coerceAtLeast(10)
+                        )
+                    }
+                    CrisisResolutionStrategy.FREE_SERVICE_REPAIR -> {
+                        val restoredStock = if (it.remainingStock == 0 && it.totalSold < it.totalStock) {
+                            it.totalStock - it.totalSold
+                        } else it.remainingStock
+                        it.copy(
+                            isRecalled = false,
+                            remainingStock = restoredStock,
+                            reviewScore = (it.reviewScore + 2).coerceAtMost(100)
+                        )
+                    }
                 }
             } else it
         }

@@ -767,12 +767,21 @@ fun EmergencyRecoveryTabContent(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Elde kalan cihazları %50 indirimle tek seferde nakde çevir",
+                                text = "Elde kalan cihazları %50 indirimle tek seferde spot piyasaya devret",
                                 fontSize = 10.sp,
                                 color = Slate500
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = "Spot toptancılara yapılan acil tasfiyeler yüksek nakit sağlar ancak marka algısını zedelediği için her model tasfiyesinde şirket itibarı 3 puan düşer.",
+                        fontSize = 11.sp,
+                        color = Slate600,
+                        lineHeight = 15.sp
+                    )
 
                     Spacer(modifier = Modifier.height(10.dp))
 
@@ -808,6 +817,12 @@ fun EmergencyRecoveryTabContent(
                                         "${"%,d".format(model.remainingStock)} adet stok • Birim: $$unitWholesale (Normal: $${model.specs.price})",
                                         fontSize = 10.sp,
                                         color = Slate600
+                                    )
+                                    Text(
+                                        "Maliyet: -3 İtibar Puanı (Spot Pazar İmajı)",
+                                        fontSize = 9.5.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(0xFFE11D48)
                                     )
                                 }
 

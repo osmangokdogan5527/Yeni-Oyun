@@ -293,7 +293,7 @@ fun GameDashboard(
                                 modifier = Modifier.weight(1f, fill = false)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            val trendBonusPct = ((state.currentTrend.bonusMultiplier - 1.0f) * 100).toInt()
+                            val trendBonusPct = state.currentTrend.bonusPercent
                             Surface(
                                 shape = RoundedCornerShape(4.dp),
                                 color = Color(0xFF2E7D32)

@@ -106,10 +106,14 @@ object BenchmarkCalculator {
 
         val chargeBonus = when {
             specs.batteryType.contains("240W") -> 15
+            specs.batteryType.contains("200W") -> 14
             specs.batteryType.contains("120W") -> 12
+            specs.batteryType.contains("100W") -> 10
             specs.batteryType.contains("65W") -> 8
-            specs.batteryType.contains("15W Kablosuz") -> 5
-            specs.batteryType.contains("18W") -> 3
+            specs.batteryType.contains("25W") -> 6
+            specs.batteryType.contains("20W") -> 5
+            specs.batteryType.contains("15W") || specs.batteryType.contains("18W") -> 4
+            specs.batteryType.contains("10W") -> 2
             else -> 0
         }
 

@@ -355,7 +355,7 @@ fun DevicesScreen(
                                                 color = Color(0xFFA5D6A7)
                                             )
                                         }
-                                        val trendBonusPct = ((state.currentTrend.bonusMultiplier - 1.0f) * 100).toInt()
+                                        val trendBonusPct = state.currentTrend.bonusPercent
                                         Text(
                                             text = "+%$trendBonusPct Satış Bonusu Devrede",
                                             fontSize = 11.sp,
@@ -1078,6 +1078,10 @@ fun RecycleStockDialog(
                             Text("$${recyclePerUnit} (%50)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFD97706))
                         }
                         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = Slate200)
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Prestij & Çevre Etkisi:", fontSize = 12.sp, color = Slate600)
+                            Text("Sıfır İtibar Kaybı (Yeşil Şirket 🌱)", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Green500)
+                        }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Kasaya Aktarılacak Tutar:", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                             Text("+$${"%,d".format(totalRefund)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Green500)

@@ -66,7 +66,7 @@ fun MarketScreen(
         currentModel = state.activeModels.firstOrNull { !it.isCompleted }?.specs?.name ?: "Satışta Model Yok",
         modelPrice = state.activeModels.firstOrNull { !it.isCompleted }?.specs?.price ?: 0,
         modelScore = state.activeModels.firstOrNull { !it.isCompleted }?.reviewScore ?: 0,
-        strategy = if (state.activeModels.any { it.matchesTrend }) "Trend Avcısı (+%${((state.currentTrend.bonusMultiplier - 1f) * 100).toInt()})" else "Dengeli Üretim",
+        strategy = if (state.activeModels.any { it.matchesTrend }) "Trend Avcısı (+%${state.currentTrend.bonusPercent})" else "Dengeli Üretim",
         brandColorHex = state.companyBrandColorHex,
         logoId = state.companyLogoId
     )
@@ -328,10 +328,13 @@ fun ActiveTrendCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(38.dp)
                             .clip(CircleShape)
                             .background(Color(0xFFFF5722)),
                         contentAlignment = Alignment.Center
@@ -340,35 +343,37 @@ fun ActiveTrendCard(
                     }
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                "🔥 AKTİF TÜKETİCİ TRENDİ",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color(0xFFFFB74D),
-                                letterSpacing = 1.sp
-                            )
-                        }
+                        Text(
+                            "🔥 AKTİF TÜKETİCİ TRENDİ",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFFFFB74D),
+                            letterSpacing = 1.sp
+                        )
                         Text(
                             trend.title,
-                            fontSize = 16.sp,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                     }
                 }
 
+                Spacer(modifier = Modifier.width(8.dp))
+
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(10.dp),
                     color = Color(0xFF2E7D32)
                 ) {
                     val bonusPct = ((trend.bonusMultiplier - 1.0f) * 100).toInt()
                     Text(
-                        text = "+%$bonusPct SATIŞ",
+                        text = "+%$bonusPct Satış Bonusu",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        maxLines = 1,
+                        softWrap = false,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
                     )
                 }
             }
@@ -402,7 +407,7 @@ fun ActiveTrendCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "İpucu: ${trend.category.tip}",
+                        text = "İpucu: ${trend.effectiveTip}",
                         fontSize = 12.sp,
                         color = Color(0xFFFFECB3),
                         fontWeight = FontWeight.Medium
