@@ -6,7 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CrisisAlert
 import androidx.compose.material.icons.filled.Info
@@ -35,30 +37,48 @@ fun HardwareCrisisManagementDialog(
     onApplyStrategy: (CrisisResolutionStrategy) -> Unit
 ) {
     var selectedStrategy by remember { mutableStateOf<CrisisResolutionStrategy?>(null) }
+    val scrollState = rememberScrollState()
 
-    Dialog(onDismissRequest = onDismiss) {
+    val selectedStrategyCost = selectedStrategy?.let { strategy ->
+        when (strategy) {
+            CrisisResolutionStrategy.SOFTWARE_PATCH_LIMIT -> 50000L
+            CrisisResolutionStrategy.FREE_SERVICE_REPAIR -> (crisis.affectedUnitsCount.toLong() * 25L).coerceAtLeast(100000L)
+            CrisisResolutionStrategy.FULL_RECALL_REFUND -> {
+                val unitRefund = model?.specs?.price?.toLong() ?: 300L
+                (crisis.affectedUnitsCount.toLong() * unitRefund) + ((model?.remainingStock ?: 0).toLong() * 50L)
+            }
+        }
+    } ?: 0L
+    val canAffordSelected = selectedStrategy == null || currentBudget >= selectedStrategyCost
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+    ) {
         Card(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
+                .fillMaxWidth(0.95f)
+                .fillMaxHeight(0.88f)
+                .padding(vertical = 8.dp),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Header Title
+                // Fixed Header
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(42.dp)
+                            .size(40.dp)
                             .background(Color(0xFFFEF2F2), RoundedCornerShape(12.dp)),
                         contentAlignment = Alignment.Center
                     ) {
@@ -67,89 +87,96 @@ fun HardwareCrisisManagementDialog(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "KRİZ YÖNETİM MASASI",
-                            fontSize = 12.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFDC2626)
                         )
                         Text(
                             text = crisis.modelName,
-                            fontSize = 18.sp,
+                            fontSize = 17.sp,
                             fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1
                         )
                     }
                 }
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
 
-                // Crisis Summary Card
-                Surface(
-                    color = Color(0xFFFFF1F2),
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(1.dp, Color(0xFFFECDD3)),
-                    modifier = Modifier.fillMaxWidth()
+                // Scrollable Content
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(scrollState),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = "Arıza: ${crisis.crisisType.title}",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                color = Color(0xFF9F1239)
-                            )
-                            val sevBadge = when (crisis.severityLevel) {
-                                3 -> "🚨 Kritik Kriz"
-                                2 -> "⚠️ Ciddi Boyut"
-                                else -> "🟡 Orta Düzey"
+                    // Crisis Summary Card
+                    Surface(
+                        color = Color(0xFFFFF1F2),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, Color(0xFFFECDD3)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = "Arıza: ${crisis.crisisType.title}",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF9F1239)
+                                )
+                                val sevBadge = when (crisis.severityLevel) {
+                                    3 -> "🚨 Kritik"
+                                    2 -> "⚠️ Ciddi"
+                                    else -> "🟡 Orta"
+                                }
+                                Text(
+                                    text = sevBadge,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp,
+                                    color = Color(0xFFBE123C)
+                                )
                             }
-                            Text(
-                                text = sevBadge,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 11.sp,
-                                color = Color(0xFFBE123C)
-                            )
-                        }
 
-                        Text(
-                            text = crisis.crisisType.description,
-                            fontSize = 12.sp,
-                            color = Color(0xFF4C0519),
-                            lineHeight = 16.sp
-                        )
+                            Text(
+                                text = crisis.crisisType.description,
+                                fontSize = 11.5.sp,
+                                color = Color(0xFF4C0519),
+                                lineHeight = 15.sp
+                            )
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = "Olası Kaynak: ${crisis.crisisType.typicalCulprit}",
-                                fontSize = 10.5.sp,
-                                color = Color(0xFF881337),
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = "Etkilenen: ${"%,d".format(crisis.affectedUnitsCount)} adet",
-                                fontSize = 10.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF881337)
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Kaynak: ${crisis.crisisType.typicalCulprit}",
+                                    fontSize = 10.sp,
+                                    color = Color(0xFF881337),
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = "Etkilenen: ${"%,d".format(crisis.affectedUnitsCount)} adet",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF881337)
+                                )
+                            }
                         }
                     }
-                }
 
-                Text(
-                    text = "Kriz Çözüm Stratejisini Seçin:",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                    Text(
+                        text = "Kriz Çözüm Stratejisini Seçin:",
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
 
-                // Strategies List
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Strategies List
                     CrisisResolutionStrategy.values().forEach { strategy ->
                         val isSelected = selectedStrategy == strategy
                         val calculatedCost = when (strategy) {
@@ -181,7 +208,8 @@ fun HardwareCrisisManagementDialog(
                                 ) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        modifier = Modifier.weight(1f)
                                     ) {
                                         Text(strategy.iconEmoji, fontSize = 16.sp)
                                         Text(
@@ -228,31 +256,53 @@ fun HardwareCrisisManagementDialog(
                     }
                 }
 
-                // Action Buttons
+                // Insufficient Budget warning if applicable
+                if (selectedStrategy != null && !canAffordSelected) {
+                    Surface(
+                        color = Color(0xFFFEF2F2),
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, Color(0xFFFCA5A5)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "⚠️ Yetersiz bütçe! (Mevcut: $${"%,d".format(currentBudget)}, Gereken: $${"%,d".format(selectedStrategyCost)}). Daha düşük maliyetli bir strateji seçin.",
+                            fontSize = 10.5.sp,
+                            color = Color(0xFFDC2626),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+
+                // Fixed Action Buttons at the Bottom
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     OutlinedButton(
                         onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Daha Sonra")
+                        Text("Daha Sonra", fontSize = 12.sp)
                     }
 
                     Button3D(
                         onClick = {
                             selectedStrategy?.let { onApplyStrategy(it) }
                         },
-                        enabled = selectedStrategy != null,
-                        modifier = Modifier.weight(1.3f),
+                        enabled = selectedStrategy != null && canAffordSelected,
+                        modifier = Modifier
+                            .weight(1.3f)
+                            .height(44.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (selectedStrategy == CrisisResolutionStrategy.FULL_RECALL_REFUND) Color(0xFFDC2626) else MaterialTheme.colorScheme.primary
                         )
                     ) {
-                        Text("Kararı Uygula", fontWeight = FontWeight.Bold)
+                        Text("Kararı Uygula", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     }
                 }
             }

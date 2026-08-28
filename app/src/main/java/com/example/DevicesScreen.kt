@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.*
@@ -230,34 +231,57 @@ fun DevicesScreen(
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Surface(
                                     color = Color(0xFFFEF2F2),
-                                    shape = RoundedCornerShape(8.dp),
+                                    shape = RoundedCornerShape(10.dp),
                                     border = BorderStroke(1.dp, Color(0xFFFCA5A5)),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 10.dp, vertical = 8.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                            modifier = Modifier.weight(1f)
                                         ) {
-                                            Text(modelCrisis.crisisType.iconEmoji, fontSize = 14.sp)
+                                            Text(modelCrisis.crisisType.iconEmoji, fontSize = 16.sp)
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = "Kronik Donanım Kusuru",
+                                                    fontSize = 9.5.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFF991B1B)
+                                                )
+                                                Text(
+                                                    text = modelCrisis.crisisType.title,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFFDC2626),
+                                                    maxLines = 2,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = Color(0xFFDC2626),
+                                            shadowElevation = 2.dp,
+                                            modifier = Modifier.clickable { selectedCrisisForResolution = modelCrisis }
+                                        ) {
                                             Text(
-                                                text = "Kronik Sorun: ${modelCrisis.crisisType.title}",
+                                                text = "Krizi Çöz",
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color(0xFFDC2626)
+                                                color = Color.White,
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                                maxLines = 1,
+                                                softWrap = false
                                             )
                                         }
-                                        Text(
-                                            text = "KRİZİ ÇÖZ",
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            color = Color(0xFF991B1B),
-                                            modifier = Modifier.clickable { selectedCrisisForResolution = modelCrisis }
-                                        )
                                     }
                                 }
                             }
@@ -695,16 +719,21 @@ fun DevicesScreen(
                                     onClick = onNavigateToBenchmark,
                                     modifier = Modifier
                                         .weight(1f)
-                                        .height(40.dp),
+                                        .height(46.dp),
+                                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 2.dp),
                                     shape = RoundedCornerShape(10.dp),
                                     colors = ButtonDefaults.outlinedButtonColors(
                                         contentColor = Color(0xFFFF5722)
                                     ),
                                     border = BorderStroke(1.dp, Color(0xFFFFCCBC))
                                 ) {
-                                    Icon(Icons.Default.Speed, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text("TEST", fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(Icons.Default.Speed, contentDescription = null, modifier = Modifier.size(15.dp))
+                                        Text("Test", fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+                                    }
                                 }
 
                                 OutlinedButton(
@@ -712,38 +741,48 @@ fun DevicesScreen(
                                     enabled = !model.isRecalled,
                                     modifier = Modifier
                                         .weight(1f)
-                                        .height(40.dp),
+                                        .height(46.dp),
+                                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 2.dp),
                                     shape = RoundedCornerShape(10.dp),
                                     colors = ButtonDefaults.outlinedButtonColors(
                                         contentColor = MaterialTheme.colorScheme.secondary
                                     )
                                 ) {
-                                    Icon(Icons.Default.Campaign, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text("REKLAM", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(Icons.Default.Campaign, contentDescription = null, modifier = Modifier.size(15.dp))
+                                        Text("Reklam", fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+                                    }
                                 }
 
                                 OutlinedButton(
                                     onClick = { selectedModelForDiscount = model },
                                     enabled = !model.isRecalled && model.remainingStock > 0,
                                     modifier = Modifier
-                                        .weight(1.1f)
-                                        .height(40.dp),
+                                        .weight(1f)
+                                        .height(46.dp),
+                                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 2.dp),
                                     shape = RoundedCornerShape(10.dp),
                                     colors = ButtonDefaults.outlinedButtonColors(
                                         contentColor = if (model.discountPercent > 0) Color(0xFFDC2626) else Color(0xFFD97706)
                                     ),
                                     border = BorderStroke(1.dp, if (model.discountPercent > 0) Color(0xFFFCA5A5) else Color(0xFFFDE68A))
                                 ) {
-                                    Icon(Icons.Default.LocalOffer, contentDescription = null, modifier = Modifier.size(15.dp))
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text(
-                                        if (model.discountPercent > 0) "%${model.discountPercent} İNDİRİM" else "İNDİRİM",
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        softWrap = false
-                                    )
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(Icons.Default.LocalOffer, contentDescription = null, modifier = Modifier.size(15.dp))
+                                        Text(
+                                            if (model.discountPercent > 0) "%${model.discountPercent} İndirim" else "İndirim",
+                                            fontSize = 9.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
+                                    }
                                 }
 
                                 OutlinedButton(
@@ -751,15 +790,20 @@ fun DevicesScreen(
                                     enabled = !model.isRecalled,
                                     modifier = Modifier
                                         .weight(1f)
-                                        .height(40.dp),
+                                        .height(46.dp),
+                                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 2.dp),
                                     shape = RoundedCornerShape(10.dp),
                                     colors = ButtonDefaults.outlinedButtonColors(
                                         contentColor = MaterialTheme.colorScheme.primary
                                     )
                                 ) {
-                                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text("STOK", fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(15.dp))
+                                        Text("Stok Ekle", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+                                    }
                                 }
                             }
 
