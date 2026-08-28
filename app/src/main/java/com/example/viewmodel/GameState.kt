@@ -355,8 +355,16 @@ data class ActiveModel(
     val isRecalled: Boolean = false,
     val recalledYear: Int? = null,
     val recalledMonth: Int? = null,
-    val producedStock: Int = totalStock // Şimdiye kadar fabrikada fiilen üretilmiş toplam adet (eski kayıtlarda geriye dönük uyum için totalStock'a eşit başlar)
+    val producedStock: Int = totalStock, // Şimdiye kadar fabrikada fiilen üretilmiş toplam adet (eski kayıtlarda geriye dönük uyum için totalStock'a eşit başlar)
+    val discountPercent: Int = 0, // İndirim Kampanyası (%0, %15, %30, %50)
+    // Sadeleştirilmiş satış özeti (arayüzde gösterim için): 1.0 = nötr, >1.0 olumlu, <1.0 olumsuz etki
+    val lastProductQualityScore: Float = 1f, // Kalite + tasarım/malzeme + OS uyumu
+    val lastMarketDemandScore: Float = 1f, // Trend + renk çeşitliliği + kampanya + fiyat cazibesi
+    val lastBrandStrengthScore: Float = 1f // İtibar + pazar olgunluğu + seri sadakati
 ) {
+    val effectivePrice: Int
+        get() = if (discountPercent > 0) (specs.price * (100 - discountPercent) / 100).coerceAtLeast(1) else specs.price
+
     val maxMonthsOnMarket: Int
         get() = if (reviewScore >= 60) 24 else 12
 
@@ -369,6 +377,19 @@ data class ActiveModel(
 
     val isCompleted: Boolean
         get() = (remainingStock <= 0 && !hasPendingProduction) || periodsOnMarket >= maxPeriodsOnMarket || (periodsOnMarket == 0 && monthsOnMarket >= maxMonthsOnMarket)
+
+    /** 1.0 nötr referans alınarak bir skor grubunu basit bir Türkçe etikete çevirir (arayüzde gösterim için). */
+    private fun scoreLabel(score: Float): String = when {
+        score >= 1.35f -> "Mükemmel"
+        score >= 1.10f -> "İyi"
+        score >= 0.90f -> "Orta"
+        score >= 0.65f -> "Zayıf"
+        else -> "Kötü"
+    }
+
+    val productQualityLabel: String get() = scoreLabel(lastProductQualityScore)
+    val marketDemandLabel: String get() = scoreLabel(lastMarketDemandScore)
+    val brandStrengthLabel: String get() = scoreLabel(lastBrandStrengthScore)
 }
 
 @Serializable
@@ -420,7 +441,16 @@ data class CompetitorReleaseHistory(
     val score: Int,
     val year: Int,
     val month: Int,
-    val headline: String
+    val headline: String,
+    val processor: String = "Gelişmiş Mobil Çip",
+    val ram: String = "8 GB",
+    val camera: String = "50 MP Pro Sensör",
+    val battery: String = "4500 mAh",
+    val display: String = "120Hz OLED",
+    val vsPlayerModelName: String? = null,
+    val vsPlayerModelScore: Int? = null,
+    val vsPlayerModelPrice: Int? = null,
+    val duelVerdict: String? = null // e.g. "Oyuncu Üstün Çıktı", "Kafa Kafaya", "Rakip Öne Geçti"
 )
 
 @Serializable
@@ -434,6 +464,97 @@ data class NewsArticle(
     val isAiGenerated: Boolean = false,
     val reviewerQuote: String? = null
 )
+
+@Serializable
+enum class HardwareCrisisType(
+    val title: String,
+    val iconEmoji: String,
+    val description: String,
+    val typicalCulprit: String
+) {
+    BATTERY_OVERHEATING(
+        "Batarya Aşırı Isınma & Şişme",
+        "🔥",
+        "Kullanıcılar cihazın şarjda veya oyun sırasında aşırı ısındığını, bazı bataryaların genleştiğini bildiriyor.",
+        "Batarya Kalitesi / Hızlı Şarj Entegrasyonu"
+    ),
+    CHASSIS_BENDGATE(
+        "Kasa Yapısal Bükülme (Bendgate)",
+        "📐",
+        "Cihazın cepte taşınırken veya hafif baskıda şasiden kalıcı olarak büküldüğü videolar sosyal medyada viral oldu.",
+        "Kasa Malzemesi & İnce Gövde Dayanımı"
+    ),
+    DISPLAY_GREEN_LINE(
+        "Ekran Yeşil Çizgi & Titreme Kusuru",
+        "🟢",
+        "Yazılım ve panel sürücüsü uyumsuzluğu nedeniyle ekranda dikey kalıcı yeşil çizgiler ve titremeler beliriyor.",
+        "Ekran Paneli Kalite Kontrolü & QA Eksikliği"
+    ),
+    CAMERA_FOCUS_BLUR(
+        "Kamera OIS & Odaklama Arızası",
+        "📷",
+        "Fotoğraf çekerken mekanik lens motorunun titrediği ve sürekli bulanık odaklama yaptığı tespit edildi.",
+        "Kamera Modülü & Optik Kalibrasyon"
+    ),
+    SOC_THROTTLING(
+        "Aşırı Isınan İşlemci & Ani Kasma",
+        "⚡",
+        "İşlemci termal sınırları aştığı için cihaz birkaç dakika içinde frekans düşürüyor ve arayüz donuyor.",
+        "Termal Soğutma Bloğu & Çip Güç Optimizasyonu"
+    )
+}
+
+@Serializable
+data class HardwareCrisis(
+    val id: String,
+    val modelId: String,
+    val modelName: String,
+    val crisisType: HardwareCrisisType,
+    val severityLevel: Int = 1, // 1: Hafif/Orta, 2: Ciddi, 3: Kritik Kriz
+    val yearTriggered: Int,
+    val monthTriggered: Int,
+    val periodTriggered: Int,
+    val affectedUnitsCount: Int,
+    val isResolved: Boolean = false,
+    val resolvedYear: Int? = null,
+    val resolvedMonth: Int? = null,
+    val resolutionChoice: String? = null // "Yazılım Yaması", "Ücretsiz Servis Tamiri", "Tam Geri Çağırma (Recall)"
+)
+
+@Serializable
+enum class CrisisResolutionStrategy(
+    val title: String,
+    val iconEmoji: String,
+    val costType: String,
+    val repImpactText: String,
+    val salesImpactText: String,
+    val description: String
+) {
+    SOFTWARE_PATCH_LIMIT(
+        "Acil Yazılım Güncellemesi & Açıklama",
+        "💻",
+        "Çok Düşük Maliyet ($50.000)",
+        "-4 İtibar Kaybı",
+        "Satış Talebi %15 Azalır",
+        "Donanım performansını/şarj hızını yazılımla kısıtlayarak sorunu maskeleyin ve resmi özür yayımlayın."
+    ),
+    FREE_SERVICE_REPAIR(
+        "Yetkili Servislerde Ücretsiz Parça Onarımı",
+        "🔧",
+        "Orta Maliyet (Cihaz Başı $25)",
+        "+2 İtibar (Müşteri Desteği)",
+        "Satışlar Hızla Normale Döner",
+        "Sorun yaşayan tüm müşterilere servislerde ücretsiz modül ve batarya/panel değişimi sağlayın."
+    ),
+    FULL_RECALL_REFUND(
+        "Tam Geri Çağırma (Full Recall) & Para İadesi",
+        "🚨",
+        "Yüksek Maliyet (Birim Satış Bedeli + %15)",
+        "+12 Tüketici Güveni & Prestij",
+        "Model Satıştan Çekilir",
+        "Cihazı tüm dünyada satıştan çekin, satılan cihazların ücretini eksiksiz iade edin. Cesur kriz liderliği takdir toplar!"
+    )
+}
 
 @Serializable
 data class MarketReport(
@@ -795,10 +916,10 @@ val DEFAULT_COMPETITORS = listOf(
 @Serializable
 data class GameState(
     val reports: List<MarketReport> = emptyList(),
-    val budget: Long = 4500000,
+    val budget: Long = 1200000,
     val monthlyIncome: Long = 0,
     val rdSpending: Long = 0,
-    val reputation: Int = 0,
+    val reputation: Int = 5,
     val year: Int = 2010,
     val month: Int = 1,
     val period: Int = 1, // 1: Ayın 1. Yarısı (1-15 Gün / 2 Hafta), 2: Ayın 2. Yarısı (16-30 Gün / 2 Hafta)
@@ -849,7 +970,8 @@ data class GameState(
     val activeLoans: List<BankLoan> = emptyList(),
     val creditScore: Int = 750, // 300 - 900 Kredi Notu (Düzenli geri ödemelerle yükselir, kredi faizlerini düşürür)
     val equitySoldPercent: Int = 0, // Yatırımcılara satılan toplam hisse payı (%25'e kadar)
-    val patentLiquidationCooldown: Int = 0 // Patent satışı bekleme süresi (Dönem cinsinden)
+    val patentLiquidationCooldown: Int = 0, // Patent satışı bekleme süresi (Dönem cinsinden)
+    val activeHardwareCrises: List<HardwareCrisis> = emptyList() // Aktif veya geçmiş donanım krizleri ve geri çağırmalar
 ) {
     val currentOfficeTier: OfficeTier
         get() = OFFICE_TIERS.firstOrNull { it.level == officeLevel } ?: OFFICE_TIERS.first()

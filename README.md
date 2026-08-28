@@ -12,6 +12,19 @@ View your app in AI Studio: https://ai.studio/apps/dacdd661-78cb-4ebb-a2ab-daa9b
 
 **Prerequisites:**  [Android Studio](https://developer.android.com/studio)
 
+## Smaller APK
+
+The release build enables R8 code shrinking and resource shrinking, so use the
+optimized release artifact instead of the debug APK:
+
+```bash
+./gradlew :app:assembleRelease
+```
+
+The APK is generated at
+`app/build/outputs/apk/release/app-release.apk`. The included GitHub Actions
+workflow builds this release variant automatically.
+
 
 1. Open Android Studio
 2. Select **Open** and choose the directory containing this project

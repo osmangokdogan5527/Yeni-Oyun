@@ -11,9 +11,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Campaign
+import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,6 +29,7 @@ import com.example.ui.theme.*
 import com.example.viewmodel.ActiveModel
 import com.example.viewmodel.CampaignType
 import com.example.viewmodel.GameViewModel
+import com.example.viewmodel.HardwareCrisis
 
 @Composable
 fun DevicesScreen(
@@ -38,7 +41,9 @@ fun DevicesScreen(
     val state by viewModel.state.collectAsState()
     var selectedModelForRestock by remember { mutableStateOf<ActiveModel?>(null) }
     var selectedModelForMarketing by remember { mutableStateOf<ActiveModel?>(null) }
+    var selectedModelForDiscount by remember { mutableStateOf<ActiveModel?>(null) }
     var selectedModelForRecycle by remember { mutableStateOf<ActiveModel?>(null) }
+    var selectedCrisisForResolution by remember { mutableStateOf<HardwareCrisis?>(null) }
     
     Column(
         modifier = modifier
@@ -91,6 +96,56 @@ fun DevicesScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Aktif Kriz Bildirim Bannerı
+                val unresolvedCrises = state.activeHardwareCrises.filter { !it.isResolved }
+                if (unresolvedCrises.isNotEmpty()) {
+                    item {
+                        Surface(
+                            color = Color(0xFFFEF2F2),
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.5.dp, Color(0xFFF87171)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text("🚨", fontSize = 20.sp)
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "AKTİF DONANIM KRİZLERİ MEVCUT!",
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 13.sp,
+                                            color = Color(0xFFDC2626)
+                                        )
+                                        Text(
+                                            text = "${unresolvedCrises.size} modelde kronik kusur bildirildi. Hemen müdahale edin.",
+                                            fontSize = 11.5.sp,
+                                            color = Color(0xFF7F1D1D)
+                                        )
+                                    }
+                                }
+
+                                unresolvedCrises.forEach { crisis ->
+                                    Button(
+                                        onClick = { selectedCrisisForResolution = crisis },
+                                        modifier = Modifier.fillMaxWidth().height(36.dp),
+                                        shape = RoundedCornerShape(10.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
+                                    ) {
+                                        Text(
+                                            text = "⚠️ ${crisis.modelName}: ${crisis.crisisType.title} - Masayı Topla",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 items(state.activeModels.reversed()) { model ->
                     val phone = model.specs
                     val progressFraction = (model.totalSold.toFloat() / model.totalStock.coerceAtLeast(1).toFloat()).coerceIn(0f, 1f)
@@ -167,6 +222,44 @@ fun DevicesScreen(
                             }
 
                             Spacer(modifier = Modifier.height(10.dp))
+
+                            // Model Hardware Crisis Banner (if this model has an active crisis)
+                            val modelCrisis = state.activeHardwareCrises.firstOrNull { it.modelId == model.id && !it.isResolved }
+                            if (modelCrisis != null) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Surface(
+                                    color = Color(0xFFFEF2F2),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(1.dp, Color(0xFFFCA5A5)),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text(modelCrisis.crisisType.iconEmoji, fontSize = 14.sp)
+                                            Text(
+                                                text = "Kronik Sorun: ${modelCrisis.crisisType.title}",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFFDC2626)
+                                            )
+                                        }
+                                        Text(
+                                            text = "KRİZİ ÇÖZ",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = Color(0xFF991B1B),
+                                            modifier = Modifier.clickable { selectedCrisisForResolution = modelCrisis }
+                                        )
+                                    }
+                                }
+                            }
 
                             // Popularity & Demand Banner
                             val demandLabel = when {
@@ -288,6 +381,125 @@ fun DevicesScreen(
                                 }
                             }
 
+                            // Active Discount Campaign Banner
+                            if (model.discountPercent > 0) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Surface(
+                                    color = Color(0xFFFEF2F2),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(1.dp, Color(0xFFFCA5A5)),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.LocalOffer,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp),
+                                                tint = Color(0xFFDC2626)
+                                            )
+                                            Text(
+                                                text = "🔥 %${model.discountPercent} İndirim Kampanyası Aktif!",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFFDC2626)
+                                            )
+                                        }
+                                        Text(
+                                            text = "$${model.effectivePrice} (Eski: $${model.specs.price})",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFB91C1C)
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Depo Şişmesi / Stok Uyarı Bannerı
+                            val isStockBuildup = isSelling && model.remainingStock > 20000 && model.monthsOnMarket >= 5 && model.discountPercent == 0
+                            val isStockCritical = isSelling && model.remainingStock in 1..2000
+                            if (isStockBuildup) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Surface(
+                                    color = Color(0xFFFFFBEB),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(1.dp, Color(0xFFFDE68A)),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.WarningAmber,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp),
+                                                tint = Color(0xFFD97706)
+                                            )
+                                            Text(
+                                                text = "📦 Depo Şişmesi Uyarısı (${"%,d".format(model.remainingStock)} stok beklemede)",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFFB45309)
+                                            )
+                                        }
+                                        Text(
+                                            text = "İndirim Uygula",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFD97706),
+                                            modifier = Modifier.clickable { selectedModelForDiscount = model }
+                                        )
+                                    }
+                                }
+                            } else if (isStockCritical) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Surface(
+                                    color = Color(0xFFFFF7ED),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(1.dp, Color(0xFFFFEDD5)),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text("⚡", fontSize = 13.sp)
+                                            Text(
+                                                text = "Stok Tükenmek Üzere (${"%,d".format(model.remainingStock)} adet kaldı)",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFFC2410C)
+                                            )
+                                        }
+                                        Text(
+                                            text = "Stok Ekle",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.clickable { selectedModelForRestock = model }
+                                        )
+                                    }
+                                }
+                            }
+
                             Spacer(modifier = Modifier.height(12.dp))
                             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                             Spacer(modifier = Modifier.height(12.dp))
@@ -359,6 +571,18 @@ fun DevicesScreen(
                                 Spacer(modifier = Modifier.height(10.dp))
                             }
 
+                            if (!model.isCompleted) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    SalesFactorTag(label = "Kalite", value = model.productQualityLabel, modifier = Modifier.weight(1f))
+                                    SalesFactorTag(label = "Talep", value = model.marketDemandLabel, modifier = Modifier.weight(1f))
+                                    SalesFactorTag(label = "Marka", value = model.brandStrengthLabel, modifier = Modifier.weight(1f))
+                                }
+                                Spacer(modifier = Modifier.height(10.dp))
+                            }
+
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -380,7 +604,7 @@ fun DevicesScreen(
 
                             Spacer(modifier = Modifier.height(12.dp))
 
-                            // Action Buttons: Benchmark, Marketing & Restock
+                            // Action Buttons: Benchmark, Marketing, Discount & Restock
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -397,8 +621,8 @@ fun DevicesScreen(
                                     border = BorderStroke(1.dp, Color(0xFFFFCCBC))
                                 ) {
                                     Icon(Icons.Default.Speed, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("TEST ET", fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text("TEST", fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
                                 }
 
                                 OutlinedButton(
@@ -413,8 +637,31 @@ fun DevicesScreen(
                                     )
                                 ) {
                                     Icon(Icons.Default.Campaign, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("PAZARLAMA", fontSize = 9.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text("REKLAM", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+                                }
+
+                                OutlinedButton(
+                                    onClick = { selectedModelForDiscount = model },
+                                    enabled = !model.isRecalled && model.remainingStock > 0,
+                                    modifier = Modifier
+                                        .weight(1.1f)
+                                        .height(40.dp),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = if (model.discountPercent > 0) Color(0xFFDC2626) else Color(0xFFD97706)
+                                    ),
+                                    border = BorderStroke(1.dp, if (model.discountPercent > 0) Color(0xFFFCA5A5) else Color(0xFFFDE68A))
+                                ) {
+                                    Icon(Icons.Default.LocalOffer, contentDescription = null, modifier = Modifier.size(15.dp))
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text(
+                                        if (model.discountPercent > 0) "%${model.discountPercent} İNDİRİM" else "İNDİRİM",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
                                 }
 
                                 OutlinedButton(
@@ -429,7 +676,7 @@ fun DevicesScreen(
                                     )
                                 ) {
                                     Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Spacer(modifier = Modifier.width(3.dp))
                                     Text("STOK", fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
                                 }
                             }
@@ -486,6 +733,17 @@ fun DevicesScreen(
         )
     }
 
+    selectedModelForDiscount?.let { targetModel ->
+        DiscountCampaignDialog(
+            model = targetModel,
+            onDismiss = { selectedModelForDiscount = null },
+            onApplyDiscount = { discountPct ->
+                viewModel.applyModelDiscount(targetModel.id, discountPct)
+                selectedModelForDiscount = null
+            }
+        )
+    }
+
     selectedModelForRecycle?.let { targetModel ->
         val unitCost = viewModel.calculateProductionCost(targetModel.specs)
         RecycleStockDialog(
@@ -498,6 +756,158 @@ fun DevicesScreen(
             }
         )
     }
+
+    selectedCrisisForResolution?.let { crisis ->
+        val crisisModel = state.activeModels.firstOrNull { it.id == crisis.modelId }
+        HardwareCrisisManagementDialog(
+            crisis = crisis,
+            model = crisisModel,
+            currentBudget = state.budget,
+            onDismiss = { selectedCrisisForResolution = null },
+            onApplyStrategy = { strategy ->
+                viewModel.resolveHardwareCrisis(crisis.id, strategy)
+                selectedCrisisForResolution = null
+            }
+        )
+    }
+}
+
+@Composable
+fun DiscountCampaignDialog(
+    model: ActiveModel,
+    onDismiss: () -> Unit,
+    onApplyDiscount: (Int) -> Unit
+) {
+    var selectedDiscount by remember { mutableIntStateOf(model.discountPercent) }
+    val originalPrice = model.specs.price
+    val newPrice = originalPrice * (100 - selectedDiscount) / 100
+    val marginDropPct = if (model.specs.unitCost > 0) {
+        val origMargin = originalPrice - model.specs.unitCost
+        val newMargin = newPrice - model.specs.unitCost
+        ((1f - (newMargin.toFloat() / origMargin.coerceAtLeast(1).toFloat())) * 100).toInt().coerceAtLeast(0)
+    } else 0
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(Icons.Default.LocalOffer, contentDescription = null, tint = Color(0xFFDC2626))
+                Text("${model.specs.name} - İndirim Kampanyası", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    "Depoda bekleyen stokları hızla eritmek ve pazar talebini patlatmak için indirim oranı belirleyin.",
+                    fontSize = 12.5.sp,
+                    color = Slate600
+                )
+
+                // Discount Option Buttons
+                Text("İndirim Oranı:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Slate900)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    listOf(0, 15, 30, 50).forEach { pct ->
+                        val isSelected = selectedDiscount == pct
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { selectedDiscount = pct },
+                            label = {
+                                Text(
+                                    if (pct == 0) "Standart (%0)" else "%$pct İndirim",
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = if (pct > 0) Color(0xFFDC2626) else MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = Color.White
+                            ),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                // Impact Card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
+                    border = BorderStroke(1.dp, if (selectedDiscount > 0) Color(0xFFFCA5A5) else Slate200)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Orijinal Liste Fiyatı:", fontSize = 12.sp, color = Slate600)
+                            Text("$$originalPrice", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Slate900)
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Kampanyalı Satış Fiyatı:", fontSize = 12.sp, color = Slate600)
+                            Text(
+                                "$$newPrice",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (selectedDiscount > 0) Color(0xFFDC2626) else Slate900
+                            )
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Birim Üretim Maliyeti:", fontSize = 12.sp, color = Slate600)
+                            Text("$${model.specs.unitCost}", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = Slate600)
+                        }
+
+                        HorizontalDivider(color = Slate200, modifier = Modifier.padding(vertical = 2.dp))
+
+                        val demandBoostText = when (selectedDiscount) {
+                            15 -> "+%45 Satış Talebi Artışı 🔥"
+                            30 -> "+%90 Satış Hızı Patlaması 🚀"
+                            50 -> "+%150 Şok Tasfiye Talebi ⚡"
+                            else -> "Normal Pazar Talebi"
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("Beklenen Talep Etkisi:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Slate800)
+                            Text(
+                                demandBoostText,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (selectedDiscount > 0) Green500 else Slate600
+                            )
+                        }
+
+                        if (selectedDiscount > 0 && newPrice <= model.specs.unitCost) {
+                            Text(
+                                "⚠️ DİKKAT: İndirimli fiyat birim maliyetin altına veya sınırına iniyor! Kâr marjınız sıfırlanabilir ancak stok hızla erir.",
+                                fontSize = 10.5.sp,
+                                color = Color(0xFFDC2626),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onApplyDiscount(selectedDiscount) },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (selectedDiscount > 0) Color(0xFFDC2626) else MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text(
+                    if (selectedDiscount > 0) "%$selectedDiscount İndirimi Başlat" else "Standart Fiyata Dön",
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Vazgeç", color = Slate600)
+            }
+        }
+    )
 }
 
 @Composable
@@ -661,6 +1071,31 @@ fun MarketingDialog(
             }
         }
     )
+}
+
+@Composable
+fun SalesFactorTag(label: String, value: String, modifier: Modifier = Modifier) {
+    val tagColor = when (value) {
+        "Mükemmel" -> Color(0xFF16A34A)
+        "İyi" -> Color(0xFF22C55E)
+        "Orta" -> Slate500
+        "Zayıf" -> Color(0xFFF59E0B)
+        else -> MaterialTheme.colorScheme.error
+    }
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp),
+        color = tagColor.copy(alpha = 0.10f),
+        border = BorderStroke(1.dp, tagColor.copy(alpha = 0.35f))
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(label, fontSize = 9.sp, color = Slate500, maxLines = 1, softWrap = false)
+            Text(value, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = tagColor, maxLines = 1, softWrap = false)
+        }
+    }
 }
 
 @Composable

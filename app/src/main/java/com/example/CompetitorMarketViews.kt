@@ -1,9 +1,19 @@
 package com.example
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CompareArrows
+import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Smartphone
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -136,52 +146,378 @@ fun CompetitorProfileCard(competitor: CompetitorCompany) {
 }
 
 @Composable
-fun CompetitorReleaseRow(release: CompetitorReleaseHistory) {
+fun CompetitorReleaseRow(
+    release: CompetitorReleaseHistory,
+    onClick: () -> Unit = {}
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = if (release.duelVerdict != null) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)) else null
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(14.dp)
         ) {
-            BrandLogo(
-                companyName = release.companyName,
-                size = 38.dp,
-                shapeRadius = 10.dp
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    release.headline,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    "${release.companyName} • $${release.price} • Puan: ${release.score}/100",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Surface(
-                shape = RoundedCornerShape(6.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    "${release.month}/${release.year}",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                BrandLogo(
+                    companyName = release.companyName,
+                    size = 40.dp,
+                    shapeRadius = 10.dp
                 )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        release.headline,
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        "${release.companyName} • $${release.price} • Puan: ${release.score}/100",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant
+                ) {
+                    Text(
+                        "${release.month}/${release.year}",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            if (release.duelVerdict != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                Icons.Default.CompareArrows,
+                                contentDescription = null,
+                                modifier = Modifier.size(15.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = release.duelVerdict,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                        Text(
+                            text = "VS Kıyasla ⚔️",
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             }
         }
     }
 }
+
+@Composable
+fun VsDuelComparisonDialog(
+    release: CompetitorReleaseHistory,
+    state: GameState,
+    onDismiss: () -> Unit
+) {
+    // Find player's best model or model specified in duel
+    val playerModel = state.activeModels.find { it.specs.name == release.vsPlayerModelName }
+        ?: state.activeModels.filter { !it.isCompleted }.maxByOrNull { it.reviewScore }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("⚔️", fontSize = 20.sp)
+                    Text("Pazar Düellosu: VS Kıyaslama", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
+                IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+                    Icon(Icons.Default.Close, contentDescription = "Kapat")
+                }
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Verdict Banner
+                if (release.duelVerdict != null) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFF1E293B),
+                        border = BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.5f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text("📰", fontSize = 16.sp)
+                            Text(
+                                text = "Basın Değerlendirmesi: ${release.duelVerdict}",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF38BDF8)
+                            )
+                        }
+                    }
+                }
+
+                // Two Column VS Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Player Card
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
+                        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(10.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            BrandLogo(
+                                companyName = state.companyName,
+                                isPlayer = true,
+                                playerLogoId = state.companyLogoId,
+                                playerBrandColorHex = state.companyBrandColorHex,
+                                size = 32.dp,
+                                shapeRadius = 8.dp
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                state.companyName,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                playerModel?.specs?.name ?: "Modeliniz Yok",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                maxLines = 1
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "$${playerModel?.specs?.price ?: 0}",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = MaterialTheme.colorScheme.primary
+                            ) {
+                                Text(
+                                    "${playerModel?.reviewScore ?: 0}/100",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    // VS Divider
+                    Box(
+                        modifier = Modifier.align(Alignment.CenterVertically),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFFEF4444)
+                        ) {
+                            Text(
+                                "VS",
+                                fontWeight = FontWeight.Black,
+                                fontSize = 12.sp,
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
+
+                    // Competitor Card
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(10.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            BrandLogo(
+                                companyName = release.companyName,
+                                size = 32.dp,
+                                shapeRadius = 8.dp
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                release.companyName,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                release.modelName,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                maxLines = 1
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "$${release.price}",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            ) {
+                                Text(
+                                    "${release.score}/100",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Specs Breakdown Comparison Table
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        DuelSpecRow(
+                            title = "İşlemci / Çip",
+                            playerVal = playerModel?.specs?.processor ?: "—",
+                            compVal = release.processor
+                        )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                        DuelSpecRow(
+                            title = "Bellek (RAM)",
+                            playerVal = playerModel?.specs?.ram ?: "—",
+                            compVal = release.ram
+                        )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                        DuelSpecRow(
+                            title = "Kamera Sistemi",
+                            playerVal = playerModel?.specs?.camera ?: "—",
+                            compVal = release.camera
+                        )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                        DuelSpecRow(
+                            title = "Batarya & Pil",
+                            playerVal = "${playerModel?.specs?.batteryCapacity ?: "—"} ${playerModel?.specs?.batteryType ?: ""}",
+                            compVal = release.battery
+                        )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                        DuelSpecRow(
+                            title = "Ekran Teknolojisi",
+                            playerVal = playerModel?.specs?.display ?: "—",
+                            compVal = release.display
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Anladım", fontWeight = FontWeight.Bold)
+            }
+        }
+    )
+}
+
+@Composable
+fun DuelSpecRow(
+    title: String,
+    playerVal: String,
+    compVal: String
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = title,
+            fontSize = 10.5.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = playerVal,
+                fontSize = 11.5.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = compVal,
+                fontSize = 11.5.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
 
 @Composable
 fun TechExpoMarketTabHeader(state: GameState) {

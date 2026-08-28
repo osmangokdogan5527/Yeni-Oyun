@@ -51,7 +51,11 @@ android {
   buildTypes {
     release {
       isCrunchPngs = false
-      isMinifyEnabled = false
+      // Keep the distributable APK small enough for the 30 MB snapshot limit.
+      // R8 removes unreachable Kotlin/Compose/library bytecode and unused
+      // Android resources from the release artifact.
+      isMinifyEnabled = true
+      isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfig = signingConfigs.getByName("release")
     }

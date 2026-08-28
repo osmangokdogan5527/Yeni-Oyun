@@ -236,7 +236,7 @@ fun getCompetitorModelForYear(companyName: String, year: Int): Triple<String, In
             year in 2020..2023 -> Triple("TCL 40 NXTPAPER Göz Koruma Mat Ekran", 299, 83)
             else -> Triple("TCL 50 Pro NXTPAPER 3.0 Kağıt Hissi", 349, 87)
         }
-        else -> when { // Fairphone
+        else -> when { // Fairphone & Diğerleri
             year <= 2014 -> Triple("Fairphone 1 Modüler Başlangıç", 399, 76)
             year in 2015..2019 -> Triple("Fairphone 2 Kendin Tamir Et", 499, 79)
             year in 2020..2022 -> Triple("Fairphone 4 5G Adil Ticaret", 579, 83)
@@ -244,3 +244,56 @@ fun getCompetitorModelForYear(companyName: String, year: Int): Triple<String, In
         }
     }
 }
+
+fun getCompetitorHardwareSpecs(companyName: String, year: Int): CompetitorModelHardware {
+    val cleanName = companyName.lowercase()
+    return when {
+        cleanName.contains("apple") -> when {
+            year <= 2011 -> CompetitorModelHardware("Apple A4/A5 Bionic", "512 MB", "5 MP HDR Kamera", "1420 mAh", "3.5\" Retina IPS")
+            year in 2012..2015 -> CompetitorModelHardware("Apple A6/A8 Çip", "1-2 GB", "8 MP iSight Kamera", "1810 mAh", "4.0\"-5.5\" Retina HD")
+            year in 2016..2019 -> CompetitorModelHardware("Apple A11/A13 Bionic", "3-4 GB", "12 MP Çift OIS Kamera", "3110 mAh", "5.8\" Super Retina OLED")
+            year in 2020..2022 -> CompetitorModelHardware("Apple A15 Bionic 5G", "6 GB", "12 MP Üçlü Pro Kamera", "4352 mAh", "6.7\" ProMotion 120Hz")
+            else -> CompetitorModelHardware("Apple A18 Pro 3nm AI", "8 GB LPDDR5X", "48 MP Fusion 5x Periskop", "4685 mAh", "6.9\" Dynamic Island 120Hz")
+        }
+        cleanName.contains("samsung") -> when {
+            year <= 2011 -> CompetitorModelHardware("Exynos 4210 Dual", "1 GB", "8 MP 1080p Kamera", "1650 mAh", "4.3\" Super AMOLED Plus")
+            year in 2012..2015 -> CompetitorModelHardware("Exynos 7420 Octa", "3 GB", "16 MP OIS Kamera", "2550 mAh", "5.1\" Quad HD Kavisli AMOLED")
+            year in 2016..2019 -> CompetitorModelHardware("Exynos 9820 / Snapdragon 855", "8 GB", "12 MP Değişken Diyafram", "4100 mAh", "6.4\" Dinamik AMOLED Infinity-O")
+            year in 2020..2022 -> CompetitorModelHardware("Snapdragon 8 Gen 1", "12 GB", "108 MP 100x Uzay Zoom", "5000 mAh", "6.8\" Edge QHD+ 120Hz")
+            else -> CompetitorModelHardware("Snapdragon 8 Elite Galaxy", "16 GB LPDDR5X", "200 MP ISOCELL 100x Zoom", "5500 mAh", "6.8\" Düz Titanyum 120Hz AMOLED")
+        }
+        cleanName.contains("xiaomi") -> when {
+            year <= 2013 -> CompetitorModelHardware("Snapdragon S4 / 800", "2 GB", "13 MP Sony Sensör", "3050 mAh", "5.0\" IPS 1080p")
+            year in 2014..2018 -> CompetitorModelHardware("Snapdragon 845 Flagship", "6 GB", "12 MP Çift AI Kamera", "3400 mAh", "6.21\" AMOLED Çentikli")
+            year in 2019..2022 -> CompetitorModelHardware("Snapdragon 8 Gen 1 Pro", "12 GB", "50 MP 1/1.28\" Sensör", "4600 mAh (120W)", "6.73\" 2K 120Hz AMOLED")
+            else -> CompetitorModelHardware("Snapdragon 8 Elite Ultra", "16 GB", "50 MP 1-İnç Leica Sensör", "5500 mAh (90W)", "6.73\" 120Hz 3000nit OLED")
+        }
+        cleanName.contains("google") -> when {
+            year <= 2015 -> CompetitorModelHardware("Snapdragon 810 Octa", "3 GB", "12.3 MP 1.55µm Piksel", "3450 mAh", "5.7\" WQHD AMOLED")
+            year in 2016..2020 -> CompetitorModelHardware("Snapdragon 845/765G", "6 GB", "12.2 MP Dual Pixel HDR+", "4080 mAh", "6.0\" OLED 90Hz")
+            year in 2021..2023 -> CompetitorModelHardware("Google Tensor G2 AI", "12 GB", "50 MP GN1 + 48 MP 5x Zoom", "5000 mAh", "6.7\" LTPO 120Hz")
+            else -> CompetitorModelHardware("Google Tensor G4 Gemini AI", "16 GB", "50 MP AI Pro + Gemini Studio", "5060 mAh", "6.8\" Super Actua LTPO")
+        }
+        cleanName.contains("huawei") -> when {
+            year <= 2015 -> CompetitorModelHardware("Kirin 950 Octa-core", "3-4 GB", "12 MP Leica Çift Kamera", "3000 mAh", "5.2\" Full HD IPS")
+            year in 2016..2019 -> CompetitorModelHardware("Kirin 980 7nm Dual NPU", "8 GB", "40 MP RYYB Sensör + 5x Zoom", "4200 mAh (40W)", "6.39\" Kavisli OLED")
+            year in 2020..2022 -> CompetitorModelHardware("Kirin 9000 5nm 5G", "8-12 GB", "50 MP Ultra Vision XMAGE", "4400 mAh (66W)", "6.76\" 90Hz Horizon OLED")
+            else -> CompetitorModelHardware("Kirin 9010 XMAGE Engine", "16 GB", "50 MP Geri Çekilebilir 1-İnç", "5200 mAh (100W)", "6.8\" 120Hz Dört Kavisli LTPO")
+        }
+        else -> when {
+            year <= 2013 -> CompetitorModelHardware("Dört Çekirdekli Mobil İşlemci", "2 GB", "8-13 MP Kamera", "2500 mAh", "4.7\"-5.0\" HD Ekran")
+            year in 2014..2018 -> CompetitorModelHardware("Sekiz Çekirdekli Performans Çipi", "4-6 GB", "16 MP Çift Kamera", "3500 mAh", "5.5\"-6.0\" Full HD+")
+            year in 2019..2022 -> CompetitorModelHardware("Amiral Gemisi 5G Çipset", "8-12 GB", "50-64 MP OIS Kamera", "4500 mAh (65W)", "6.5\" 120Hz AMOLED")
+            else -> CompetitorModelHardware("Yeni Nesil 3nm/4nm AI Çip", "12-16 GB", "50-200 MP Gelişmiş Lens", "5000+ mAh Hızlı Şarj", "6.7\" 120Hz-165Hz OLED")
+        }
+    }
+}
+
+data class CompetitorModelHardware(
+    val processor: String,
+    val ram: String,
+    val camera: String,
+    val battery: String,
+    val display: String
+)
+

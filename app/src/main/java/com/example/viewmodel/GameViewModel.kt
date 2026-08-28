@@ -203,6 +203,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         var totalRecallReputationPenalty = 0
         val newNewsList = currentState.newsList.toMutableList()
         val finishedModelsNews = mutableListOf<NewsArticle>()
+        val newCrisesList = mutableListOf<HardwareCrisis>()
 
         // Update Market Trends (Progresses every full month / 2 periods)
         var updatedTrend = currentState.currentTrend
@@ -255,24 +256,53 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 // Quality, reputation and active marketing campaign demand multiplier
                 val qualityFactor = (model.reviewScore / 55.0f).coerceIn(0.4f, 2.0f)
                 
-                // 1. ZORLUK & İTİBAR DENGESİ: Düşük itibarda satışlar daha zor ve gerçekçi
+                // 1. ZORLUK & İTİBAR DENGESİ: Şirket olgunluğu ve marka itibarına göre satış hacmi kademeli açılır.
+                // İlk modellerde ve düşük itibarda sınırlı satış ve mütevazı kâr, itibar oluştukça (ve 3-5 başarılı model sonrasında) büyük kârlar açılır.
                 val repFactor = when {
-                    currentState.reputation < 20 -> 0.35f + (currentState.reputation / 20.0f) * 0.30f // 0.35x - 0.65x
-                    currentState.reputation < 50 -> 0.65f + ((currentState.reputation - 20) / 30.0f) * 0.40f // 0.65x - 1.05x
-                    currentState.reputation < 80 -> 1.05f + ((currentState.reputation - 50) / 30.0f) * 0.45f // 1.05x - 1.50x
-                    else -> 1.50f + ((currentState.reputation - 80) / 20.0f) * 0.50f // 1.50x - 2.00x
+                    currentState.reputation < 15 -> 0.20f + (currentState.reputation / 15.0f) * 0.20f // 0.20x - 0.40x (Bilinmeyen yeni marka dönemi)
+                    currentState.reputation < 35 -> 0.40f + ((currentState.reputation - 15) / 20.0f) * 0.30f // 0.40x - 0.70x (İlk tanınma evresi)
+                    currentState.reputation < 60 -> 0.70f + ((currentState.reputation - 35) / 25.0f) * 0.35f // 0.70x - 1.05x (Büyüyen şirket)
+                    currentState.reputation < 85 -> 1.05f + ((currentState.reputation - 60) / 25.0f) * 0.45f // 1.05x - 1.50x (Güçlü pazar aktörü)
+                    else -> 1.50f + ((currentState.reputation - 85) / 15.0f) * 0.50f // 1.50x - 2.00x (Dev marka / amiral gemisi lideri)
                 }
 
-                // 2. FİYAT DUYARLILIĞI (PRICE ELASTICITY)
-                val estimatedUnitCost = model.specs.unitCost.coerceAtLeast(40)
-                val markupRatio = model.specs.price.toFloat() / estimatedUnitCost.toFloat()
-                val priceElasticityFactor = when {
-                    markupRatio > 2.6f && currentState.reputation < 35 -> 0.40f
-                    markupRatio > 2.0f && currentState.reputation < 50 -> 0.65f
-                    markupRatio > 1.7f && currentState.reputation < 25 -> 0.75f
-                    markupRatio <= 1.3f -> 1.25f
+                // Şirket Olgunluk & Tecrübe Çarpanı (3-5 modelden sonra pazar güveni ve kanal dağıtımı oturur)
+                val marketMaturityFactor = when {
+                    currentState.modelCount <= 1 -> 0.65f // İlk telefon: Mütevazı pilot satış
+                    currentState.modelCount <= 3 -> 0.82f // 2-3. telefon: Kanal genişlemesi
+                    currentState.modelCount <= 5 -> 0.95f // 4-5. model: Yerleşik dağıtım ağı
+                    else -> 1.0f + ((currentState.modelCount - 5).coerceAtMost(10) * 0.02f) // Düzenli üretici bonusu
+                }
+
+                // 2. GELİŞMİŞ FİYAT/TALEP ESNEKLİĞİ (ADVANCED PRICE ELASTICITY & DISCOUNT IMPACT)
+                val currentPrice = model.effectivePrice
+                val estimatedUnitCost = model.specs.unitCost.coerceAtLeast(30)
+                val markupRatio = currentPrice.toFloat() / estimatedUnitCost.toFloat()
+                val (fairMin, fairMax) = when {
+                    estimatedUnitCost >= 500 -> 1099 to 1799
+                    estimatedUnitCost >= 320 -> 799 to 1199
+                    estimatedUnitCost >= 180 -> 499 to 799
+                    estimatedUnitCost >= 90 -> 299 to 499
+                    else -> 129 to 299
+                }
+                val basePriceElasticity = when {
+                    currentPrice < fairMin * 0.88f -> 1.45f // F/P Patlaması (+%45)
+                    currentPrice <= fairMax -> 1.05f // Standart Dengeli Talep
+                    currentPrice <= fairMax * 1.25f -> {
+                        if (currentState.reputation >= 60) 0.90f else 0.75f // Tuzlu fiyat
+                    }
+                    else -> {
+                        if (currentState.reputation >= 85) 0.65f else 0.45f // Aşırı pahalı, talep çöküşü (-%55)
+                    }
+                } * when {
+                    markupRatio > 2.5f && currentState.reputation < 30 -> 0.40f // Bilinmeyen markanın fahiş fiyat koyması durumunda sert talep kesintisi
+                    markupRatio > 2.2f && currentState.reputation < 50 -> 0.65f
+                    markupRatio <= 1.25f -> 1.15f
                     else -> 1.0f
                 }
+                // Ekstra İndirim Kampanyası Talep Çarpanı (%15 indirim -> +%35 talep, %30 -> +%80 talep, %50 -> +%150 talep)
+                val discountBoost = if (model.discountPercent > 0) 1.0f + (model.discountPercent * 0.03f) else 1.0f
+                val priceElasticityFactor = basePriceElasticity * discountBoost
 
                 // 3. SERİ DEVAMI & NESİL SADAKATİ
                 val seriesLoyaltyFactor = if (model.specs.generation > 1) {
@@ -316,15 +346,18 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     else -> 1.0f
                 }
 
-                // Lifecycle Sales Curve Factor (over periods)
+                // Lifecycle Sales Curve Factor (over periods) — yumuşatılmış eğri: pik ay 4'te
+                // eskisi gibi 2.40x'e sıçramıyor, en fazla 1.55x'e çıkıp kademeli iniyor. Bu, iyi bir
+                // telefon + trend + reklam + iyi fiyat kombinasyonunun anlık "para makinesi"ne
+                // dönüşmesini engelliyor; büyüme hâlâ var ama patlama yapmıyor.
                 val lifecycleSalesCurve = when (newMonths) {
-                    0, 1 -> 0.45f
+                    0, 1 -> 0.50f
                     2 -> 0.80f
-                    3 -> 2.20f
-                    4 -> 2.40f
-                    5 -> 2.00f
-                    6 -> 1.50f
-                    7 -> 0.70f
+                    3 -> 1.35f
+                    4 -> 1.55f
+                    5 -> 1.40f
+                    6 -> 1.10f
+                    7 -> 0.75f
                     8 -> 0.40f
                     9 -> 0.25f
                     10 -> 0.15f
@@ -333,12 +366,20 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     else -> 0.04f
                 }
 
-                val demandFactor = qualityFactor * repFactor * priceElasticityFactor * seriesLoyaltyFactor * tierDemandFactor * campaignFactor * trendFactor * colorFactor * designFactor * osSynergyFactor * lifecycleSalesCurve
+                val demandFactor = qualityFactor * repFactor * marketMaturityFactor * priceElasticityFactor * seriesLoyaltyFactor * tierDemandFactor * campaignFactor * trendFactor * colorFactor * designFactor * osSynergyFactor * lifecycleSalesCurve
+
+                // --- SADELEŞTİRİLMİŞ 3 GRUPLU ÖZET (sadece arayüzde gösterim için; matematik yukarıdaki gibi kalıyor) ---
+                // "Ürün Kalitesi": telefonun kendi niteliği — inceleme puanı, tasarım/malzeme, OS uyumu
+                val productQualityGroup = qualityFactor * designFactor * osSynergyFactor
+                // "Pazar Talebi": dış etkenler — trend, renk çeşitliliği, aktif kampanya, fiyat cazibesi
+                val marketDemandGroup = trendFactor * colorFactor * campaignFactor * priceElasticityFactor
+                // "Marka Gücü": şirketin birikimi — itibar, pazar olgunluğu, seri sadakati
+                val brandStrengthGroup = repFactor * marketMaturityFactor * seriesLoyaltyFactor
                 
                 // 2-week units sold (0 if demand is zero or below)
                 val calculatedUnits = (basePeriodBatch * demandFactor).toInt().coerceAtLeast(0)
                 val unitsSoldThisPeriod = calculatedUnits.coerceAtMost(model.remainingStock)
-                val revenueThisPeriod = unitsSoldThisPeriod.toLong() * model.specs.price
+                val revenueThisPeriod = unitsSoldThisPeriod.toLong() * model.effectivePrice
                 
                 totalMonthlyRevenue += revenueThisPeriod
                 totalMonthlyUnitsSold += unitsSoldThisPeriod
@@ -373,7 +414,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     monthsOnMarket = newMonths,
                     isExtendedNewsSent = isExtendedNewsSent,
                     activeCampaign = updatedCampaign,
-                    matchesTrend = isTrendActive
+                    matchesTrend = isTrendActive,
+                    lastProductQualityScore = productQualityGroup,
+                    lastMarketDemandScore = marketDemandGroup,
+                    lastBrandStrengthScore = brandStrengthGroup
                 )
 
                 // Check if model completed its sales cycle or sold out
@@ -390,18 +434,32 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
 
-                // Geri Çağırma (Recall) Kontrolü
+                // Geri Çağırma (Recall) & Kronik Donanım Krizi Kontrolü
                 val (modelAfterRecallCheck, recallOutcome) = checkForRecall(updatedModel, newYear, newMonth)
                 if (recallOutcome != null) {
-                    totalRecallCost += recallOutcome.compensationCost
-                    totalRecallReputationPenalty += recallOutcome.reputationPenalty
+                    val crisisType = detectHardwareCrisisType(modelAfterRecallCheck.specs)
+                    val crisisId = "crisis_${modelAfterRecallCheck.id}_${newYear}_${newMonth}"
+                    val newCrisis = HardwareCrisis(
+                        id = crisisId,
+                        modelId = modelAfterRecallCheck.id,
+                        modelName = modelAfterRecallCheck.specs.name,
+                        crisisType = crisisType,
+                        severityLevel = if (modelAfterRecallCheck.recallRiskPercent > 35) 3 else if (modelAfterRecallCheck.recallRiskPercent > 20) 2 else 1,
+                        yearTriggered = newYear,
+                        monthTriggered = newMonth,
+                        periodTriggered = newPeriod,
+                        affectedUnitsCount = modelAfterRecallCheck.totalSold,
+                        isResolved = false
+                    )
+
+                    // State'e kriz ekleme listesi için biriktir
+                    newCrisesList.add(newCrisis)
+
                     finishedModelsNews.add(
                         NewsArticle(
-                            id = "news_recall_${modelAfterRecallCheck.id}",
-                            title = "⚠️ GERİ ÇAĞIRMA: ${modelAfterRecallCheck.specs.name} Piyasadan Çekildi!",
-                            text = "${modelAfterRecallCheck.specs.name} modelinde tespit edilen üretim kusurları nedeniyle cihaz geri çağrıldı. " +
-                                "Müşteri tazminatları ve kalan stoğun imhası $${"%,d".format(recallOutcome.compensationCost)} maliyet oluşturdu, " +
-                                "itibarınız ${recallOutcome.reputationPenalty} puan düştü.",
+                            id = "news_crisis_${modelAfterRecallCheck.id}",
+                            title = "🚨 KRİZ PATLAK VERDİ: ${modelAfterRecallCheck.specs.name} (${crisisType.title})",
+                            text = "${modelAfterRecallCheck.specs.name} modelinde '${crisisType.title}' skandalı patlak verdi! ${crisisType.description} Kullanıcılar sosyal medyada tepkili. Cihazlar ekranından 'Acil Kriz Yönetimi' masasını toplayıp karar almalısınız!",
                             category = "Şirket",
                             year = newYear,
                             month = newMonth
@@ -623,6 +681,18 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     else -> "${comp.name}, yeni akıllı telefon modeli ${modelName} cihazını $${price} fiyat ve ${score}/100 değerlendirme notuyla piyasaya sundu."
                 }
 
+                val hardware = getCompetitorHardwareSpecs(comp.name, newYear)
+
+                // VS Duel with Player's Best Active Model
+                val playerBestModel = currentState.activeModels.filter { !it.isCompleted }.maxByOrNull { it.reviewScore }
+                val duelVerdict = if (playerBestModel != null) {
+                    when {
+                        playerBestModel.reviewScore >= score + 4 -> "🏆 Şirketiniz (${playerBestModel.specs.name}) Donanım ve Puan Olarak Ezdi!"
+                        playerBestModel.reviewScore >= score - 2 -> "⚖️ Kafa Kafaya Mücadele! İki Cihaz da Çok Güçlü."
+                        else -> "⚡ Rakip (${modelName}) Puan Olarak Öne Geçti!"
+                    }
+                } else null
+
                 newNewsList.add(
                     NewsArticle(
                         id = "comp_launch_${newYear}_${newMonth}_${newPeriod}_${Random.nextInt(100, 999)}",
@@ -645,7 +715,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                         score = score,
                         year = newYear,
                         month = newMonth,
-                        headline = releaseHeadline
+                        headline = releaseHeadline,
+                        processor = hardware.processor,
+                        ram = hardware.ram,
+                        camera = hardware.camera,
+                        battery = hardware.battery,
+                        display = hardware.display,
+                        vsPlayerModelName = playerBestModel?.specs?.name,
+                        vsPlayerModelScore = playerBestModel?.reviewScore,
+                        vsPlayerModelPrice = playerBestModel?.specs?.price,
+                        duelVerdict = duelVerdict
                     )
                 )
 
@@ -926,6 +1005,35 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val updatedPatentCooldown = (currentState.patentLiquidationCooldown - 1).coerceAtLeast(0)
         val finalCalculatedBudget = currentState.budget + netIncome - autoStartResearchCost + expoPrizeTotal - totalRecallCost
 
+        // Depo Şişmesi (Inventory Buildup) & Stok Tükenme Uyarıları
+        for (m in updatedActiveModels) {
+            if (!m.isCompleted && m.remainingStock > 25000 && m.monthsOnMarket >= 6 && m.discountPercent == 0) {
+                newNewsList.add(
+                    0,
+                    NewsArticle(
+                        id = "stock_buildup_${m.id}_${newYear}_${newMonth}_${newPeriod}",
+                        title = "📦 LOJİSTİK UYARISI: ${m.specs.name} Depolarda Şişti!",
+                        text = "${m.specs.name} modelinin deposunda ${"%,d".format(m.remainingStock)} adet satılmamış stok birikti. Depolama maliyetlerini azaltmak ve sermayeyi döndürmek için İndirim Kampanyası uygulayabilir veya kalan stokları geri dönüştürebilirsiniz.",
+                        category = "Lojistik",
+                        year = newYear,
+                        month = newMonth
+                    )
+                )
+            } else if (!m.isCompleted && m.remainingStock in 1..2000 && m.monthsOnMarket <= 8) {
+                newNewsList.add(
+                    0,
+                    NewsArticle(
+                        id = "stock_low_${m.id}_${newYear}_${newMonth}_${newPeriod}",
+                        title = "⚡ STOK TÜKENİYOR: ${m.specs.name} Rafları Boşalıyor!",
+                        text = "${m.specs.name} modelinden piyasada yalnızca ${"%,d".format(m.remainingStock)} adet kaldı! Satış ivmesini kaybetmemek için Cihazlar sekmesinden tekrar üretim siparişi verebilirsiniz.",
+                        category = "Lojistik",
+                        year = newYear,
+                        month = newMonth
+                    )
+                )
+            }
+        }
+
         if (finalCalculatedBudget < 0) {
             newNewsList.add(
                 0,
@@ -971,6 +1079,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 activeLoans = processedLoans,
                 creditScore = updatedCreditScore,
                 patentLiquidationCooldown = updatedPatentCooldown,
+                activeHardwareCrises = it.activeHardwareCrises + newCrisesList,
                 techLevel = if (updatedUnlockedTech.size >= 15) "Yapay Zeka" else if (updatedUnlockedTech.size >= 5) "İleri Düzey" else "Giriş"
             )
         }
@@ -1362,7 +1471,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _state.update { 
             it.copy(
                 budget = it.budget - totalCost,
-                reputation = (it.reputation + ((reviewScore - 65) / 12).coerceAtLeast(0)).coerceIn(0, 100),
+                reputation = (it.reputation + ((reviewScore - 70) / 10).coerceIn(0, 3)).coerceIn(0, 100),
                 modelCount = it.modelCount + 1,
                 manufacturedPhones = it.manufacturedPhones + specs,
                 activeModels = it.activeModels + newActiveModel,
@@ -1519,6 +1628,44 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun applyModelDiscount(modelId: String, discountPercent: Int) {
+        val currentState = _state.value
+        val model = currentState.activeModels.find { it.id == modelId } ?: return
+        val clampedDiscount = discountPercent.coerceIn(0, 70)
+
+        val updatedModels = currentState.activeModels.map {
+            if (it.id == modelId) {
+                it.copy(discountPercent = clampedDiscount)
+            } else it
+        }
+
+        val actionText = if (clampedDiscount > 0) {
+            "🏷️ '${model.specs.name}' için %$clampedDiscount İndirim Kampanyası başlatıldı! Yeni Satış Fiyatı: $${model.specs.price * (100 - clampedDiscount) / 100}"
+        } else {
+            "İndirim kaldırıldı. '${model.specs.name}' standart fiyattan ($${model.specs.price}) satılmaya devam ediyor."
+        }
+
+        val news = if (clampedDiscount > 0) {
+            NewsArticle(
+                id = "news_discount_${modelId}_${currentState.year}_${currentState.month}_${Random.nextInt(100, 999)}",
+                title = "🔥 İNDİRİM FIRSATI: ${model.specs.name} %$clampedDiscount İndirimde!",
+                text = "${currentState.companyName}, popüler modeli ${model.specs.name} için sınırlı süreliğine %$clampedDiscount indirim kampanyası başlattı. Yeni fiyat: $${model.specs.price * (100 - clampedDiscount) / 100}!",
+                category = "Pazar",
+                year = currentState.year,
+                month = currentState.month
+            )
+        } else null
+
+        _state.update {
+            it.copy(
+                activeModels = updatedModels,
+                newsList = if (news != null) it.newsList + news else it.newsList,
+                noticeMessage = actionText
+            )
+        }
+        autoSaveGame()
+    }
+
     fun calculateResearchDuration(engineers: Int, cost: Long = 0L): Int {
         val baseMonths = when {
             cost >= 80000000L -> 16 // 100M Mega OS Research
@@ -1551,7 +1698,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
             val report = MarketReport(
                 title = "Ar-Ge Araştırması Başlatıldı: $techName",
-                text = "$techName teknolojisinin araştırması başlatıldı ($${"%,d".format(cost)} harcandı). Mevcut ${currentState.engineers} Ar-Ge mühendisi ile projenin $duration ay sürmesi öngörülüyor.",
+                text = "$techName teknolojisinin araştırması başlatıldı ($${"%,d".format(cost)} harcandı). Mevcut ${currentState.engineers} Ar-Ge mühendisi ile projenin $duration dönem (~${"%.1f".format(duration / 2.0)} ay) sürmesi öngörülüyor.",
                 profit = -cost,
                 unitsSold = 0,
                 reviewScore = 0
@@ -1560,7 +1707,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val techNews = NewsArticle(
                 id = "news_tech_start_${currentState.year}_${currentState.month}_${Random.nextInt(100, 999)}",
                 title = "YENİ AR-GE PROJESİ: $techName",
-                text = "Ar-Ge ekibimiz $techName üzerinde çalışmaya başladı. Tahmini tamamlama süresi: $duration Ay.",
+                text = "Ar-Ge ekibimiz $techName üzerinde çalışmaya başladı. Tahmini tamamlama süresi: $duration dönem (~${"%.1f".format(duration / 2.0)} ay).",
                 category = "Teknoloji",
                 year = currentState.year,
                 month = currentState.month
@@ -1575,6 +1722,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         } else if (currentState.activeResearch != null && !currentState.unlockedTech.contains(techId) && currentState.researchQueue.none { it.techId == techId }) {
             // Add to queue
             queueResearch(techId, techName, cost)
+        } else if (currentState.budget < cost && currentState.activeResearch == null) {
+            _state.update { it.copy(noticeMessage = "Yetersiz bütçe! '$techName' için $${"%,d".format(cost)} gerekiyor.") }
         }
     }
 
@@ -2313,6 +2462,75 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 activeModels = updatedModels,
                 newsList = listOf(news) + state.newsList,
                 noticeMessage = "${model.specs.name} stokları tasfiye edildi (+$${"%,d".format(totalGained)})!"
+            )
+        }
+        autoSaveGame()
+        return true
+    }
+
+    fun resolveHardwareCrisis(crisisId: String, strategy: CrisisResolutionStrategy): Boolean {
+        val current = _state.value
+        val crisis = current.activeHardwareCrises.firstOrNull { it.id == crisisId } ?: return false
+        val model = current.activeModels.firstOrNull { it.id == crisis.modelId }
+
+        val cost = when (strategy) {
+            CrisisResolutionStrategy.SOFTWARE_PATCH_LIMIT -> 50000L
+            CrisisResolutionStrategy.FREE_SERVICE_REPAIR -> (crisis.affectedUnitsCount.toLong() * 25L).coerceAtLeast(100000L)
+            CrisisResolutionStrategy.FULL_RECALL_REFUND -> {
+                val unitRefund = model?.specs?.price?.toLong() ?: 300L
+                (crisis.affectedUnitsCount.toLong() * unitRefund) + ((model?.remainingStock ?: 0).toLong() * 50L)
+            }
+        }
+
+        if (current.budget < cost) {
+            _state.update { it.copy(noticeMessage = "Bu kriz yönetimi stratejisini uygulamak için bütçe yetersiz! Gereken: $${"%,d".format(cost)}") }
+            return false
+        }
+
+        val repDelta = when (strategy) {
+            CrisisResolutionStrategy.SOFTWARE_PATCH_LIMIT -> -4
+            CrisisResolutionStrategy.FREE_SERVICE_REPAIR -> +3
+            CrisisResolutionStrategy.FULL_RECALL_REFUND -> +12
+        }
+
+        val updatedCrises = current.activeHardwareCrises.map {
+            if (it.id == crisisId) {
+                it.copy(
+                    isResolved = true,
+                    resolvedYear = current.year,
+                    resolvedMonth = current.month,
+                    resolutionChoice = strategy.title
+                )
+            } else it
+        }
+
+        val updatedModels = current.activeModels.map {
+            if (it.id == crisis.modelId) {
+                when (strategy) {
+                    CrisisResolutionStrategy.FULL_RECALL_REFUND -> it.copy(remainingStock = 0, isRecalled = true, recalledYear = current.year, recalledMonth = current.month)
+                    CrisisResolutionStrategy.SOFTWARE_PATCH_LIMIT -> it.copy(reviewScore = (it.reviewScore - 6).coerceAtLeast(10))
+                    CrisisResolutionStrategy.FREE_SERVICE_REPAIR -> it.copy(reviewScore = (it.reviewScore + 2).coerceAtMost(100))
+                }
+            } else it
+        }
+
+        val news = NewsArticle(
+            id = "crisis_res_${crisisId}_${current.year}_${current.month}_${Random.nextInt(100, 999)}",
+            title = "🛡️ KRİZ ÇÖZÜLDÜ: ${crisis.modelName} - ${strategy.title}",
+            text = "${current.companyName}, ${crisis.modelName} modelindeki ${crisis.crisisType.title} sorununa yönelik '${strategy.title}' stratejisini uyguladı ($${"%,d".format(cost)} harcandı). ${strategy.repImpactText}!",
+            category = "Şirket",
+            year = current.year,
+            month = current.month
+        )
+
+        _state.update { state ->
+            state.copy(
+                budget = state.budget - cost,
+                reputation = (state.reputation + repDelta).coerceIn(0, 100),
+                activeHardwareCrises = updatedCrises,
+                activeModels = updatedModels,
+                newsList = listOf(news) + state.newsList,
+                noticeMessage = "${crisis.modelName} krizi yönetildi: ${strategy.title} ($${"%,d".format(cost)})"
             )
         }
         autoSaveGame()

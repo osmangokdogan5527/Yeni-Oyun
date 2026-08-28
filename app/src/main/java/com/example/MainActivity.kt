@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.BenchmarkScreen
+import com.example.ui.FinancialHubDialog
 import com.example.ui.SaveLoadDialog
 import com.example.ui.theme.*
 import com.example.viewmodel.GameState
@@ -64,7 +65,8 @@ fun GameTopBar(
     onAdvanceTime: () -> Unit,
     onOpenCompanyProfile: () -> Unit = {},
     onOpenSaveLoad: () -> Unit = {},
-    onOpenAchievements: () -> Unit = {}
+    onOpenAchievements: () -> Unit = {},
+    onOpenFinance: () -> Unit = {}
 ) {
     val playerLogoDrawable = when (state.companyLogoId) {
         "ic_logo_diamond" -> R.drawable.ic_logo_diamond
@@ -151,6 +153,14 @@ fun GameTopBar(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    FilledTonalIconButton(
+                        onClick = onOpenFinance,
+                        modifier = Modifier.size(36.dp),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("🏦", fontSize = 16.sp)
+                    }
+
                     BadgedBox(
                         badge = {
                             if (state.unlockedAchievementIds.isNotEmpty()) {
@@ -201,17 +211,34 @@ fun GameTopBar(
 
             Spacer(modifier = Modifier.height(6.dp))
 
+            val isNegative = state.budget < 0
+            val budgetDisplay = if (state.budget >= 0) "$${"%,d".format(state.budget).replace(',', '.')}" else "-$${"%,d".format(kotlin.math.abs(state.budget)).replace(',', '.')}"
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(
+                        if (isNegative) Color(0xFFFEE2E2) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    )
+                    .clickable { onOpenFinance() }
                     .padding(horizontal = 12.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("Bakiye", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("$${"%,d".format(state.budget).replace(',', '.')}", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Bakiye", fontSize = 10.sp, color = if (isNegative) Color(0xFFDC2626) else MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (state.totalDebt > 0) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("(Borç: $${"%,d".format(state.totalDebt)})", fontSize = 9.sp, color = Color(0xFFE11D48), fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    Text(
+                        budgetDisplay,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        color = if (isNegative) Color(0xFFDC2626) else MaterialTheme.colorScheme.primary
+                    )
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("Aylık Gelir", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -232,8 +259,22 @@ fun MainApp(viewModel: GameViewModel = viewModel()) {
     var showEditCompanyDialog by remember { mutableStateOf(false) }
     var showSaveLoadDialog by remember { mutableStateOf(false) }
     var showAchievementsDialog by remember { mutableStateOf(false) }
+    var showFinancialHubDialog by remember { mutableStateOf(false) }
     val state by viewModel.state.collectAsState()
     val savedGames by viewModel.savedGamesState.collectAsState()
+
+    // Finans & Bankacılık Merkezi Dialogu
+    if (showFinancialHubDialog) {
+        FinancialHubDialog(
+            state = state,
+            onDismiss = { showFinancialHubDialog = false },
+            onTakeLoan = { loanType -> viewModel.takeOutLoan(loanType) },
+            onPayOffEarly = { loanId -> viewModel.payOffLoanEarly(loanId) },
+            onLiquidatePatents = { viewModel.liquidatePatents() },
+            onSeekVentureCapital = { viewModel.seekVentureCapital() },
+            onLiquidateStock = { modelId -> viewModel.emergencyLiquidateStock(modelId) }
+        )
+    }
 
     // Başarım Kilidi Açıldı Kutlama Kartı
     if (state.lastUnlockedAchievementIds.isNotEmpty()) {
@@ -311,7 +352,8 @@ fun MainApp(viewModel: GameViewModel = viewModel()) {
                     onAdvanceTime = { viewModel.advanceTime() },
                     onOpenCompanyProfile = { showEditCompanyDialog = true },
                     onOpenSaveLoad = { showSaveLoadDialog = true },
-                    onOpenAchievements = { showAchievementsDialog = true }
+                    onOpenAchievements = { showAchievementsDialog = true },
+                    onOpenFinance = { showFinancialHubDialog = true }
                 )
             }
         },
@@ -331,7 +373,8 @@ fun MainApp(viewModel: GameViewModel = viewModel()) {
                 onNewDevice = { currentScreen = AppScreen.PhoneBuilder },
                 onNavigateToMarket = { currentScreen = AppScreen.Market },
                 onNavigateToSoftware = { currentScreen = AppScreen.Software },
-                onEditCompanyProfile = { showEditCompanyDialog = true }
+                onEditCompanyProfile = { showEditCompanyDialog = true },
+                onOpenFinance = { showFinancialHubDialog = true }
             )
             AppScreen.Devices -> DevicesScreen(
                 viewModel = viewModel, 

@@ -75,6 +75,12 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            val softwareSectionNames = listOf("İşletim Sistemi", "Öz Yonga & OEM", "Ekosistem", "Küresel Rekabet")
+                            Text(
+                                text = "Ana Ekran  ›  Yazılım  ›  ${softwareSectionNames.getOrElse(selectedTab) { "İşletim Sistemi" }}",
+                                fontSize = 9.5.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
                         }
                     }
                 },

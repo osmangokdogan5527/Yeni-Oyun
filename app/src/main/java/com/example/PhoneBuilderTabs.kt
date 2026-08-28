@@ -409,8 +409,8 @@ fun PhoneBuilderSoftwareTab(
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text("🌐 İşletim Sistemi ve Yazılım Mimarisi", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Slate900)
-            Text("Cihazınızda çalışacak işletim sistemi türünü seçin. Kendi yazılımınızı kullanmak uygulama mağazası ekosistem geliri ve optimizasyon puanı sağlar.", fontSize = 11.sp, color = Slate600)
+            Text("📲 Bu Cihaz İçin OS Seçimi", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Slate900)
+            Text("Bu telefonda hangi işletim sisteminin çalışacağını seçin. Kendi platformunuzu geliştirmek/yükseltmek için Yazılım ekranına gidin — burada sadece bu cihaza hangisini yükleyeceğinizi seçiyorsunuz.", fontSize = 11.sp, color = Slate600)
 
             val hasCompanyOs = customOs != null && customOs.type != OsType.STOCK_ANDROID
             val isCompanyOsSelected = selectedOsChoice == 1
@@ -734,6 +734,30 @@ fun PhoneBuilderProductionTab(
         }
     )
 
+    // --- CANLI SEGMENT, FİYAT ESNEKLİĞİ & KÂR MARJI ANALİZ PANELİ ---
+    val margin = price - unitCost
+    val marginPercent = if (price > 0) ((margin / price) * 100).toInt() else 0
+    val (fairMin, fairMax) = when {
+        unitCost >= 500 -> 1099 to 1799
+        unitCost >= 320 -> 799 to 1199
+        unitCost >= 180 -> 499 to 799
+        unitCost >= 90 -> 299 to 499
+        else -> 129 to 299
+    }
+    val autoSegment = when {
+        unitCost >= 500 -> "👑 Ultra Amiral Gemisi"
+        unitCost >= 320 -> "⚡ Amiral Gemisi & Premium"
+        unitCost >= 180 -> "💎 Orta-Üst Segment"
+        unitCost >= 90 -> "⚖️ Orta Segment (F/P)"
+        else -> "🌱 Giriş Seviyesi (Ekonomik)"
+    }
+    val (elasticityLabel, elasticityColor, demandMultiplierText, elasticityDesc) = when {
+        price < fairMin * 0.88f -> Quadruple("🔥 Agresif Fiyat Kırıcı", Color(0xFF10B981), "+%45 Talep Artışı", "Fiyat donanıma göre inanılmaz cazip! Tüketici akını ve pazar payı patlaması.")
+        price <= fairMax -> Quadruple("✨ Mükemmel F/P & Dengeli", Color(0xFF2563EB), "%100 Standart Talep", "Fiyat segment standartlarına tam oturuyor. Dengeli satış ve kâr marjı.")
+        price <= fairMax * 1.25f -> Quadruple("⚠️ Yüksek Fiyatlandırma", Color(0xFFF59E0B), "-%25 Talep Azalışı", "Fiyat biraz tuzlu. Sadece marka itibarınız güçlüyse hedeflenen satış yakalanır.")
+        else -> Quadruple("🚨 Aşırı Pahalı (Stok Riski)", Color(0xFFEF4444), "-%55 Sert Talep Düşüşü", "Tüketici bu fiyata tepki gösterir! Satışlar çok yavaşlar ve depo stokları şişebilir.")
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -741,13 +765,37 @@ fun PhoneBuilderProductionTab(
         border = BorderStroke(1.dp, Slate200)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("📊 Canlı Segment & Fiyat/Talep Analizi", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Slate900)
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(6.dp)
+                ) {
+                    Text(
+                        text = autoSegment,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            // Fiyat Slider
             Column {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Satış Fiyatı (Perakende)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    Text("$${price.toInt()}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 14.sp)
+                    Column {
+                        Text("Satış Fiyatı (Perakende)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text("Segment Tavsiyesi: $$fairMin - $$fairMax", fontSize = 10.5.sp, color = Slate500)
+                    }
+                    Text("$${price.toInt()}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
                 }
                 Slider(
                     value = price,
@@ -757,6 +805,47 @@ fun PhoneBuilderProductionTab(
                 )
             }
 
+            // Talep Esnekliği & Kâr Marjı Bilgi Kutusu
+            Surface(
+                color = elasticityColor.copy(alpha = 0.08f),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, elasticityColor.copy(alpha = 0.4f))
+            ) {
+                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = elasticityLabel,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.5.sp,
+                            color = elasticityColor
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = elasticityColor.copy(alpha = 0.2f)
+                        ) {
+                            Text(
+                                text = demandMultiplierText,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = elasticityColor,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                    Text(
+                        text = elasticityDesc,
+                        fontSize = 11.sp,
+                        color = Slate700,
+                        lineHeight = 15.sp
+                    )
+                }
+            }
+
+            // Üretim Adedi Slider
             Column {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -788,6 +877,7 @@ fun PhoneBuilderProductionTab(
                 }
             }
 
+            // Kalite Kontrol Slider
             Column {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -830,20 +920,24 @@ fun PhoneBuilderProductionTab(
                 }
             }
 
-            val margin = price - unitCost
-            val marginPercent = if (price > 0) ((margin / price) * 100).toInt() else 0
+            // Kâr Marjı ve Maliyet Özeti
             Surface(
                 color = if (margin > 0) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f) else MaterialTheme.colorScheme.errorContainer,
                 shape = RoundedCornerShape(10.dp)
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(10.dp),
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("Birim Kâr Marjı", fontSize = 11.sp, color = Slate700)
-                        Text("+$${margin.toInt()} (%$marginPercent)", fontWeight = FontWeight.Bold, color = if (margin > 0) Green500 else Color.Red, fontSize = 13.sp)
+                        Text("Birim Kâr & Marj", fontSize = 11.sp, color = Slate700)
+                        Text(
+                            text = if (margin >= 0) "+$${margin.toInt()} (%$marginPercent Marj)" else "-$${kotlin.math.abs(margin).toInt()} (Zararına Satış!)",
+                            fontWeight = FontWeight.Bold,
+                            color = if (margin > 0) Green500 else Color.Red,
+                            fontSize = 13.5.sp
+                        )
                     }
                     Column(horizontalAlignment = Alignment.End) {
                         Text("Parti Toplam Maliyeti", fontSize = 11.sp, color = Slate700)
@@ -854,3 +948,5 @@ fun PhoneBuilderProductionTab(
         }
     }
 }
+
+private data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)

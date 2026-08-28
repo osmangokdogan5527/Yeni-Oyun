@@ -14,7 +14,7 @@ fun calculateProductionCost(
     customChipsets: List<CustomChipset>,
     unitCostDiscountPercent: Float
 ): Int {
-    var cost = 15 // Base assembly cost
+    var cost = 30 // Base assembly, packaging, logistics & licensing overhead
 
     // Material & Frame & Finish
     cost += when(specs.material) { "Plastik" -> 5; "Alüminyum" -> 20; "Cam" -> 30; "Titanyum" -> 60; else -> 10 }
@@ -226,6 +226,20 @@ fun calculateRecallRisk(qaPerUnit: Float, reviewScore: Int): Int {
     return (baseRisk - qaProtection - reviewProtection).roundToInt().coerceIn(2, 55)
 }
 
+fun detectHardwareCrisisType(specs: PhoneSpecs): HardwareCrisisType {
+    val batteryLower = specs.batteryType.lowercase()
+    val matLower = specs.material.lowercase()
+    val procLower = specs.processor.lowercase()
+
+    return when {
+        batteryLower.contains("120w") || batteryLower.contains("65w") || specs.batteryCapacity.contains("5000") || specs.batteryCapacity.contains("7000") -> HardwareCrisisType.BATTERY_OVERHEATING
+        matLower.contains("alüminyum") || specs.thicknessMm <= 7.2f || specs.frameStyle.contains("Ultra İnce") -> HardwareCrisisType.CHASSIS_BENDGATE
+        procLower.contains("888") || procLower.contains("810") || procLower.contains("gen") || procLower.contains("kuantum") -> HardwareCrisisType.SOC_THROTTLING
+        specs.camera.contains("200mp") || specs.camera.contains("periskop") || specs.camera.contains("üçlü") -> HardwareCrisisType.CAMERA_FOCUS_BLUR
+        else -> HardwareCrisisType.DISPLAY_GREEN_LINE
+    }
+}
+
 fun checkForRecall(model: ActiveModel, year: Int, month: Int): Pair<ActiveModel, RecallOutcome?> {
     if (model.isRecalled || model.recallRiskPercent <= 0 || model.monthsOnMarket > 3) {
         return model to null
@@ -253,3 +267,79 @@ fun checkForRecall(model: ActiveModel, year: Int, month: Int): Pair<ActiveModel,
         reputationPenalty = reputationPenalty
     )
 }
+
+data class MarketSegmentAnalysis(
+    val detectedSegment: String,
+    val segmentBadge: String,
+    val recommendedPriceRange: IntRange,
+    val estimatedReviewScore: Int,
+    val priceCompetitiveness: String, // "Mükemmel Fiyat", "Dengeli", "Pahalı", "Aşırı Fiyat"
+    val demandMultiplierPercent: Int, // e.g. 130 means +30% demand, 60 means -40% demand
+    val profitPerUnit: Int,
+    val profitMarginPercent: Int,
+    val priceElasticityNote: String
+)
+
+fun analyzeModelMarketPosition(
+    unitCost: Int,
+    price: Float,
+    tier: ModelTier,
+    specs: PhoneSpecs,
+    reputation: Int
+): MarketSegmentAnalysis {
+    val profit = (price.toInt() - unitCost)
+    val marginPercent = if (price > 0) ((profit.toFloat() / price) * 100f).roundToInt() else 0
+
+    // Detect hardware tier based on raw hardware cost
+    val (hardwareSegment, badge, fairPriceRange) = when {
+        unitCost >= 500 -> Triple("Ultra Amiral Gemisi", "👑", 1099..1799)
+        unitCost >= 320 -> Triple("Amiral Gemisi & Premium", "⚡", 799..1199)
+        unitCost >= 180 -> Triple("Orta-Üst Segment", "💎", 499..799)
+        unitCost >= 90 -> Triple("Orta Segment (F/P)", "⚖️", 299..499)
+        else -> Triple("Giriş Seviyesi (Ekonomik)", "🌱", 129..299)
+    }
+
+    // Estimate review score base
+    val hwScore = when {
+        unitCost >= 500 -> 92
+        unitCost >= 350 -> 84
+        unitCost >= 220 -> 76
+        unitCost >= 130 -> 68
+        else -> 58
+    }
+
+    // Price elasticity & price vs expected range
+    val midFair = (fairPriceRange.first + fairPriceRange.last) / 2
+    val priceRatio = price / midFair.toFloat()
+
+    val (competitiveness, demandMult, elasticityNote) = when {
+        price <= fairPriceRange.first * 0.85f -> Triple("Agresif Fiyat Kırıcı (Yüksek Talep)", 145, "🔥 Fiyat donanıma göre çok uygun! Tüketiciler akın edecek, yüksek talep.")
+        price <= fairPriceRange.first -> Triple("Mükemmel F/P Oranı", 125, "✨ Fiyat/performans dengesi harika. Pazar payı kazanmak için ideal.")
+        price <= fairPriceRange.last -> Triple("Dengeli Piyasa Fiyatı", 100, "✅ Segment standartlarına tam uygun kâr ve talep dengesi.")
+        price <= fairPriceRange.last * 1.25f -> Triple("Yüksek Fiyatlandırma", 75, "⚠️ Fiyat segmente göre biraz tuzlu. Sadece marka sadakati olanlar tercih edebilir.")
+        else -> Triple("Aşırı Pahalı (Stok Riski)", 45, "🚨 Tüketici tepkisi! Donanımına göre aşırı pahalı, talep sert düşecek ve stok riski oluşabilir.")
+    }
+
+    // Score adjustment for pricing
+    val priceScoreModifier = when {
+        priceRatio < 0.8f -> +6
+        priceRatio < 1.05f -> +2
+        priceRatio < 1.25f -> -4
+        else -> -10
+    }
+
+    val estimatedScore = (hwScore + priceScoreModifier + (reputation / 20)).coerceIn(35, 99)
+
+    return MarketSegmentAnalysis(
+        detectedSegment = hardwareSegment,
+        segmentBadge = badge,
+        recommendedPriceRange = fairPriceRange,
+        estimatedReviewScore = estimatedScore,
+        priceCompetitiveness = competitiveness,
+        demandMultiplierPercent = demandMult,
+        profitPerUnit = profit,
+        profitMarginPercent = marginPercent,
+        priceElasticityNote = elasticityNote
+    )
+}
+

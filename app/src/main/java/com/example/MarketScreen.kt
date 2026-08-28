@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import com.example.ui.theme.Slate300
 import com.example.ui.theme.Slate400
 import com.example.viewmodel.CompetitorCompany
+import com.example.viewmodel.CompetitorReleaseHistory
 import com.example.viewmodel.GameState
 import com.example.viewmodel.MarketTrend
 import com.example.viewmodel.TechExpoEvent
@@ -44,6 +45,7 @@ fun MarketScreen(
     onNavigateToBuilder: () -> Unit = {}
 ) {
     var selectedTab by remember { mutableIntStateOf(0) } // 0: Pazar Payı, 1: Rakip Analizi, 2: Lansman Akışı
+    var selectedReleaseForDuel by remember { mutableStateOf<CompetitorReleaseHistory?>(null) }
 
     // Build sorted participant list (Player + Competitors)
     val playerParticipant = MarketParticipant(
@@ -222,7 +224,10 @@ fun MarketScreen(
                         }
                     } else {
                         items(state.competitorReleases) { release ->
-                            CompetitorReleaseRow(release = release)
+                            CompetitorReleaseRow(
+                                release = release,
+                                onClick = { selectedReleaseForDuel = release }
+                            )
                         }
                     }
                 }
@@ -279,6 +284,14 @@ fun MarketScreen(
                 }
             }
         }
+    }
+
+    selectedReleaseForDuel?.let { release ->
+        VsDuelComparisonDialog(
+            release = release,
+            state = state,
+            onDismiss = { selectedReleaseForDuel = null }
+        )
     }
 }
 
