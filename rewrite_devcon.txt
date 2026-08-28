@@ -1,0 +1,7 @@
+    fun hostDevConference() {
+        val currentState = _state.value
+        val cost = 25000000L
+        if (currentState.budget < cost) {
+            _state.update { it.copy(noticeMessage = "Geliştirici Konferansı (DevCon) düzenlemek için yetersiz bütçe! Gereken: $${"%,d".format(cost)}") }
+            return
+        }

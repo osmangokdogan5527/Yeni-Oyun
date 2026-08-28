@@ -1,0 +1,8 @@
+                val extraColors = (model.specs.selectedColors.size - 1).coerceAtLeast(0)
+                val colorFactor = 1.0f + (extraColors * 0.04f)
+                val designFactor = when {
+                    model.specs.material == "Titanyum" || model.specs.backFinish == "Vegan Deri" -> 1.10f
+                    model.specs.material == "Cam" || model.specs.backFinish == "Karbon Fiber" -> 1.06f
+                    model.specs.material == "Alüminyum" || model.specs.backFinish == "Buzlu Mat Cam" -> 1.03f
+                    else -> 1.0f
+                }

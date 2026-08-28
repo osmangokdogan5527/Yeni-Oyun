@@ -1,0 +1,44 @@
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OsMetricTile(
+                            label = "Teknoloji",
+                            value = "${customOs.overallTechScore}/100",
+                            subtext = "Gelişmişlik",
+                            icon = Icons.Default.Memory,
+                            color = Color(0xFF3B82F6),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OsMetricTile(
+                            label = "Ekosistem",
+                            value = "${customOs.ecosystemScore}/100",
+                            subtext = "Bağlılık",
+                            icon = Icons.Default.Hub,
+                            color = Color(0xFF8B5CF6),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OsMetricTile(
+                            label = "Pazar Payı",
+                            value = "%${"%.1f".format(customOs.popularityPercent)}",
+                            subtext = "Kullanıcı",
+                            icon = Icons.AutoMirrored.Filled.TrendingUp,
+                            color = Color(0xFF10B981),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OsMetricTile(
+                            label = "Stabilite",
+                            value = "%${customOs.stability}",
+                            subtext = "${customOs.bugsEncountered} Çökme",
+                            icon = Icons.Default.BugReport,
+                            color = if (customOs.stability >= 75) Color(0xFF10B981) else if (customOs.stability >= 50) Color(0xFFF59E0B) else Color(0xFFEF4444),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }

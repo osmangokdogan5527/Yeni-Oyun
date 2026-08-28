@@ -17,6 +17,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -26,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import com.example.ui.Button3D
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,7 +47,7 @@ import com.example.viewmodel.GameState
 import com.example.viewmodel.GameViewModel
 
 enum class AppScreen {
-    Dashboard, Devices, Market, Benchmark, Software, PhoneBuilder, Research, Employees, News
+    CompanyHub, Devices, TechHub, Market, PhoneBuilder
 }
 
 class MainActivity : ComponentActivity() {
@@ -88,165 +91,98 @@ fun GameTopBar(
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 3.dp
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(horizontal = 14.dp, vertical = 8.dp)
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            // Sol: Şirket Logosu ve Tarih
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.clickable { onOpenCompanyProfile() }
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                Box(
                     modifier = Modifier
-                        .clickable { onOpenCompanyProfile() }
-                        .padding(vertical = 2.dp)
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(brandColor)
+                        .padding(6.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(34.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(brandColor)
-                            .padding(6.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(id = playerLogoDrawable),
-                            contentDescription = state.companyName,
-                            tint = Color.White,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = state.companyName,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Slate900,
-                                lineHeight = 16.sp
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(
-                                Icons.Default.Edit,
-                                contentDescription = "Şirket Profili Düzenle",
-                                tint = Slate400,
-                                modifier = Modifier.size(12.dp)
-                            )
-                        }
-                        val monthName = GameViewModel.getMonthName(state.month)
-                        val periodLabel = if (state.period == 1) "1-15 $monthName" else "16-30 $monthName"
-                        Text(
-                            text = "$periodLabel / ${state.year}",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
+                    Icon(
+                        painter = painterResource(id = playerLogoDrawable),
+                        contentDescription = state.companyName,
+                        tint = Color.White,
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    FilledTonalIconButton(
-                        onClick = onOpenFinance,
-                        modifier = Modifier.size(36.dp),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Text("🏦", fontSize = 16.sp)
-                    }
-
-                    BadgedBox(
-                        badge = {
-                            if (state.unlockedAchievementIds.isNotEmpty()) {
-                                Badge(containerColor = Color(0xFFFACC15)) {
-                                    Text("${state.unlockedAchievementIds.size}", fontSize = 9.sp, color = Color(0xFF0F172A))
-                                }
-                            }
-                        }
-                    ) {
-                        FilledTonalIconButton(
-                            onClick = onOpenAchievements,
-                            modifier = Modifier.size(36.dp),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.EmojiEvents,
-                                contentDescription = "Başarımlar",
-                                tint = Color(0xFFFACC15),
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-
-                    FilledTonalIconButton(
-                        onClick = onOpenSaveLoad,
-                        modifier = Modifier.size(36.dp),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Save,
-                            contentDescription = "Kayıt & Yükleme",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-
-                    Button(
-                        onClick = onAdvanceTime,
-                        modifier = Modifier.height(36.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        shape = RoundedCornerShape(18.dp)
-                    ) {
-                        Text("İlerle (2 Hafta) ⏩", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    }
+                Column {
+                    Text(
+                        text = state.companyName,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1
+                    )
+                    val monthName = GameViewModel.getMonthName(state.month)
+                    val periodLabel = if (state.period == 1) "(1.Yarı)" else "(2.Yarı)"
+                    Text(
+                        text = "$monthName ${state.year} $periodLabel",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
-
+            // Orta: Bütçe (Finans Menüsüne Gider)
             val isNegative = state.budget < 0
             val budgetDisplay = if (state.budget >= 0) "$${"%,d".format(state.budget).replace(',', '.')}" else "-$${"%,d".format(kotlin.math.abs(state.budget)).replace(',', '.')}"
-            Row(
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(
-                        if (isNegative) Color(0xFFFEE2E2) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    )
+                    .clip(RoundedCornerShape(6.dp))
                     .clickable { onOpenFinance() }
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 4.dp, vertical = 2.dp)
             ) {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Bakiye", fontSize = 10.sp, color = if (isNegative) Color(0xFFDC2626) else MaterialTheme.colorScheme.onSurfaceVariant)
-                        if (state.totalDebt > 0) {
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("(Borç: $${"%,d".format(state.totalDebt)})", fontSize = 9.sp, color = Color(0xFFE11D48), fontWeight = FontWeight.Bold)
-                        }
-                    }
+                Text("Bütçe", fontSize = 9.sp, color = Slate500)
+                androidx.compose.animation.AnimatedContent(
+                    targetState = budgetDisplay,
+                    label = "BudgetAnimation"
+                ) { targetBudget ->
                     Text(
-                        budgetDisplay,
+                        targetBudget,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp,
-                        color = if (isNegative) Color(0xFFDC2626) else MaterialTheme.colorScheme.primary
+                        fontSize = 13.sp,
+                        color = if (isNegative) Color(0xFFDC2626) else Green500
                     )
                 }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Aylık Gelir", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("+$${"%,d".format(state.monthlyIncome).replace(',', '.')}", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Green500)
+            }
+
+            // Sağ: Hızlı Aksiyonlar
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                IconButton(onClick = onOpenAchievements, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.EmojiEvents, contentDescription = "Başarımlar", tint = Color(0xFFFACC15), modifier = Modifier.size(20.dp))
                 }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text("Aylık Gider", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("-$${"%,d".format(state.totalMonthlyExpenses).replace(',', '.')}", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
+                IconButton(onClick = onOpenSaveLoad, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.Settings, contentDescription = "Ayarlar/Kayıt", tint = Slate500, modifier = Modifier.size(20.dp))
+                }
+                
+                Button3D(
+                    onClick = onAdvanceTime,
+                    modifier = Modifier.height(34.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                    shape = RoundedCornerShape(17.dp)
+                ) {
+                    Text("İlerle ⏩", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -255,7 +191,7 @@ fun GameTopBar(
 
 @Composable
 fun MainApp(viewModel: GameViewModel = viewModel()) {
-    var currentScreen by remember { mutableStateOf(AppScreen.Dashboard) }
+    var currentScreen by remember { mutableStateOf(AppScreen.CompanyHub) }
     var showEditCompanyDialog by remember { mutableStateOf(false) }
     var showSaveLoadDialog by remember { mutableStateOf(false) }
     var showAchievementsDialog by remember { mutableStateOf(false) }
@@ -342,7 +278,15 @@ fun MainApp(viewModel: GameViewModel = viewModel()) {
         )
     }
 
-    Scaffold(
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+        LaunchedEffect(state.noticeMessage) {
+            state.noticeMessage?.let {
+                snackbarHostState.showSnackbar(it)
+                viewModel.clearNoticeMessage()
+            }
+        }
+        Scaffold(
+            snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -367,54 +311,85 @@ fun MainApp(viewModel: GameViewModel = viewModel()) {
         }
     ) { innerPadding ->
         when (currentScreen) {
-            AppScreen.Dashboard -> GameDashboard(
-                viewModel = viewModel, 
-                modifier = Modifier.padding(innerPadding),
-                onNewDevice = { currentScreen = AppScreen.PhoneBuilder },
-                onNavigateToMarket = { currentScreen = AppScreen.Market },
-                onNavigateToSoftware = { currentScreen = AppScreen.Software },
-                onEditCompanyProfile = { showEditCompanyDialog = true },
-                onOpenFinance = { showFinancialHubDialog = true }
-            )
+            AppScreen.CompanyHub -> {
+                var selectedTab by remember { mutableIntStateOf(0) }
+                Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                    ScrollableTabRow(
+                        selectedTabIndex = selectedTab,
+                        edgePadding = 0.dp
+                    ) {
+                        Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Özet") })
+                        Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Personel") })
+                        Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("M&A") })
+                        Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = { Text("Haberler") })
+                    }
+                    when (selectedTab) {
+                        0 -> GameDashboard(
+                            viewModel = viewModel, 
+                            onNewDevice = { currentScreen = AppScreen.PhoneBuilder },
+                            onNavigateToMarket = { currentScreen = AppScreen.Market },
+                            onNavigateToSoftware = { currentScreen = AppScreen.TechHub },
+                            onEditCompanyProfile = { showEditCompanyDialog = true },
+                            onOpenFinance = { showFinancialHubDialog = true }
+                        )
+                        1 -> EmployeesScreen(viewModel = viewModel)
+                        2 -> AcquisitionScreen(viewModel = viewModel)
+                        3 -> NewsScreen(viewModel = viewModel)
+                    }
+                }
+            }
             AppScreen.Devices -> DevicesScreen(
                 viewModel = viewModel, 
                 modifier = Modifier.padding(innerPadding), 
                 onNewDevice = { currentScreen = AppScreen.PhoneBuilder },
-                onNavigateToBenchmark = { currentScreen = AppScreen.Benchmark }
+                onNavigateToBenchmark = { currentScreen = AppScreen.TechHub }
             )
             AppScreen.Market -> MarketScreen(
                 state = state,
                 onNavigateToBuilder = { currentScreen = AppScreen.PhoneBuilder }
             )
-            AppScreen.Benchmark -> BenchmarkScreen(
-                viewModel = viewModel,
-                modifier = Modifier.padding(innerPadding)
-            )
-            AppScreen.Software -> SoftwareScreen(
-                viewModel = viewModel,
-                modifier = Modifier.padding(innerPadding)
-            )
-            AppScreen.Research -> ResearchScreen(
-                viewModel = viewModel, 
-                modifier = Modifier.padding(innerPadding)
-            )
-            AppScreen.Employees -> EmployeesScreen(
-                viewModel = viewModel, 
-                modifier = Modifier.padding(innerPadding)
-            )
-            AppScreen.News -> NewsScreen(
-                viewModel = viewModel, 
-                modifier = Modifier.padding(innerPadding)
-            )
+            AppScreen.TechHub -> {
+                var selectedTab by remember { mutableIntStateOf(0) }
+                Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                    TabRow(selectedTabIndex = selectedTab) {
+                        Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Ar-Ge") })
+                        Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Yazılım") })
+                        Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("Yonga") })
+                        Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = { Text("Test Lab") })
+                    }
+                    when (selectedTab) {
+                        0 -> ResearchScreen(viewModel = viewModel)
+                        1 -> SoftwareScreen(viewModel = viewModel)
+                        2 -> {
+                            LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
+                                item {
+                                    com.example.ui.ChipsetStudioView(
+                                        state = state,
+                                        onSaveChipset = { viewModel.saveCustomChipset(it) },
+                                        onDeleteChipset = { viewModel.deleteCustomChipset(it) },
+                                        onUnarchiveChipset = { viewModel.unarchiveCustomChipset(it) },
+                                        onToggleOemSale = { id, active, price ->
+                                            viewModel.toggleChipsetOemSale(id, active, price)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        3 -> BenchmarkScreen(viewModel = viewModel)
+                    }
+                }
+            }
             AppScreen.PhoneBuilder -> {
-                val existingSeriesList = (state.activeModels.map { it.specs.seriesName } + state.manufacturedPhones.map { it.seriesName })
+                val existingSeriesList = (state.activeModels.map { it.specs.seriesName } + state.manufacturedPhones.map { it.seriesName } + state.ownedLegacySeries.map { it.seriesName })
                     .filter { it.isNotBlank() }
                     .distinct()
+                val previousSpecsList = (state.activeModels.map { it.specs } + state.manufacturedPhones).distinctBy { it.name }
 
                 PhoneBuilderScreen(
                     unlockedTech = state.unlockedTech,
                     year = state.year,
                     existingSeries = existingSeriesList,
+                    previousModels = previousSpecsList,
                     customOs = state.customOs,
                     customChipsets = state.customChipsets,
                     currentTrend = state.currentTrend,
@@ -422,11 +397,11 @@ fun MainApp(viewModel: GameViewModel = viewModel()) {
                     companyLogoStyle = state.companyLogoStyle,
                     companyBrandColorHex = state.companyBrandColorHex,
                     checkTrendMatch = { viewModel.checkTrendMatch(it, state.currentTrend) },
-                    onBack = { currentScreen = AppScreen.Dashboard },
+                    onBack = { currentScreen = AppScreen.CompanyHub },
                     factoryPeriodCapacity = state.currentFactoryTier.periodCapacity,
                     onManufacture = { specs ->
                         viewModel.manufacturePhone(specs)
-                        currentScreen = AppScreen.Dashboard
+                        currentScreen = AppScreen.CompanyHub
                     }
                 )
             }
@@ -440,14 +415,10 @@ fun BottomNavigationBar(
     onNavigate: (AppScreen) -> Unit
 ) {
     val navItems = listOf(
-        Triple(AppScreen.Dashboard, Icons.Default.Home, "Ana Sayfa"),
+        Triple(AppScreen.CompanyHub, Icons.Default.Home, "Şirket"),
         Triple(AppScreen.Devices, Icons.Default.PhoneAndroid, "Cihazlar"),
-        Triple(AppScreen.Market, Icons.AutoMirrored.Filled.TrendingUp, "Pazar"),
-        Triple(AppScreen.Benchmark, Icons.Default.Speed, "Test Lab"),
-        Triple(AppScreen.Software, Icons.Default.Terminal, "Yazılım"),
-        Triple(AppScreen.Research, Icons.Default.Science, "Ar-Ge"),
-        Triple(AppScreen.Employees, Icons.Default.Group, "Personel"),
-        Triple(AppScreen.News, Icons.Default.Campaign, "Haberler")
+        Triple(AppScreen.TechHub, Icons.Default.Science, "Teknoloji"),
+        Triple(AppScreen.Market, Icons.AutoMirrored.Filled.TrendingUp, "Pazar")
     )
 
     val listState = rememberLazyListState()

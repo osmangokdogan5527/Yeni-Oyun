@@ -1,4 +1,5 @@
 package com.example
+import androidx.compose.ui.graphics.Color
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -20,7 +21,6 @@ import androidx.compose.ui.unit.sp
 import com.example.ui.theme.Slate200
 import com.example.ui.theme.Slate400
 import com.example.ui.theme.Slate500
-import com.example.ui.theme.Slate800
 
 @Composable
 fun SelectionGroup(
@@ -42,7 +42,7 @@ fun SelectionGroup(
             Text(
                 text = title,
                 fontWeight = FontWeight.Bold,
-                color = Slate800,
+                color = Color(0xFF1E293B),
                 fontSize = 13.sp
             )
             if (selectedItem != null && selectedItem.cost > 0) {
@@ -84,7 +84,7 @@ fun SelectionGroup(
                         Surface(
                             shape = RoundedCornerShape(10.dp),
                             color = when {
-                                !isUnlocked -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                                !isUnlocked -> Color(0xFFF1F5F9).copy(alpha = 0.35f)
                                 isSelected -> MaterialTheme.colorScheme.primaryContainer
                                 else -> MaterialTheme.colorScheme.surface
                             },
@@ -132,7 +132,7 @@ fun SelectionGroup(
                                         color = when {
                                             !isUnlocked -> Slate400
                                             isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
-                                            else -> Slate800
+                                            else -> Color(0xFF1E293B)
                                         },
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                         fontSize = 11.5.sp,

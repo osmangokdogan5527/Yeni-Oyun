@@ -1,0 +1,15 @@
+@Serializable
+data class ActiveOsDevelopment(
+    val name: String,
+    val targetVersion: String,
+    val type: OsType,
+    val licenseType: OsLicenseType,
+    val focus: OsFocus,
+    val themeColorHex: Long,
+    val perDeviceLicenseFee: Int,
+    val totalMonths: Int,
+    val remainingMonths: Int,
+    val cost: Long,
+    val isMajorUpdate: Boolean,
+    val qaInvestment: Long
+)

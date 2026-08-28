@@ -7,6 +7,7 @@
 package com.example
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import com.example.ui.Button3D
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -75,7 +78,7 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            val softwareSectionNames = listOf("İşletim Sistemi", "Öz Yonga & OEM", "Ekosistem", "Küresel Rekabet")
+                            val softwareSectionNames = listOf("İşletim Sistemi", "Cihaz Güncellemeleri", "Ekosistem", "Küresel Rekabet")
                             Text(
                                 text = "Ana Ekran  ›  Yazılım  ›  ${softwareSectionNames.getOrElse(selectedTab) { "İşletim Sistemi" }}",
                                 fontSize = 9.5.sp,
@@ -124,14 +127,14 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
                         onClick = { selectedTab = 1 },
                         text = {
                             Text(
-                                "Öz Yonga & OEM (${state.customChipsets.size})",
+                                "Cihaz Güncellemeleri",
                                 fontSize = 11.sp,
                                 fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                         },
-                        icon = { Icon(Icons.Default.Memory, contentDescription = null, modifier = Modifier.size(17.dp)) }
+                        icon = { Icon(Icons.Default.SystemUpdate, contentDescription = null, modifier = Modifier.size(17.dp)) }
                     )
                     Tab(
                         selected = selectedTab == 2,
@@ -223,7 +226,7 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
                                 )
 
                                 Surface(
-                                    color = Color.Black.copy(alpha = 0.35f),
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Row(
@@ -253,7 +256,7 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
                                         Spacer(modifier = Modifier.width(8.dp))
 
                                         if (!isBeingResearched && !isQueued) {
-                                            Button(
+                                            Button3D(
                                                 onClick = {
                                                     viewModel.startResearch("Özel Mobil İşletim Sistemi Mimarisi", "Özel Mobil İşletim Sistemi Mimarisi", 100000000L)
                                                 },
@@ -272,12 +275,37 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
                 }
 
                 // 2. HERO OS STATUS CARD
+    if (customOs.activeDevelopment != null) {
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("🚀 İşletim Sistemi Geliştirme Sürecinde", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Proje: ${customOs.activeDevelopment.name} v${customOs.activeDevelopment.targetVersion}", fontSize = 14.sp)
+                    Text("Tür: ${customOs.activeDevelopment.type.title}", fontSize = 14.sp)
+                    Text("Kalan Süre: ${customOs.activeDevelopment.remainingMonths} Dönem", fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LinearProgressIndicator(
+                        progress = { 
+                            1f - (customOs.activeDevelopment.remainingMonths.toFloat() / customOs.activeDevelopment.totalMonths.toFloat())
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+    }
                 item {
                     OsHeroStatusCard(
                         customOs = customOs,
                         isUnlocked = isOsResearchUnlocked,
                         onOpenCreateDialog = { showCreateOsDialog = true },
-                        onOpenReleaseDialog = { showReleaseUpdateDialog = true }
+                        onOpenReleaseDialog = { showReleaseUpdateDialog = true },
+                        onReleaseHotfix = { viewModel.releaseOsHotfix() }
                     )
                 }
 
@@ -364,18 +392,55 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
                 }
             }
 
-            // --- TAB 1: ÖZ YONGA & OEM SATIŞ (SILICON FOUNDRY) ---
+            // --- TAB 1: CİHAZ GÜNCELLEMELERİ ---
             if (selectedTab == 1) {
-                item {
-                    ChipsetStudioView(
-                        state = state,
-                        onSaveChipset = { viewModel.saveCustomChipset(it) },
-                        onDeleteChipset = { viewModel.deleteCustomChipset(it) },
-                        onUnarchiveChipset = { viewModel.unarchiveCustomChipset(it) },
-                        onToggleOemSale = { id, active, price ->
-                            viewModel.toggleChipsetOemSale(id, active, price)
+                if (!customOs.isCustomActive) {
+                    item {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth().padding(32.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(Icons.Default.SystemUpdate, contentDescription = null, modifier = Modifier.size(48.dp), tint = Slate400)
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text("Özel İşletim Sistemi Gerekli", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                Text("Cihazlara OTA güncellemesi göndermek için önce kendi işletim sisteminizi geliştirmelisiniz.", fontSize = 12.sp, color = Slate500, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
+                            }
                         }
-                    )
+                    }
+                } else {
+                    item {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            tonalElevation = 2.dp
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Icon(Icons.Default.SystemUpdate, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    Text("İşletim Sistemi Sürüm Yönetimi", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                }
+                                Text(
+                                    "Büyük sürüm güncellemeleri, piyasadaki eski cihazlarınızın ömrünü uzatır ve müşteri memnuniyetini artırır. Hangi modellerin v${customOs.majorVersionCount + 1}.0 güncellemesini alacağını seçerek yayınlayabilirsiniz.",
+                                    fontSize = 12.sp,
+                                    color = Slate600
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Button3D(
+                                    onClick = { showReleaseUpdateDialog = true },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                ) {
+                                    Text("Büyük Güncelleme Yayınla (v${customOs.majorVersionCount + 1}.0)")
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -462,9 +527,16 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
                             
                             HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                             
-                            viewModel.rivalOperatingSystems.forEachIndexed { index, rivalOs ->
+                            
+                            
+                            
+                            val dummyRivals = emptyList<com.example.viewmodel.CompetitorOsInfo>()
+                            dummyRivals.forEachIndexed { index, rivalOs ->
+
+
+
                                 RivalOsCompactRow(rivalOs = rivalOs)
-                                if (index < viewModel.rivalOperatingSystems.size - 1) {
+                                if (index < dummyRivals.size - 1) {
                                     HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), modifier = Modifier.padding(vertical = 4.dp))
                                 }
                             }
@@ -489,43 +561,97 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
     }
 
     if (showReleaseUpdateDialog) {
+        var selectedDevices by remember { mutableStateOf(setOf<String>()) }
+        val eligibleDevices = state.activeModels.filter { it.specs.osName.contains(customOs.name) }
+        val baseCost = 150000L
+        val totalCost = baseCost + (selectedDevices.size * 25000L)
+
         AlertDialog(
             onDismissRequest = { showReleaseUpdateDialog = false },
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("🚀 ", fontSize = 20.sp)
-                    Text("Büyük Sistem Güncellemesi Yayınla", fontWeight = FontWeight.Bold)
+                    Text("Büyük Sistem Güncellemesi", fontWeight = FontWeight.Bold, fontSize = 17.sp)
                 }
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        "Tüm aktif cihazlara ve üçüncü taraf üreticilere ${customOs.name} v${customOs.majorVersionCount + 1}.0 OTA sistem güncellemesi dağıtılacak.",
-                        fontSize = 13.sp
+                        "${customOs.name} v${customOs.majorVersionCount + 1}.0 güncellemesini yayınlayın. Hangi aktif cihazların bu güncellemeyi (OTA) alacağını seçebilirsiniz:",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    
+                    if (eligibleDevices.isEmpty()) {
+                        Text("Piyasada bu işletim sistemini kullanan aktif cihazınız bulunmuyor. Yeni üretimler v${customOs.majorVersionCount + 1}.0 ile çıkacaktır.", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 160.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                .padding(8.dp)
+                        ) {
+                            items(eligibleDevices.size) { index ->
+                                val device = eligibleDevices[index]
+                                val isSelected = selectedDevices.contains(device.id)
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { 
+                                            selectedDevices = if (isSelected) selectedDevices - device.id else selectedDevices + device.id
+                                        }
+                                        .padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    androidx.compose.material3.Checkbox(
+                                        checked = isSelected,
+                                        onCheckedChange = { checked ->
+                                            selectedDevices = if (checked) selectedDevices + device.id else selectedDevices - device.id
+                                        }
+                                    )
+                                    Column {
+                                        Text(device.specs.name, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                        Text("${device.monthsOnMarket} aydır piyasada", fontSize = 11.sp, color = Slate500)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     Surface(
-                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        color = MaterialTheme.colorScheme.primaryContainer,
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text("• Ar-Ge & Dağıtım Maliyeti: $150,000", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            Text("• Marka İtibarı Kazancı: +5 İtibar", fontSize = 12.sp, color = Color(0xFF10B981))
-                            Text("• Müşteri Memnuniyeti & Güvenlik Tazeleyici", fontSize = 12.sp)
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Temel Dağıtım Gideri:", fontSize = 12.sp)
+                                Text("$$baseCost", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Cihaz Başı OTA:", fontSize = 12.sp)
+                                Text("$25,000 x ${selectedDevices.size}", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+                            androidx.compose.material3.HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp), color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f))
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Toplam:", fontWeight = FontWeight.Bold)
+                                Text("$${"%,d".format(totalCost)}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            }
                         }
                     }
                 }
             },
             confirmButton = {
-                Button(
+                Button3D(
                     onClick = {
-                        viewModel.releaseMajorOsUpdate()
+                        viewModel.releaseMajorOsUpdate(selectedDevices.toList())
                         showReleaseUpdateDialog = false
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Text("Güncellemeyi Yayınla ($150,000)")
+                    Text("Yayınla")
                 }
             },
             dismissButton = {

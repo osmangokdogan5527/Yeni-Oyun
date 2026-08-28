@@ -13,7 +13,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Business
 import androidx.compose.material3.*
+import com.example.ui.Button3D
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -84,7 +87,7 @@ fun GameDashboard(
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = "🚨", fontSize = 20.sp)
+                    Icon(imageVector = Icons.Default.Warning, contentDescription = "Kriz", tint = Color(0xFFDC2626), modifier = Modifier.size(24.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -145,7 +148,7 @@ fun GameDashboard(
                         Text(
                             text = "Üretim maliyeti %${kotlin.math.abs(event.costMultiplierPercent - 100)} ${if (isNegative) "arttı" else "azaldı"} • ${event.remainingPeriods} periyot kaldı",
                             fontSize = 10.sp,
-                            color = Slate700
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -194,7 +197,7 @@ fun GameDashboard(
                                 text = state.companyName,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Slate900
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Surface(
@@ -281,7 +284,7 @@ fun GameDashboard(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
-                                "🔥 TREND: ${state.currentTrend.title}",
+                                "TREND: ${state.currentTrend.title}",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFFFB74D),
@@ -364,14 +367,14 @@ fun DashboardAppBar(year: Int, month: Int, onAdvanceTime: (() -> Unit)? = null) 
                     .background(MaterialTheme.colorScheme.primary, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text("🏢", fontSize = 20.sp)
+                Icon(imageVector = Icons.Default.Business, contentDescription = "Fabrika", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
             }
             Column {
                 Text(
                     text = "Smartphone Tycoon",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Slate900,
+                    color = MaterialTheme.colorScheme.onSurface,
                     lineHeight = 20.sp
                 )
                 Text(
@@ -402,7 +405,7 @@ fun DashboardAppBar(year: Int, month: Int, onAdvanceTime: (() -> Unit)? = null) 
             }
 
             if (onAdvanceTime != null) {
-                Button(
+                Button3D(
                     onClick = onAdvanceTime,
                     modifier = Modifier.height(36.dp),
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
@@ -447,7 +450,7 @@ fun DashboardStatsGrid(
             ) {
                 if (totalDebt > 0) {
                     Text(
-                        text = "🏦 Borç: $${"%,d".format(totalDebt)} (Finans)",
+                        text = "Borç: $${"%,d".format(totalDebt)} (Finans)",
                         fontSize = 9.sp,
                         color = Color(0xFFE11D48),
                         fontWeight = FontWeight.Bold,
@@ -597,7 +600,7 @@ fun ReportItem(report: MarketReport) {
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
             Text(
                 text = report.text,
-                color = Slate800,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 14.sp,
                 lineHeight = 22.sp
             )

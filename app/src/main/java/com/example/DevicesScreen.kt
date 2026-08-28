@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.*
+import com.example.ui.Button3D
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,7 +52,7 @@ fun DevicesScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         // Prominent Call to Action Button
-        Button(
+        Button3D(
             onClick = onNewDevice,
             modifier = Modifier
                 .fillMaxWidth()
@@ -79,7 +80,7 @@ fun DevicesScreen(
                 ) {
                     Icon(Icons.Default.PhoneAndroid, contentDescription = null, modifier = Modifier.size(64.dp), tint = Slate400)
                     Text("Henüz hiç telefon üretmediniz.", color = Slate600, fontWeight = FontWeight.Medium, fontSize = 15.sp)
-                    Button(
+                    Button3D(
                         onClick = onNewDevice,
                         modifier = Modifier.height(48.dp),
                         shape = RoundedCornerShape(12.dp)
@@ -128,7 +129,7 @@ fun DevicesScreen(
                                 }
 
                                 unresolvedCrises.forEach { crisis ->
-                                    Button(
+                                    Button3D(
                                         onClick = { selectedCrisisForResolution = crisis },
                                         modifier = Modifier.fillMaxWidth().height(36.dp),
                                         shape = RoundedCornerShape(10.dp),
@@ -189,7 +190,7 @@ fun DevicesScreen(
                                         )
                                     }
                                     Column {
-                                        Text(phone.name, fontWeight = FontWeight.Bold, fontSize = 17.sp, color = Slate900)
+                                        Text(phone.name, fontWeight = FontWeight.Bold, fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurface)
                                         val hardwareSummary = if (phone.sdCardSupport.contains("Yok", ignoreCase = true)) {
                                             "${phone.ramCapacity} (${phone.ramType}) • ${phone.storage}"
                                         } else {
@@ -277,7 +278,7 @@ fun DevicesScreen(
                             val demandTextColor = when {
                                 model.reviewScore >= 75 -> Color(0xFFE65100)
                                 model.reviewScore >= 60 -> Color(0xFF2E7D32)
-                                else -> Slate800
+                                else -> MaterialTheme.colorScheme.onSurface
                             }
 
                             Surface(
@@ -580,7 +581,88 @@ fun DevicesScreen(
                                     SalesFactorTag(label = "Talep", value = model.marketDemandLabel, modifier = Modifier.weight(1f))
                                     SalesFactorTag(label = "Marka", value = model.brandStrengthLabel, modifier = Modifier.weight(1f))
                                 }
-                                Spacer(modifier = Modifier.height(10.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // Hype & Müşteri Memnuniyeti Gösterge Paneli
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                Text("📢", fontSize = 12.sp)
+                                                Text("Hype: ${model.hypeScore}/100", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (model.hypeScore >= 80) Color(0xFFDC2626) else if (model.hypeScore >= 50) Color(0xFFD97706) else MaterialTheme.colorScheme.primary)
+                                                Text("(${model.hypeStatus})", fontSize = 10.sp, color = Slate600)
+                                            }
+                                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                Text("❤️", fontSize = 12.sp)
+                                                Text("Memnuniyet: %${model.customerSatisfactionScore}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (model.customerSatisfactionScore >= 75) Green500 else if (model.customerSatisfactionScore >= 45) Color(0xFFD97706) else Color(0xFFDC2626))
+                                            }
+                                        }
+
+                                        // İade Dalgası veya Şikayet Uyarı Bannerı
+                                        if (model.totalRefundsCount > 0) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    "🔄 Toplam İade: ${"%,d".format(model.totalRefundsCount)} adet",
+                                                    fontSize = 10.5.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = if (model.customerSatisfactionScore <= 35) Color(0xFFDC2626) else Slate600
+                                                )
+                                                if (model.lastPeriodRefunds > 0) {
+                                                    Text(
+                                                        "Son Dönem: -${"%,d".format(model.lastPeriodRefunds)} ($${"%,d".format(model.lastPeriodRefundCost)})",
+                                                        fontSize = 10.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color(0xFFDC2626)
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        if (model.hypeScore >= 55 && model.customerSatisfactionScore <= 35) {
+                                            Surface(
+                                                shape = RoundedCornerShape(6.dp),
+                                                color = Color(0xFFFEE2E2),
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Text(
+                                                    "⚠️ Aşırı Hype & Düşük Kalite Fiyaskosu! Kullanıcılar 'Telefon ısınıyor' diye iade ediyor.",
+                                                    fontSize = 9.5.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFFB91C1C),
+                                                    modifier = Modifier.padding(6.dp)
+                                                )
+                                            }
+                                        } else if (model.customerSatisfactionScore >= 88 && model.wordOfMouthBoost > 1.0f) {
+                                            Surface(
+                                                shape = RoundedCornerShape(6.dp),
+                                                color = Color(0xFFDCFCE7),
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Text(
+                                                    "🌟 Kulaktan Kulağa Övgü Dalgası! Kullanıcılar cihazı övüyor (+%15 Ekstra Satış Bonusu).",
+                                                    fontSize = 9.5.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFF15803D),
+                                                    modifier = Modifier.padding(6.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
                             }
 
                             Row(
@@ -590,11 +672,11 @@ fun DevicesScreen(
                             ) {
                                 Column {
                                     Text("Fiyat", fontSize = 10.sp, color = Slate500)
-                                    Text("$${phone.price}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Slate900)
+                                    Text("$${phone.price}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                                 }
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text("Kalan Stok", fontSize = 10.sp, color = Slate500)
-                                    Text("${"%,d".format(model.remainingStock)}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Slate900)
+                                    Text("${"%,d".format(model.remainingStock)}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                                 }
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text("Elde Edilen Ciro", fontSize = 10.sp, color = Slate500)
@@ -804,7 +886,7 @@ fun DiscountCampaignDialog(
                 )
 
                 // Discount Option Buttons
-                Text("İndirim Oranı:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Slate900)
+                Text("İndirim Oranı:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -843,7 +925,7 @@ fun DiscountCampaignDialog(
                     ) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Orijinal Liste Fiyatı:", fontSize = 12.sp, color = Slate600)
-                            Text("$$originalPrice", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Slate900)
+                            Text("$$originalPrice", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Kampanyalı Satış Fiyatı:", fontSize = 12.sp, color = Slate600)
@@ -851,7 +933,7 @@ fun DiscountCampaignDialog(
                                 "$$newPrice",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (selectedDiscount > 0) Color(0xFFDC2626) else Slate900
+                                color = if (selectedDiscount > 0) Color(0xFFDC2626) else MaterialTheme.colorScheme.onSurface
                             )
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -868,7 +950,7 @@ fun DiscountCampaignDialog(
                             else -> "Normal Pazar Talebi"
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Beklenen Talep Etkisi:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Slate800)
+                            Text("Beklenen Talep Etkisi:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                             Text(
                                 demandBoostText,
                                 fontSize = 12.sp,
@@ -890,7 +972,7 @@ fun DiscountCampaignDialog(
             }
         },
         confirmButton = {
-            Button(
+            Button3D(
                 onClick = { onApplyDiscount(selectedDiscount) },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (selectedDiscount > 0) Color(0xFFDC2626) else MaterialTheme.colorScheme.primary
@@ -941,11 +1023,11 @@ fun RecycleStockDialog(
                     Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Elde Kalan Stok:", fontSize = 12.sp, color = Slate600)
-                            Text("${"%,d".format(model.remainingStock)} adet", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Slate900)
+                            Text("${"%,d".format(model.remainingStock)} adet", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Birim Üretim Maliyeti:", fontSize = 12.sp, color = Slate600)
-                            Text("$${unitCost}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Slate900)
+                            Text("$${unitCost}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Geri İade Değeri (Adet Başı):", fontSize = 12.sp, color = Slate600)
@@ -953,7 +1035,7 @@ fun RecycleStockDialog(
                         }
                         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = Slate200)
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Kasaya Aktarılacak Tutar:", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Slate900)
+                            Text("Kasaya Aktarılacak Tutar:", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                             Text("+$${"%,d".format(totalRefund)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Green500)
                         }
                     }
@@ -961,7 +1043,7 @@ fun RecycleStockDialog(
             }
         },
         confirmButton = {
-            Button(
+            Button3D(
                 onClick = onConfirmRecycle,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD97706))
             ) {
@@ -1021,7 +1103,7 @@ fun MarketingDialog(
                                     text = campaign.title,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp,
-                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else Slate900
+                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
                                     text = "$${"%,d".format(campaign.cost)}",
@@ -1031,12 +1113,24 @@ fun MarketingDialog(
                                 )
                             }
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "${campaign.durationMonths} Ay • +%${campaign.boostPercent} Satış Artışı",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Green500
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "${campaign.durationMonths} Ay • +%${campaign.boostPercent} Satış",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Green500
+                                )
+                                Text(
+                                    text = "+${campaign.hypeBoost} Hype",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (campaign.hypeBoost >= 30) Color(0xFFDC2626) else MaterialTheme.colorScheme.primary
+                                )
+                            }
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = campaign.description,
@@ -1057,7 +1151,7 @@ fun MarketingDialog(
             }
         },
         confirmButton = {
-            Button(
+            Button3D(
                 onClick = { onConfirmCampaign(selectedType) },
                 enabled = canAfford,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
@@ -1129,10 +1223,10 @@ fun RestockDialog(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text("Birim Üretim Maliyeti:", fontSize = 12.sp, color = Slate600)
-                    Text("$${unitCost} / adet", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Slate900)
+                    Text("$${unitCost} / adet", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 }
 
-                Text("Üretilecek Adet:", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Slate900)
+                Text("Üretilecek Adet:", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1173,7 +1267,7 @@ fun RestockDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Toplam Maliyet:", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Slate900)
+                    Text("Toplam Maliyet:", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     Text(
                         "$${"%,d".format(totalCost)}",
                         fontSize = 14.sp,
@@ -1192,7 +1286,7 @@ fun RestockDialog(
             }
         },
         confirmButton = {
-            Button(
+            Button3D(
                 onClick = { onConfirmRestock(selectedQty) },
                 enabled = canAfford,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)

@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import com.example.ui.Button3D
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -248,7 +249,7 @@ fun AppStoreManagementCard(
                     }
                 }
 
-                Button(
+                Button3D(
                     onClick = onOpenFundDialog,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     shape = RoundedCornerShape(8.dp),
@@ -337,14 +338,14 @@ fun GlobalDevConCard(
                     }
                 }
 
-                Button(
+                Button3D(
                     onClick = onHost,
                     enabled = state.budget >= 5000000L,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF38BDF8)),
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
                 ) {
-                    Text("Konferans Düzenle ($5M)", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("Konferans Düzenle ($5M)", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
 

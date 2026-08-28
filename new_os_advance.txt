@@ -1,0 +1,86 @@
+        var updatedCustomOs = currentState.customOs
+        var appStoreRevenueThisPeriod = 0L
+        var licenseRevenueThisPeriod = 0L
+
+        // Process OS Development Time
+        if (updatedCustomOs.activeDevelopment != null) {
+            val dev = updatedCustomOs.activeDevelopment
+            val newRemaining = dev.remainingMonths - 1
+            if (newRemaining <= 0) {
+                // OS Development Complete!
+                val initialDevs = (currentState.engineers / 2).coerceAtLeast(1).coerceAtMost(currentState.engineers)
+                
+                // Calculate bugs and stability
+                // High QA investment relative to cost => high stability. Low => low stability.
+                val qaRatio = dev.qaInvestment.toDouble() / dev.cost.toDouble().coerceAtLeast(1.0)
+                // qaRatio 0.0 => 40 stability, qaRatio 0.5 => 70, qaRatio 1.0 => 100
+                val calculatedStability = (40 + (qaRatio * 60)).toInt().coerceIn(10, 100)
+                
+                val isNewOs = !dev.isMajorUpdate
+
+                val repBonus = when (dev.type) {
+                    OsType.PROPRIETARY_KERNEL -> 18
+                    OsType.CUSTOM_UI_SKIN -> 10
+                    OsType.STOCK_ANDROID -> 0
+                }
+
+                updatedCustomOs = updatedCustomOs.copy(
+                    name = dev.name,
+                    version = dev.targetVersion,
+                    type = dev.type,
+                    licenseType = dev.licenseType,
+                    focus = dev.focus,
+                    themeColorHex = dev.themeColorHex,
+                    perDeviceLicenseFee = dev.perDeviceLicenseFee,
+                    assignedDevs = if (updatedCustomOs.assignedDevs > 0) updatedCustomOs.assignedDevs else initialDevs,
+                    popularityPercent = if (updatedCustomOs.popularityPercent > 0) updatedCustomOs.popularityPercent else (if (dev.licenseType == OsLicenseType.OPEN_SOURCE) 3.5f else 2.0f),
+                    optimizationScore = if (updatedCustomOs.optimizationScore > 20) updatedCustomOs.optimizationScore else 35,
+                    ecosystemScore = if (updatedCustomOs.ecosystemScore > 10) updatedCustomOs.ecosystemScore else 20,
+                    thirdPartyAdoptersCount = if (updatedCustomOs.thirdPartyAdoptersCount > 0) updatedCustomOs.thirdPartyAdoptersCount else (if (dev.licenseType == OsLicenseType.OPEN_SOURCE) 1 else 0),
+                    majorVersionCount = if (isNewOs) 1 else updatedCustomOs.majorVersionCount + 1,
+                    minorVersionCount = 0,
+                    lastUpdateMonth = newMonth,
+                    lastUpdateYear = newYear,
+                    stability = calculatedStability,
+                    bugsEncountered = 0,
+                    totalStoreApps = if (isNewOs) { if (dev.type == OsType.PROPRIETARY_KERNEL) 500L else 125000L } else updatedCustomOs.totalStoreApps,
+                    activeDevelopment = null
+                )
+
+                val news = NewsArticle(
+                    id = "os_launch_${newYear}_${newMonth}_${Random.nextInt(100, 999)}",
+                    title = "🌐 BÜYÜK YAZILIM HAMLESİ: ${dev.name} v${dev.targetVersion} (${dev.licenseType.badge})!",
+                    text = "Aylarca süren Ar-Ge sonrası, ${dev.name} yazılımımız yayınlandı. İlk testlere göre sistem kararlılığı (Stabilite): %$calculatedStability.",
+                    category = "Şirket",
+                    year = newYear,
+                    month = newMonth
+                )
+                newNewsList.add(news)
+                expoRepGain += repBonus
+            } else {
+                updatedCustomOs = updatedCustomOs.copy(
+                    activeDevelopment = dev.copy(remainingMonths = newRemaining)
+                )
+            }
+        }
+
+        if (updatedCustomOs.isCustomActive) {
+            val devCount = updatedCustomOs.assignedDevs.coerceAtMost(currentState.engineers)
+            
+            // OS Bug & Stability Crises
+            if (updatedCustomOs.stability < 70 && Random.nextInt(100) < (70 - updatedCustomOs.stability) / 3) {
+                // Bug triggered
+                val lostRep = Random.nextInt(1, 4)
+                expoRepGain -= lostRep
+                updatedCustomOs = updatedCustomOs.copy(bugsEncountered = updatedCustomOs.bugsEncountered + 1)
+                newNewsList.add(
+                    NewsArticle(
+                        id = "os_bug_${newYear}_${newMonth}_${Random.nextInt(100, 999)}",
+                        title = "🚨 YAZILIM KRİZİ: ${updatedCustomOs.name} Çöktü!",
+                        text = "İşletim sistemimizdeki stabilite sorunları (Stabilite: %${updatedCustomOs.stability}) kullanıcıların cihazlarının çökmesine neden oldu! İtibar kaybediyoruz (-$lostRep). Yazılım merkezinden acil Hata Düzeltme (Hotfix) yayınlayın.",
+                        category = "Şirket",
+                        year = newYear,
+                        month = newMonth
+                    )
+                )
+            }

@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import com.example.ui.Button3D
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -401,7 +402,7 @@ fun CreateOsDialog(
             }
         },
         confirmButton = {
-            Button(
+            Button3D(
                 onClick = {
                     onConfirm(osName, selectedType, selectedLicense, selectedFocus, selectedColor, perDeviceFee)
                 },
@@ -480,7 +481,7 @@ fun DeveloperFundDialog(
             }
         },
         confirmButton = {
-            Button(
+            Button3D(
                 onClick = { onInvest(selectedAmount) },
                 enabled = currentBudget >= selectedAmount
             ) {

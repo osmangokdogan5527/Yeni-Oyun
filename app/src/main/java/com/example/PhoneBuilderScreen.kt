@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import com.example.ui.Button3D
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 import com.example.ui.theme.*
+import com.example.viewmodel.LaunchCampaign
 import com.example.viewmodel.ModelTier
 import com.example.viewmodel.PhoneSpecs
 
@@ -43,6 +45,7 @@ fun PhoneBuilderScreen(
     existingSeries: List<String> = emptyList(),
     customOs: com.example.viewmodel.CustomOsState? = null,
     customChipsets: List<com.example.viewmodel.CustomChipset> = emptyList(),
+    previousModels: List<com.example.viewmodel.PhoneSpecs> = emptyList(),
     currentTrend: com.example.viewmodel.MarketTrend? = null,
     companyName: String = "Apex Mobile",
     companyLogoStyle: String = "Minimal Elmas",
@@ -153,6 +156,7 @@ fun PhoneBuilderScreen(
     var price by remember { mutableFloatStateOf(699f) }
     var quantity by remember { mutableFloatStateOf(100000f) }
     var qaBudget by remember { mutableFloatStateOf(100000f) }
+    var selectedLaunchCampaign by remember { mutableStateOf(LaunchCampaign.ORGANIC) }
 
     val extraColorCost = (selectedColors.size - 1).coerceAtLeast(0) * 3
     val osLicenseFee = when (selectedOsChoice) {
@@ -187,7 +191,7 @@ fun PhoneBuilderScreen(
 
     Scaffold(
         topBar = {
-            val totalCost = (unitCost.toLong() * quantity.toLong()) + qaBudget.toLong()
+            val totalCost = (unitCost.toLong() * quantity.toLong()) + qaBudget.toLong() + selectedLaunchCampaign.cost
             TopAppBar(
                 title = { 
                     Column {
@@ -221,6 +225,62 @@ fun PhoneBuilderScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Geri")
                     }
                 },
+                actions = {
+                    if (previousModels.isNotEmpty()) {
+                        var showCopyMenu by remember { mutableStateOf(false) }
+                        Box {
+                            TextButton(onClick = { showCopyMenu = true }) {
+                                Text("📋 Kopyala", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            }
+                            androidx.compose.material3.DropdownMenu(
+                                expanded = showCopyMenu,
+                                onDismissRequest = { showCopyMenu = false }
+                            ) {
+                                previousModels.reversed().take(10).forEach { previousSpecs ->
+                                    androidx.compose.material3.DropdownMenuItem(
+                                        text = { Text(previousSpecs.name) },
+                                        onClick = {
+                                            selectedExistingSeries = previousSpecs.seriesName.ifBlank { existingSeries.firstOrNull() ?: "Aura" }
+                                            selectedTier = previousSpecs.tier
+                                            selectedStyle = previousSpecs.style
+                                            selectedMaterial = previousSpecs.material
+                                            selectedProcessor = previousSpecs.processor
+                                            selectedRamCapacity = previousSpecs.ramCapacity
+                                            selectedRamType = previousSpecs.ramType
+                                            selectedStorage = previousSpecs.storage
+                                            selectedSdCard = previousSpecs.sdCardSupport
+                                            selectedDisplay = previousSpecs.display
+                                            screenSizeInch = previousSpecs.screenSizeInch
+                                            thicknessMm = previousSpecs.thicknessMm
+                                            selectedGlass = previousSpecs.glass
+                                            selectedCamera = previousSpecs.camera
+                                            selectedCellularNetwork = previousSpecs.cellularNetwork
+                                            selectedChargingPort = previousSpecs.chargingPort
+                                            selectedWirelessConnectivity = previousSpecs.wirelessConnectivity
+                                            selectedAudio = previousSpecs.audio
+                                            selectedBatteryCapacity = previousSpecs.batteryCapacity
+                                            selectedBatteryType = previousSpecs.batteryType
+                                            selectedBackFinish = previousSpecs.backFinish
+                                            selectedCameraBump = previousSpecs.cameraBumpStyle
+                                            selectedFrameStyle = previousSpecs.frameStyle
+                                            selectedNotchStyle = previousSpecs.notchStyle
+                                            price = previousSpecs.price.toFloat()
+                                            selectedLaunchCampaign = previousSpecs.launchCampaign
+                                            
+                                            selectedOsChoice = when {
+                                                previousSpecs.osName.contains("GlobalOS") -> 2
+                                                previousSpecs.osName != "Android AOSP" && previousSpecs.osName != "Android AOSP (Stok Açık Kaynak)" -> 1
+                                                else -> 0
+                                            }
+
+                                            showCopyMenu = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
@@ -232,7 +292,7 @@ fun PhoneBuilderScreen(
                 shadowElevation = 8.dp,
                 color = MaterialTheme.colorScheme.surface
             ) {
-                Button(
+                Button3D(
                     onClick = {
                         val currentOsType = when (selectedOsChoice) {
                             1 -> if (customOs != null && customOs.type != com.example.viewmodel.OsType.STOCK_ANDROID) customOs.type.title else "Özel Şirket Arayüzü"
@@ -279,6 +339,7 @@ fun PhoneBuilderScreen(
                                 price = price.toInt(),
                                 quantity = quantity.toInt(),
                                 qaBudget = qaBudget.toLong(),
+                                launchCampaign = selectedLaunchCampaign,
                                 osName = currentOsName,
                                 osType = currentOsType,
                                 osFocus = currentOsFocus,
@@ -671,7 +732,9 @@ fun PhoneBuilderScreen(
                         onPriceChange = { price = it },
                         onQuantityChange = { quantity = it },
                         onQaBudgetChange = { qaBudget = it },
-                        factoryPeriodCapacity = factoryPeriodCapacity
+                        factoryPeriodCapacity = factoryPeriodCapacity,
+                        selectedLaunchCampaign = selectedLaunchCampaign,
+                        onLaunchCampaignChange = { selectedLaunchCampaign = it }
                     )
                 }
             }

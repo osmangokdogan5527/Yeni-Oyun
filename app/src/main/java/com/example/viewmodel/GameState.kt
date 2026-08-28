@@ -11,16 +11,93 @@ enum class EmployeeType {
 }
 
 @Serializable
+enum class LaunchCampaign(
+    val title: String,
+    val cost: Long,
+    val initialHype: Int,
+    val minRecommendedScore: Int,
+    val description: String,
+    val riskWarning: String
+) {
+    ORGANIC(
+        "Sıfır Reklam (Organik Lansman)",
+        0L,
+        12,
+        0,
+        "Sıfır pazarlama bütçesi. Tanıtım eksikliği nedeniyle ilk satışlar çok yavaş olur, ancak fiyasko veya iade riski yoktur.",
+        "Düşük Talep Riski: Harika telefon sıfır reklamla zor satılır!"
+    ),
+    SOCIAL_MEDIA(
+        "Sosyal Medya & Basın Bülteni",
+        60000L,
+        35,
+        55,
+        "Temel dijital reklamlar ve teknoloji basını duyuruları. Giriş ve orta segment için dengeli ve güvenli.",
+        "Düşük Risk: Dengeli beklenti"
+    ),
+    VIRAL_INFLUENCER(
+        "Viral Influencer & YouTube Lansmanı",
+        200000L,
+        65,
+        70,
+        "Teknoloji yayıncıları ve YouTube kanallarıyla büyük sponsorluklar. Güçlü erken satış patlaması.",
+        "Orta Risk: Puan 70 altındaysa eleştiriler ve iadeler başlar!"
+    ),
+    GLOBAL_BILLBOARD(
+        "Küresel Reklam & Şehir Panoları",
+        600000L,
+        90,
+        80,
+        "TV spotları ve metropol dev billboardları. Üst segment için devasa talep ve mağaza önü kuyrukları!",
+        "Yüksek Risk: Puan 80 altındaysa hayal kırıklığı ve iade dalgası!"
+    ),
+    MEGA_CELEBRITY(
+        "Süperstar & Küresel Sahne Şovu",
+        1500000L,
+        125,
+        90,
+        "Dünya yıldızlarıyla görkemli lansman etkinliği. Zirve Hype ve tarihi satış rekoru potansiyeli!",
+        "Kritik Risk: En ufak donanım hatasında felaket ve itibar çöküşü!"
+    )
+}
+
+@Serializable
 enum class CampaignType(
     val title: String,
     val cost: Long,
     val durationMonths: Int,
     val boostPercent: Int,
-    val description: String
+    val hypeBoost: Int,
+    val description: String,
+    val riskWarning: String
 ) {
-    SOCIAL_MEDIA("Sosyal Medya Reklamı", 50000L, 3, 25, "3 Ay boyunca +%25 satış talebi artışı"),
-    INFLUENCER("Influencer İşbirliği", 150000L, 3, 50, "3 Ay boyunca +%50 satış talebi artışı"),
-    TV_COMMERCIAL("TV Reklam Kampanyası", 400000L, 6, 80, "6 Ay boyunca +%80 satış talebi artışı")
+    SOCIAL_MEDIA(
+        "Sosyal Medya Reklamı",
+        50000L,
+        3,
+        25,
+        20,
+        "3 Ay boyunca +%25 satış talebi ve +20 Hype artışı",
+        "Güvenli: Dengeli beklenti"
+    ),
+    INFLUENCER(
+        "Influencer İşbirliği",
+        150000L,
+        3,
+        50,
+        40,
+        "3 Ay boyunca +%50 satış talebi ve +40 Hype artışı",
+        "Orta Risk: Kalite yetersizse tepki çeker"
+    ),
+    TV_COMMERCIAL(
+        "TV & Küresel Reklam Kampanyası",
+        400000L,
+        6,
+        80,
+        65,
+        "6 Ay boyunca +%80 satış talebi ve +65 Hype artışı",
+        "Yüksek Risk: Beklenti-gerçeklik uçurumu iadelere yol açabilir!"
+    )
 }
 
 @Serializable
@@ -243,7 +320,26 @@ enum class ModelTier(
 }
 
 @Serializable
+data class ActiveOsDevelopment(
+    val name: String,
+    val targetVersion: String,
+    val type: OsType,
+    val licenseType: OsLicenseType,
+    val focus: OsFocus,
+    val themeColorHex: Long,
+    val perDeviceLicenseFee: Int,
+    val totalMonths: Int,
+    val remainingMonths: Int,
+    val cost: Long,
+    val isMajorUpdate: Boolean,
+    val qaInvestment: Long
+)
+
+@Serializable
 data class CustomOsState(
+    val stability: Int = 100,
+    val bugsEncountered: Int = 0,
+    val activeDevelopment: ActiveOsDevelopment? = null,
     val name: String = "Stok Açık Kaynak Android",
     val version: String = "1.0",
     val type: OsType = OsType.STOCK_ANDROID,
@@ -314,6 +410,7 @@ data class PhoneSpecs(
     val price: Int,
     val quantity: Int,
     val qaBudget: Long = 0,
+    val launchCampaign: LaunchCampaign = LaunchCampaign.ORGANIC,
     val techScore: Int = 2010,
     val matchesTrend: Boolean = false,
     val selectedColors: List<String> = listOf("Gece Siyahı"),
@@ -360,7 +457,14 @@ data class ActiveModel(
     // Sadeleştirilmiş satış özeti (arayüzde gösterim için): 1.0 = nötr, >1.0 olumlu, <1.0 olumsuz etki
     val lastProductQualityScore: Float = 1f, // Kalite + tasarım/malzeme + OS uyumu
     val lastMarketDemandScore: Float = 1f, // Trend + renk çeşitliliği + kampanya + fiyat cazibesi
-    val lastBrandStrengthScore: Float = 1f // İtibar + pazar olgunluğu + seri sadakati
+    val lastBrandStrengthScore: Float = 1f, // İtibar + pazar olgunluğu + seri sadakati
+    // Hype & Müşteri Memnuniyeti Dengesi
+    val hypeScore: Int = 20, // 0 - 140+ (Pazarlama beklentisi)
+    val customerSatisfactionScore: Int = 80, // %0 - %100 (Gerçek memnuniyet)
+    val totalRefundsCount: Int = 0, // Toplam iade adedi
+    val lastPeriodRefunds: Int = 0, // Son 2 haftalık dönemdeki iade
+    val lastPeriodRefundCost: Long = 0L, // Son 2 haftada iade edilen tutar
+    val wordOfMouthBoost: Float = 1.0f // Ağızdan ağıza pazarlama çarpanı
 ) {
     val effectivePrice: Int
         get() = if (discountPercent > 0) (specs.price * (100 - discountPercent) / 100).coerceAtLeast(1) else specs.price
@@ -377,6 +481,23 @@ data class ActiveModel(
 
     val isCompleted: Boolean
         get() = (remainingStock <= 0 && !hasPendingProduction) || periodsOnMarket >= maxPeriodsOnMarket || (periodsOnMarket == 0 && monthsOnMarket >= maxMonthsOnMarket)
+
+    val satisfactionStatus: String
+        get() = when {
+            customerSatisfactionScore >= 88 -> "Beklentileri Aştı 🌟"
+            customerSatisfactionScore >= 70 -> "Memnun & Sadık 👍"
+            customerSatisfactionScore >= 50 -> "Dengeli / Karışık 😐"
+            customerSatisfactionScore >= 30 -> "Hayal Kırıklığı 📉"
+            else -> "Büyük Fiyasko & İade 🚨"
+        }
+
+    val hypeStatus: String
+        get() = when {
+            hypeScore >= 90 -> "Zirve Hype 🔥"
+            hypeScore >= 60 -> "Yüksek Beklenti 🚀"
+            hypeScore >= 30 -> "Dengeli Tanıtım 📢"
+            else -> "Düşük / Sessiz 💤"
+        }
 
     /** 1.0 nötr referans alınarak bir skor grubunu basit bir Türkçe etikete çevirir (arayüzde gösterim için). */
     private fun scoreLabel(score: Float): String = when {
@@ -413,6 +534,64 @@ data class MarketTrend(
     val remainingMonths: Int = 4,
     val totalDurationMonths: Int = 4
 )
+
+// --- M&A (Mergers and Acquisitions) Classes ---
+
+@Serializable
+enum class CompanyType(val description: String, val baseMultiplier: Float) {
+    STRUGGLING("Zor Durumda", 0.9f),
+    NORMAL("Normal", 1.5f),
+    SUCCESSFUL("Başarılı", 2.5f),
+    TECH_STARTUP("Teknoloji Startup'ı", 1.2f)
+}
+
+@Serializable
+enum class PostAcquisitionStrategy {
+    INDEPENDENT_BRAND,
+    MERGE_TO_MAIN,
+    LIQUIDATE_ASSETS
+}
+
+@Serializable
+data class PhoneSeriesLegacy(
+    val seriesName: String,
+    val originCompanyId: String = "PLAYER",
+    val launchYear: Int,
+    val totalModelsReleased: Int = 1,
+    val averageReviewScore: Int = 75,
+    val seriesReputation: Int = 70, // 0-100
+    val totalSales: Long = 0L,
+    val isActive: Boolean = true
+)
+
+@Serializable
+data class OwnedSubBrand(
+    val id: String,
+    val name: String,
+    val logoEmoji: String,
+    val brandReputation: Int,
+    val cash: Long = 0L,
+    val autoManage: Boolean = true
+)
+
+@Serializable
+data class AcquisitionTarget(
+    val id: String,
+    val name: String,
+    val logoEmoji: String,
+    val type: CompanyType,
+    val cash: Long,
+    val debt: Long,
+    val brandReputation: Int,
+    val employees: Int,
+    val patents: List<String>,
+    val activeSeries: List<PhoneSeriesLegacy>,
+    val valuation: Long,
+    val minimumAcceptableMultiplier: Float,
+    val remainingMonthsAvailable: Int = 12
+)
+
+// ----------------------------------------------
 
 @Serializable
 data class CompetitorCompany(
@@ -930,6 +1109,9 @@ data class GameState(
     val unlockedTech: List<String> = emptyList(),
     val activeResearch: ActiveResearch? = null,
     val researchQueue: List<ActiveResearch> = emptyList(),
+    val acquisitionTargets: List<AcquisitionTarget> = emptyList(),
+    val ownedSubBrands: List<OwnedSubBrand> = emptyList(),
+    val ownedLegacySeries: List<PhoneSeriesLegacy> = emptyList(),
     val newsList: List<NewsArticle> = emptyList(),
     val officeLevel: Int = 1,
     val factoryLevel: Int = 0,
@@ -985,15 +1167,31 @@ data class GameState(
     val maxEmployees: Int
         get() = currentOfficeTier.maxEmployees
 
-    val engineerSalary: Long get() = engineers * 8000L
-    val qaSalary: Long get() = qaInspectors * 5000L
-    val workerSalary: Long get() = assemblyWorkers * 3000L
+    /**
+     * Şirket büyüdükçe artan masraf çarpanı (Wealth Tax / Scale Overhead).
+     * Bütçe 10 milyonun altındayken 1.0x, üstündeyken logaritmik olarak artarak
+     * ofis, fabrika ve maaş giderlerini katlar. (Zorluğu korumak için).
+     */
+    val scaleMultiplier: Double
+        get() {
+            val wealthMillions = (budget / 1_000_000.0).coerceAtLeast(0.0)
+            return if (wealthMillions <= 10.0) {
+                1.0
+            } else {
+                // Her 10 katı büyümede masraflar ~%120 daha fazla artar
+                1.0 + Math.log10(wealthMillions / 10.0) * 1.2
+            }
+        }
+
+    val engineerSalary: Long get() = (engineers * 8000L * scaleMultiplier).toLong()
+    val qaSalary: Long get() = (qaInspectors * 5000L * scaleMultiplier).toLong()
+    val workerSalary: Long get() = (assemblyWorkers * 3000L * scaleMultiplier).toLong()
     val totalSalaries: Long get() = engineerSalary + qaSalary + workerSalary
 
-    val officeExpense: Long get() = currentOfficeTier.monthlyRent
-    val factoryMaintenance: Long get() = currentFactoryTier.monthlyMaintenance
+    val officeExpense: Long get() = (currentOfficeTier.monthlyRent * scaleMultiplier).toLong()
+    val factoryMaintenance: Long get() = (currentFactoryTier.monthlyMaintenance * scaleMultiplier).toLong()
     val osMaintenanceExpense: Long 
-        get() = (if (customOs.type != OsType.STOCK_ANDROID) customOs.type.monthlyMaintenance else 0L) + customOs.updateGuarantee.monthlyCost
+        get() = (((if (customOs.type != OsType.STOCK_ANDROID) customOs.type.monthlyMaintenance else 0L) + customOs.updateGuarantee.monthlyCost) * scaleMultiplier).toLong()
 
     val totalLoanPeriodPayments: Long get() = activeLoans.sumOf { it.periodPayment }
     val totalDebt: Long get() = activeLoans.sumOf { it.remainingBalance }

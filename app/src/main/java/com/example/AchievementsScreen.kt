@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.*
+import com.example.ui.Button3D
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -215,7 +216,7 @@ fun AchievementUnlockedBanner(achievements: List<Achievement>, onDismiss: () -> 
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = onDismiss, shape = RoundedCornerShape(12.dp)) {
+                Button3D(onClick = onDismiss, shape = RoundedCornerShape(12.dp)) {
                     Text("Harika!")
                 }
             }

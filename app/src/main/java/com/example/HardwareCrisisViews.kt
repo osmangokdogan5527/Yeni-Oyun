@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.CrisisAlert
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
+import com.example.ui.Button3D
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -240,7 +241,7 @@ fun HardwareCrisisManagementDialog(
                         Text("Daha Sonra")
                     }
 
-                    Button(
+                    Button3D(
                         onClick = {
                             selectedStrategy?.let { onApplyStrategy(it) }
                         },

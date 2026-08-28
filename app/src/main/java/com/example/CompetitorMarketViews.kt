@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.*
+import com.example.ui.Button3D
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -472,7 +473,7 @@ fun VsDuelComparisonDialog(
             }
         },
         confirmButton = {
-            Button(
+            Button3D(
                 onClick = onDismiss,
                 shape = RoundedCornerShape(8.dp)
             ) {

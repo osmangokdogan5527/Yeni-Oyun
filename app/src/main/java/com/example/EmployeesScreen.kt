@@ -11,6 +11,7 @@ import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.Savings
 import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.*
+import com.example.ui.Button3D
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,21 +28,9 @@ import com.example.viewmodel.OFFICE_TIERS
 
 @Composable
 fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
-    val state by viewModel.state.collectAsState()
-    val totalStaff = state.totalEmployees
-
-    if (state.noticeMessage != null) {
-        AlertDialog(
-            onDismissRequest = { viewModel.clearNoticeMessage() },
-            title = { Text("Kapasite / Bütçe Uyarısı", fontWeight = FontWeight.Bold) },
-            text = { Text(state.noticeMessage ?: "", fontSize = 14.sp) },
-            confirmButton = {
-                Button(onClick = { viewModel.clearNoticeMessage() }) {
-                    Text("Anladım")
-                }
-            }
-        )
-    }
+    val productionState by viewModel.productionState.collectAsState()
+    val financeState by viewModel.financeState.collectAsState()
+    val totalStaff = productionState.totalEmployees
 
     Column(
         modifier = modifier
@@ -70,7 +59,7 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                     "Personel & Fabrika Yönetimi",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Slate900
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -79,7 +68,7 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
-                    text = "$totalStaff / ${state.maxEmployees} Personel",
+                    text = "$totalStaff / ${productionState.maxEmployees} Personel",
                     fontSize = 10.5.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -111,10 +100,10 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                             "Aylık Sabit Kesinti",
                             fontSize = 10.5.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Slate700
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            "-$${"%,d".format(state.totalMonthlyExpenses)}",
+                            "-$${"%,d".format(financeState.totalMonthlyExpenses)}",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.error
@@ -122,7 +111,7 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                     }
 
                     Text(
-                        text = "Maaş $${"%,d".format(state.totalSalaries)} • Kira $${"%,d".format(state.officeExpense)} • Bakım $${"%,d".format(state.factoryMaintenance)}",
+                        text = "Maaş $${"%,d".format(financeState.totalSalaries)} • Kira $${"%,d".format(financeState.officeExpense)} • Bakım $${"%,d".format(financeState.factoryMaintenance)}",
                         fontSize = 9.5.sp,
                         color = Slate500,
                         fontWeight = FontWeight.Medium,
@@ -143,17 +132,17 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                 ) {
                     CompactMetric(
                         icon = Icons.Outlined.Savings,
-                        value = "%${"%.1f".format(state.unitCostDiscountPercent)}",
+                        value = "%${"%.1f".format(productionState.unitCostDiscountPercent)}",
                         label = "Tasarruf"
                     )
                     CompactMetric(
                         icon = Icons.Outlined.VerifiedUser,
-                        value = "+${state.qaScoreBonus}",
+                        value = "+${productionState.qaScoreBonus}",
                         label = "QA Puanı"
                     )
                     CompactMetric(
                         icon = Icons.Outlined.Bolt,
-                        value = "${viewModel.calculateResearchDuration(state.engineers)}",
+                        value = "${viewModel.calculateResearchDuration(productionState.engineers)}",
                         label = "Dönem/Ar-Ge"
                     )
                 }
@@ -167,8 +156,8 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
         ) {
             // Office Tier Upgrade Card
             item {
-                val currentOffice = state.currentOfficeTier
-                val nextOffice = OFFICE_TIERS.firstOrNull { it.level == state.officeLevel + 1 }
+                val currentOffice = productionState.currentOfficeTier
+                val nextOffice = OFFICE_TIERS.firstOrNull { it.level == productionState.officeLevel + 1 }
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -185,7 +174,7 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                                 Icon(Icons.Default.Business, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
                                 Column {
                                     Text("ŞİRKET GENEL MERKEZİ", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                                    Text(currentOffice.name, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Slate900)
+                                    Text(currentOffice.name, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                                 }
                             }
 
@@ -194,7 +183,7 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                                 shape = RoundedCornerShape(6.dp)
                             ) {
                                 Text(
-                                    text = "Kapasite: ${state.totalEmployees} / ${currentOffice.maxEmployees}",
+                                    text = "Kapasite: ${productionState.totalEmployees} / ${currentOffice.maxEmployees}",
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary,
@@ -213,8 +202,8 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                         Spacer(modifier = Modifier.height(8.dp))
 
                         if (nextOffice != null) {
-                            val canAfford = state.budget >= nextOffice.upgradeCost
-                            Button(
+                            val canAfford = financeState.budget >= nextOffice.upgradeCost
+                            Button3D(
                                 onClick = { viewModel.upgradeOffice() },
                                 modifier = Modifier.fillMaxWidth().height(34.dp),
                                 enabled = canAfford,
@@ -252,8 +241,8 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
 
             // Factory Tier Upgrade Card
             item {
-                val currentFactory = state.currentFactoryTier
-                val nextFactory = FACTORY_TIERS.firstOrNull { it.level == state.factoryLevel + 1 }
+                val currentFactory = productionState.currentFactoryTier
+                val nextFactory = FACTORY_TIERS.firstOrNull { it.level == productionState.factoryLevel + 1 }
 
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -270,7 +259,7 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                                 Icon(Icons.Default.PrecisionManufacturing, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(22.dp))
                                 Column {
                                     Text("ÜRETİM FABRİKASI TESİSİ", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary)
-                                    Text(currentFactory.name, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Slate900)
+                                    Text(currentFactory.name, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                                 }
                             }
 
@@ -279,7 +268,7 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                                 shape = RoundedCornerShape(6.dp)
                             ) {
                                 Text(
-                                    text = "İşçi: ${state.assemblyWorkers} / ${currentFactory.maxWorkers}",
+                                    text = "İşçi: ${productionState.assemblyWorkers} / ${currentFactory.maxWorkers}",
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.tertiary,
@@ -298,8 +287,8 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                         Spacer(modifier = Modifier.height(8.dp))
 
                         if (nextFactory != null) {
-                            val canAfford = state.budget >= nextFactory.upgradeCost
-                            Button(
+                            val canAfford = financeState.budget >= nextFactory.upgradeCost
+                            Button3D(
                                 onClick = { viewModel.upgradeFactory() },
                                 modifier = Modifier.fillMaxWidth().height(34.dp),
                                 enabled = canAfford,
@@ -342,9 +331,9 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                     icon = Icons.Default.Science,
                     roleDesc = "Ar-Ge araştırmalarının süresini kısaltır (8+ mühendis ile 1 ayda biter), eskime cezasını düşürür.",
                     salaryText = "$8,000 / Ay",
-                    currentCount = state.engineers,
-                    impactText = "Eskime Cezası Azaltma: -${state.engineerTechBonus} Puan (Tavan: 30)",
-                    marginalText = "Sıradaki mühendis: +${state.marginalEngineerBonus()} puan katkı (azalan verim) • Ar-Ge hızı: ~${viewModel.calculateResearchDuration(state.engineers)} Dönem/proje",
+                    currentCount = productionState.engineers,
+                    impactText = "Eskime Cezası Azaltma: -${productionState.engineerTechBonus} Puan (Tavan: 30)",
+                    marginalText = "Sıradaki mühendis: +${productionState.marginalEngineerBonus()} puan katkı (azalan verim) • Ar-Ge hızı: ~${viewModel.calculateResearchDuration(productionState.engineers)} Dönem/proje",
                     onHire = { viewModel.hireEmployee(EmployeeType.ENGINEER, it) },
                     onFire = { viewModel.fireEmployee(EmployeeType.ENGINEER, it) }
                 )
@@ -356,9 +345,9 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                     icon = Icons.Default.CheckCircle,
                     roleDesc = "Üretilen telefonlardaki hataları ayıklar ve inceleme puanına doğrudan bonus ekler.",
                     salaryText = "$5,000 / Ay",
-                    currentCount = state.qaInspectors,
-                    impactText = "Puan Bonusu: +${state.qaScoreBonus} Puan (Tavan: 20)",
-                    marginalText = "Sıradaki uzman: +${state.marginalQaBonus()} puan katkı (azalan verim)",
+                    currentCount = productionState.qaInspectors,
+                    impactText = "Puan Bonusu: +${productionState.qaScoreBonus} Puan (Tavan: 20)",
+                    marginalText = "Sıradaki uzman: +${productionState.marginalQaBonus()} puan katkı (azalan verim)",
                     onHire = { viewModel.hireEmployee(EmployeeType.QA_INSPECTOR, it) },
                     onFire = { viewModel.fireEmployee(EmployeeType.QA_INSPECTOR, it) }
                 )
@@ -368,11 +357,11 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                 EmployeeCategoryCard(
                     title = "Montaj & Üretim İşçileri",
                     icon = Icons.Default.Build,
-                    roleDesc = "Fabrikada montaj verimliliğini yükseltir (Maksımum ${state.currentFactoryTier.maxWorkers} işçi).",
+                    roleDesc = "Fabrikada montaj verimliliğini yükseltir (Maksımum ${productionState.currentFactoryTier.maxWorkers} işçi).",
                     salaryText = "$3,000 / Ay",
-                    currentCount = state.assemblyWorkers,
-                    impactText = "İşçi İndirimi: %${"%.1f".format(state.workerDiscountPercent)} (Tavan: %22)",
-                    marginalText = "Sıradaki işçi: +%${"%.2f".format(state.marginalWorkerDiscount())} indirim katkısı",
+                    currentCount = productionState.assemblyWorkers,
+                    impactText = "İşçi İndirimi: %${"%.1f".format(productionState.workerDiscountPercent)} (Tavan: %22)",
+                    marginalText = "Sıradaki işçi: +%${"%.2f".format(productionState.marginalWorkerDiscount())} indirim katkısı",
                     onHire = { viewModel.hireEmployee(EmployeeType.ASSEMBLY_WORKER, it) },
                     onFire = { viewModel.fireEmployee(EmployeeType.ASSEMBLY_WORKER, it) }
                 )
@@ -387,7 +376,7 @@ fun CompactMetric(icon: androidx.compose.ui.graphics.vector.ImageVector, value: 
         Icon(icon, contentDescription = null, tint = Slate500, modifier = Modifier.size(15.dp))
         Spacer(modifier = Modifier.width(5.dp))
         Column {
-            Text(value, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Slate900, maxLines = 1, softWrap = false)
+            Text(value, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, softWrap = false)
             Text(label, fontSize = 9.sp, color = Slate500, maxLines = 1, softWrap = false)
         }
     }
@@ -433,7 +422,7 @@ fun EmployeeCategoryCard(
                         Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(18.dp))
                     }
                     Column {
-                        Text(title, fontWeight = FontWeight.Bold, fontSize = 13.5.sp, color = Slate900)
+                        Text(title, fontWeight = FontWeight.Bold, fontSize = 13.5.sp, color = MaterialTheme.colorScheme.onSurface)
                         Text(impactText, fontSize = 11.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary)
                     }
                 }
@@ -499,7 +488,7 @@ fun EmployeeCategoryCard(
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Button(
+                    Button3D(
                         onClick = { onHire(1) },
                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
                         modifier = Modifier.height(32.dp),
@@ -511,7 +500,7 @@ fun EmployeeCategoryCard(
                         Text("İşe Al (+1)", fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
                     }
 
-                    Button(
+                    Button3D(
                         onClick = { onHire(5) },
                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
                         modifier = Modifier.height(32.dp),

@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import com.example.ui.Button3D
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -89,7 +90,7 @@ fun TechExpoCeremonyDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                Button3D(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
                     Text("Devam Et")
                 }
             }

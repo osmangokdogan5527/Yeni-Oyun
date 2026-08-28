@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import com.example.ui.Button3D
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -423,7 +424,7 @@ fun ActiveTrendCard(
                     fontWeight = FontWeight.SemiBold
                 )
 
-                Button(
+                Button3D(
                     onClick = onNavigateToBuilder,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFFF9800)

@@ -1,0 +1,26 @@
+    fun releaseOsHotfix() {
+        val currentState = _state.value
+        val customOs = currentState.customOs
+
+        if (!customOs.isCustomActive || customOs.stability >= 95) {
+            _state.update { it.copy(noticeMessage = "Yazılım zaten yeterince stabil, hotfix gerekmiyor.") }
+            return
+        }
+
+        val hotfixCost = 500000L
+        if (currentState.budget < hotfixCost) {
+            _state.update { it.copy(noticeMessage = "Hotfix yayınlamak için $500,000 bütçe gerekiyor.") }
+            return
+        }
+
+        val stabilityGain = (10 + currentState.qaInspectors / 10).coerceIn(10, 30)
+
+        _state.update {
+            it.copy(
+                budget = it.budget - hotfixCost,
+                customOs = customOs.copy(stability = (customOs.stability + stabilityGain).coerceAtMost(100)),
+                noticeMessage = "🛠️ Hotfix yayınlandı! Stabilite +$stabilityGain arttı."
+            )
+        }
+        autoSaveGame()
+    }

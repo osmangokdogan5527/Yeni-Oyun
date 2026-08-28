@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
+import com.example.ui.Button3D
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -182,7 +183,7 @@ fun CompanySetupDialog(
                         TextButton(onClick = { onDismiss?.invoke() }) { Text("Vazgeç") }
                         Spacer(modifier = Modifier.width(8.dp))
                     }
-                    Button(
+                    Button3D(
                         enabled = isValid,
                         onClick = {
                             val logoStyle = COMPANY_LOGO_OPTIONS.first { it.id == selectedLogoId }.styleName

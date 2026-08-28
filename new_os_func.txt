@@ -1,0 +1,73 @@
+    fun createOrUpgradeOs(
+        name: String, 
+        type: OsType, 
+        licenseType: OsLicenseType,
+        focus: OsFocus, 
+        themeColorHex: Long,
+        perDeviceLicenseFee: Int = 0
+    ) {
+        val currentState = _state.value
+        if (!currentState.unlockedTech.contains("Özel Mobil İşletim Sistemi Mimarisi")) {
+            _state.update { 
+                it.copy(noticeMessage = "⚠️ Kendi işletim sisteminizi geliştirmek için Ar-Ge bölümünden 'Özel Mobil İşletim Sistemi Mimarisi' ($100,000,000) projesini araştırmalısınız!") 
+            }
+            return
+        }
+
+        if (currentState.customOs.activeDevelopment != null) {
+            _state.update { it.copy(noticeMessage = "Halihazırda devam eden bir OS geliştirme projeniz var.") }
+            return
+        }
+
+        val devCost = type.devCost
+        if (currentState.budget < devCost) {
+            _state.update { it.copy(noticeMessage = "İşletim sistemi geliştirme için yetersiz bütçe! Gereken: $${"%,d".format(devCost)}") }
+            return
+        }
+
+        val isMajorUpdate = (type == currentState.customOs.type && currentState.customOs.name == name)
+        val initialVersion = if (isMajorUpdate) "${currentState.customOs.majorVersionCount + 1}.0" else "1.0"
+
+        // Calculate time
+        // Independent OS takes much longer than a UI Skin
+        val baseMonths = if (type == OsType.PROPRIETARY_KERNEL) 24 else if (type == OsType.CUSTOM_UI_SKIN) 12 else 0
+        
+        // Speed up based on engineers (very rough formula, diminishing returns)
+        val engineerFactor = (currentState.engineers / 500.0).coerceIn(0.1, 3.0)
+        val totalMonths = (baseMonths / engineerFactor).toInt().coerceAtLeast(3)
+        val totalPeriods = totalMonths * 2
+
+        val qaInvestment = (currentState.qaInspectors * 5000L).coerceAtMost(devCost)
+
+        val activeDev = ActiveOsDevelopment(
+            name = name,
+            targetVersion = initialVersion,
+            type = type,
+            licenseType = licenseType,
+            focus = focus,
+            themeColorHex = themeColorHex,
+            perDeviceLicenseFee = perDeviceLicenseFee,
+            totalMonths = totalPeriods,
+            remainingMonths = totalPeriods,
+            cost = devCost,
+            isMajorUpdate = isMajorUpdate,
+            qaInvestment = qaInvestment
+        )
+
+        val report = MarketReport(
+            title = "OS Geliştirmesi Başladı: $name v$initialVersion",
+            text = "$name v$initialVersion ($type) için Ar-Ge başladı. Bütçe: $${"%,d".format(devCost)}. Tahmini Süre: $totalPeriods dönem.",
+            profit = -devCost,
+            unitsSold = 0,
+            reviewScore = 0
+        )
+
+        _state.update {
+            it.copy(
+                budget = it.budget - devCost,
+                customOs = it.customOs.copy(activeDevelopment = activeDev),
+                reports = it.reports + report,
+                noticeMessage = "OS Geliştirme Projesi başlatıldı!"
+            )
+        }
+    }

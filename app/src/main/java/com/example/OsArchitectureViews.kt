@@ -1,5 +1,6 @@
 package com.example
 
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import com.example.ui.Button3D
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,16 +24,15 @@ import androidx.compose.ui.unit.sp
 import com.example.viewmodel.CustomOsState
 import com.example.viewmodel.OsModuleType
 import com.example.viewmodel.UpdateGuarantee
-
 @Composable
 fun OsHeroStatusCard(
     customOs: CustomOsState,
     isUnlocked: Boolean,
     onOpenCreateDialog: () -> Unit,
-    onOpenReleaseDialog: () -> Unit
+    onOpenReleaseDialog: () -> Unit,
+    onReleaseHotfix: () -> Unit = {}
 ) {
     val themeColor = Color(customOs.themeColorHex)
-
     Card(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -109,9 +110,7 @@ fun OsHeroStatusCard(
                             )
                         }
                     }
-
                     Spacer(modifier = Modifier.width(8.dp))
-
                     Surface(
                         shape = RoundedCornerShape(8.dp),
                         color = if (customOs.isCustomActive) Color(0xFF10B981).copy(alpha = 0.15f) else Color(0xFF64748B).copy(alpha = 0.15f)
@@ -128,35 +127,50 @@ fun OsHeroStatusCard(
                     }
                 }
 
-                // Stats Grid: Tech Score, Optimization, Ecosystem, Popularity
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OsMetricTile(
-                        label = "Teknoloji",
-                        value = "${customOs.overallTechScore}/100",
-                        subtext = "Gelişmişlik",
-                        icon = Icons.Default.Memory,
-                        color = Color(0xFF3B82F6),
-                        modifier = Modifier.weight(1f)
-                    )
-                    OsMetricTile(
-                        label = "Ekosistem",
-                        value = "${customOs.ecosystemScore}/100",
-                        subtext = "Bağlılık",
-                        icon = Icons.Default.Hub,
-                        color = Color(0xFF8B5CF6),
-                        modifier = Modifier.weight(1f)
-                    )
-                    OsMetricTile(
-                        label = "Pazar Payı",
-                        value = "%${"%.1f".format(customOs.popularityPercent)}",
-                        subtext = "Kullanıcı",
-                        icon = Icons.AutoMirrored.Filled.TrendingUp,
-                        color = Color(0xFF10B981),
-                        modifier = Modifier.weight(1f)
-                    )
+                // Stats Grid
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OsMetricTile(
+                            label = "Teknoloji",
+                            value = "${customOs.overallTechScore}/100",
+                            subtext = "Gelişmişlik",
+                            icon = Icons.Default.Memory,
+                            color = Color(0xFF3B82F6),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OsMetricTile(
+                            label = "Ekosistem",
+                            value = "${customOs.ecosystemScore}/100",
+                            subtext = "Bağlılık",
+                            icon = Icons.Default.Hub,
+                            color = Color(0xFF8B5CF6),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OsMetricTile(
+                            label = "Pazar Payı",
+                            value = "%${"%.1f".format(customOs.popularityPercent)}",
+                            subtext = "Kullanıcı",
+                            icon = Icons.AutoMirrored.Filled.TrendingUp,
+                            color = Color(0xFF10B981),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OsMetricTile(
+                            label = "Stabilite",
+                            value = "%${customOs.stability}",
+                            subtext = "${customOs.bugsEncountered} Çökme",
+                            icon = Icons.Default.BugReport,
+                            color = if (customOs.stability >= 75) Color(0xFF10B981) else if (customOs.stability >= 50) Color(0xFFF59E0B) else Color(0xFFEF4444),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
 
                 // Action Buttons
@@ -164,7 +178,7 @@ fun OsHeroStatusCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Button(
+                    Button3D(
                         onClick = onOpenCreateDialog,
                         enabled = isUnlocked,
                         modifier = Modifier.weight(1f),
@@ -189,12 +203,25 @@ fun OsHeroStatusCard(
                             Spacer(modifier = Modifier.width(6.dp))
                             Text("OTA Güncellemesi ($150k)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
+                        
+                        if (customOs.stability < 90) {
+                            Button3D(
+                                onClick = onReleaseHotfix,
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))
+                            ) {
+                                Icon(Icons.Default.BugReport, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Acil Hotfix ($500k)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
                 }
             }
         }
     }
 }
+
 
 @Composable
 fun OsMetricTile(
@@ -291,7 +318,7 @@ fun OsModuleCompactRow(
             Spacer(modifier = Modifier.width(8.dp))
             
             if (!isMaxLevel) {
-                Button(
+                Button3D(
                     onClick = onUpgrade,
                     enabled = isUnlocked && canAfford,
                     colors = ButtonDefaults.buttonColors(

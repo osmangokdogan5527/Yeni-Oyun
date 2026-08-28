@@ -1,0 +1,34 @@
+                // OS & Software Synergy Demand Multiplier
+                var baseOsSynergy = when {
+                    model.specs.osFocus.contains("Oyun") && model.specs.style == "Oyuncu" -> 1.30f
+                    model.specs.osFocus.contains("Güvenlik") && model.specs.style == "Klasik" -> 1.25f
+                    model.specs.osFocus.contains("Yapay Zeka") && model.matchesTrend -> 1.20f
+                    model.specs.osFocus.contains("Estetik") -> 1.12f
+                    else -> 1.0f
+                }
+                
+                // Ecosystem Penalty / Windows Phone Effect
+                if (model.specs.osType.contains("Bağımsız") || model.specs.osType.contains("Özel")) {
+                    val appCount = currentState.customOs.totalStoreApps
+                    val requiredAppsForFullSales = 50000L
+                    if (appCount < requiredAppsForFullSales) {
+                        val penalty = (appCount.toFloat() / requiredAppsForFullSales.toFloat()).coerceIn(0.1f, 1.0f)
+                        baseOsSynergy *= penalty
+                        
+                        if (penalty < 0.5f && Random.nextInt(100) < 5) {
+                            newNewsList.add(
+                                NewsArticle(
+                                    id = "no_apps_${model.id}_${newYear}_${newMonth}",
+                                    title = "⚠️ MÜŞTERİLER ŞİKAYETÇİ: Mağazada Uygulama Yok!",
+                                    text = "${model.specs.name} donanım olarak harika olsa da, uygulama mağazasındaki eksiklikler nedeniyle (sadece ${"%,d".format(appCount)} uygulama) satışlar durma noktasına geldi! Geliştirici fonuna acil yatırım yapın.",
+                                    category = "Pazar",
+                                    year = newYear,
+                                    month = newMonth
+                                )
+                            )
+                        }
+                    } else if (appCount > 200000L) {
+                        baseOsSynergy *= 1.2f // Huge ecosystem advantage (iOS effect)
+                    }
+                }
+                val osSynergyFactor = baseOsSynergy

@@ -245,7 +245,12 @@ fun checkForRecall(model: ActiveModel, year: Int, month: Int): Pair<ActiveModel,
         return model to null
     }
 
-    val monthlyHazardPercent = model.recallRiskPercent / 3f
+    var monthlyHazardPercent = model.recallRiskPercent / 3f
+    // Yüksek Hype ile kalitesiz cihaz satıldığında kullanıcı baskısı ve aşırı ısınma/donma krizleri hızla patlak verir
+    if (model.hypeScore >= 60 && model.customerSatisfactionScore <= 35) {
+        monthlyHazardPercent *= 1.8f
+    }
+
     if (Random.nextFloat() * 100f >= monthlyHazardPercent) {
         return model to null
     }

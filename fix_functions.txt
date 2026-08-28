@@ -1,0 +1,11 @@
+    fun setAssignedDevs(count: Int) {
+        val maxEng = _state.value.engineers
+        val validCount = count.coerceIn(0, maxEng)
+        _state.update {
+            it.copy(
+                customOs = it.customOs.copy(assignedDevs = validCount),
+                noticeMessage = "Yazılım ekibine $validCount geliştirici atandı."
+            )
+        }
+        autoSaveGame()
+    }

@@ -1,0 +1,197 @@
+@Composable
+fun OsHeroStatusCard(
+    customOs: CustomOsState,
+    isUnlocked: Boolean,
+    onOpenCreateDialog: () -> Unit,
+    onOpenReleaseDialog: () -> Unit,
+    onReleaseHotfix: () -> Unit = {}
+) {
+    val themeColor = Color(customOs.themeColorHex)
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(3.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            themeColor.copy(alpha = 0.15f),
+                            MaterialTheme.colorScheme.surface
+                        )
+                    )
+                )
+                .padding(18.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                // Top Row: Title + Version + Badges
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .background(themeColor, RoundedCornerShape(12.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (customOs.isCustomActive) "📱" else "🤖",
+                                fontSize = 20.sp
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f, fill = false)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = customOs.name,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = themeColor.copy(alpha = 0.2f)
+                                ) {
+                                    Text(
+                                        text = "v${customOs.version}",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = themeColor,
+                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
+                            }
+                            Text(
+                                text = "${customOs.type.title} • ${customOs.licenseType.badge}",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (customOs.isCustomActive) Color(0xFF10B981).copy(alpha = 0.15f) else Color(0xFF64748B).copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            text = if (customOs.isCustomActive) "Aktif" else "Stok Android",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (customOs.isCustomActive) Color(0xFF10B981) else Color(0xFF64748B),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
+                }
+
+                // Stats Grid
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OsMetricTile(
+                            label = "Teknoloji",
+                            value = "${customOs.overallTechScore}/100",
+                            subtext = "Gelişmişlik",
+                            icon = Icons.Default.Memory,
+                            color = Color(0xFF3B82F6),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OsMetricTile(
+                            label = "Ekosistem",
+                            value = "${customOs.ecosystemScore}/100",
+                            subtext = "Bağlılık",
+                            icon = Icons.Default.Hub,
+                            color = Color(0xFF8B5CF6),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OsMetricTile(
+                            label = "Pazar Payı",
+                            value = "%${"%.1f".format(customOs.popularityPercent)}",
+                            subtext = "Kullanıcı",
+                            icon = Icons.AutoMirrored.Filled.TrendingUp,
+                            color = Color(0xFF10B981),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OsMetricTile(
+                            label = "Stabilite",
+                            value = "%${customOs.stability}",
+                            subtext = "${customOs.bugsEncountered} Çökme",
+                            icon = Icons.Default.BugReport,
+                            color = if (customOs.stability >= 75) Color(0xFF10B981) else if (customOs.stability >= 50) Color(0xFFF59E0B) else Color(0xFFEF4444),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                // Action Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = onOpenCreateDialog,
+                        enabled = isUnlocked,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = themeColor),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.Tune, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (customOs.isCustomActive) "İşletim Sistemini Düzenle" else "Özel OS Geliştir",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    if (customOs.isCustomActive) {
+                        OutlinedButton(
+                            onClick = onOpenReleaseDialog,
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(Icons.Default.RocketLaunch, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("OTA Güncellemesi ($150k)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        
+                        if (customOs.stability < 90) {
+                            Button(
+                                onClick = onReleaseHotfix,
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))
+                            ) {
+                                Icon(Icons.Default.BugReport, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Acil Hotfix ($500k)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

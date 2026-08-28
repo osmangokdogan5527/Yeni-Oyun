@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
+import com.example.ui.Button3D
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -214,7 +215,7 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                     "Ar-Ge Araştırma Merkezi",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Slate900
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -364,7 +365,7 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                         "📋 Otomatik Araştırma Sırası",
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
-                        color = Slate900
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         "Mevcut araştırma bittiğinde sıradaki proje otomatik olarak başlar ve mühendisler çalışmaya devam eder.",
@@ -378,14 +379,14 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                     item {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = Slate100),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Column(
                                 modifier = Modifier.padding(24.dp).fillMaxWidth(),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Text("Araştırma sırası şu an boş.", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Slate700)
+                                Text("Araştırma sırası şu an boş.", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     "Araştırılacaklar sekmesinden istediğiniz teknolojilere 'Sıraya Ekle' diyerek otomatik zincir kurabilirsiniz.",
@@ -425,7 +426,7 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                                 }
 
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(queueItem.techName, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Slate900)
+                                    Text(queueItem.techName, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                                     Text("Maliyet: $${"%,d".format(queueItem.cost).replace(',', '.')} • Tahmini: ${queueItem.totalMonths} Dönem (~${"%.1f".format(queueItem.totalMonths / 2.0)} Ay)", fontSize = 11.sp, color = Slate600)
                                 }
 
@@ -497,13 +498,14 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                 }
 
                 items(visibleTechNodes) { tech ->
+                    val dynamicCost = (tech.cost * state.scaleMultiplier).toLong()
                     val isUnlocked = state.unlockedTech.contains(tech.id)
                     val isBeingResearched = state.activeResearch?.techId == tech.id
                     val queueIndex = state.researchQueue.indexOfFirst { it.techId == tech.id }
                     val isInQueue = queueIndex != -1
-                    val canAfford = state.budget >= tech.cost
+                    val canAfford = state.budget >= dynamicCost
                     val isAvailable = state.year >= tech.yearAvailable
-                    val estimatedDuration = viewModel.calculateResearchDuration(state.engineers, tech.cost)
+                    val estimatedDuration = viewModel.calculateResearchDuration(state.engineers, dynamicCost)
                     
                     Box(
                         modifier = Modifier
@@ -555,7 +557,7 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                                     tech.name, 
                                     fontWeight = FontWeight.Bold, 
                                     fontSize = 13.sp, 
-                                    color = Slate900,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -581,7 +583,7 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("Maliyet: $${"%,d".format(tech.cost).replace(',', '.')}", fontWeight = FontWeight.Bold, color = if (canAfford) MaterialTheme.colorScheme.primary else Color.Red, fontSize = 10.5.sp)
+                                        Text("Maliyet: $${"%,d".format(dynamicCost).replace(',', '.')}", fontWeight = FontWeight.Bold, color = if (canAfford) MaterialTheme.colorScheme.primary else Color.Red, fontSize = 10.5.sp)
                                         Text("• Süre: $estimatedDuration Dönem (~${"%.1f".format(estimatedDuration / 2.0)} Ay)", fontWeight = FontWeight.Medium, color = Slate600, fontSize = 10.sp)
                                     }
                                 }
@@ -599,12 +601,12 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                                     }
                                 } else {
                                     val buttonEnabled = isAvailable && (state.activeResearch == null && canAfford || state.activeResearch != null)
-                                    Button(
+                                    Button3D(
                                         onClick = { 
                                             if (state.activeResearch == null) {
-                                                viewModel.startResearch(tech.id, tech.name, tech.cost)
+                                                viewModel.startResearch(tech.id, tech.name, dynamicCost)
                                             } else {
-                                                viewModel.queueResearch(tech.id, tech.name, tech.cost)
+                                                viewModel.queueResearch(tech.id, tech.name, dynamicCost)
                                             }
                                         },
                                         enabled = buttonEnabled,

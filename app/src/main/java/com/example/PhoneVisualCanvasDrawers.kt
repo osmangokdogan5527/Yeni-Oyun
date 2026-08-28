@@ -1,5 +1,7 @@
 package com.example
 
+import androidx.compose.material3.MaterialTheme
+
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -173,8 +175,8 @@ internal fun DrawScope.drawBackChassis(
                         when (phase) {
                             0 -> drawRect(color = Color.White.copy(alpha = 0.09f), topLeft = Offset(x, y), size = Size(cell, cell))
                             1 -> drawRect(color = Color.White.copy(alpha = 0.04f), topLeft = Offset(x, y), size = Size(cell, cell))
-                            2 -> drawRect(color = Color.Black.copy(alpha = 0.30f), topLeft = Offset(x, y), size = Size(cell, cell))
-                            else -> drawRect(color = Color.Black.copy(alpha = 0.14f), topLeft = Offset(x, y), size = Size(cell, cell))
+                            2 -> drawRect(color = Color(0xFF1E293B).copy(alpha = 0.30f), topLeft = Offset(x, y), size = Size(cell, cell))
+                            else -> drawRect(color = Color(0xFF1E293B).copy(alpha = 0.14f), topLeft = Offset(x, y), size = Size(cell, cell))
                         }
                         // İplik demeti (tow) çapraz parıltısı — dokumaya derinlik katar
                         drawLine(
@@ -319,7 +321,7 @@ internal fun DrawScope.drawBackChassis(
             val haloRadius = 38.dp.toPx()
             val haloCenter = Offset(size.width / 2, 70.dp.toPx())
 
-            drawCircle(color = Color.Black.copy(alpha = 0.45f), radius = haloRadius + 3.dp.toPx(), center = Offset(haloCenter.x, haloCenter.y + 2.dp.toPx()))
+            drawCircle(color = Color(0xFF1E293B).copy(alpha = 0.45f), radius = haloRadius + 3.dp.toPx(), center = Offset(haloCenter.x, haloCenter.y + 2.dp.toPx()))
             drawCircle(brush = metalRingBrush, radius = haloRadius + 1.8.dp.toPx(), center = haloCenter)
             drawCircle(brush = camPlateBrush, radius = haloRadius, center = haloCenter)
             drawCircle(color = Color.White.copy(alpha = 0.15f), radius = haloRadius - 2.dp.toPx(), center = haloCenter, style = Stroke(width = 1.dp.toPx()))
@@ -338,7 +340,7 @@ internal fun DrawScope.drawBackChassis(
             val visorRect = Size(size.width - (backMargin * 2), visorHeight)
 
             drawRoundRect(
-                color = Color.Black.copy(alpha = 0.45f),
+                color = Color(0xFF1E293B).copy(alpha = 0.45f),
                 topLeft = Offset(backMargin, visorTop + 2.dp.toPx()),
                 size = visorRect,
                 cornerRadius = CornerRadius(10.dp.toPx(), 10.dp.toPx())
@@ -377,7 +379,7 @@ internal fun DrawScope.drawBackChassis(
             val bumpTop = 16.dp.toPx()
 
             drawRoundRect(
-                color = Color.Black.copy(alpha = 0.45f),
+                color = Color(0xFF1E293B).copy(alpha = 0.45f),
                 topLeft = Offset(bumpLeft, bumpTop + 2.5.dp.toPx()),
                 size = Size(bumpW, bumpH),
                 cornerRadius = CornerRadius(18.dp.toPx(), 18.dp.toPx())
@@ -419,7 +421,7 @@ internal fun DrawScope.drawBackChassis(
             val islandTop = 16.dp.toPx()
 
             drawRoundRect(
-                color = Color.Black.copy(alpha = 0.45f),
+                color = Color(0xFF1E293B).copy(alpha = 0.45f),
                 topLeft = Offset(islandLeft, islandTop + 2.5.dp.toPx()),
                 size = Size(islandW, islandH),
                 cornerRadius = CornerRadius(20.dp.toPx(), 20.dp.toPx())
@@ -549,7 +551,7 @@ internal fun DrawScope.drawFrontDisplay(
 
     // Inner bevel shadow for realistic depth
     drawRoundRect(
-        color = Color.Black.copy(alpha = 0.5f),
+        color = Color(0xFF1E293B).copy(alpha = 0.5f),
         topLeft = Offset(1.5.dp.toPx(), 1.5.dp.toPx()),
         size = Size(size.width - 3.dp.toPx(), size.height - 3.dp.toPx()),
         cornerRadius = CornerRadius(phoneCorner - 1.dp.toPx(), phoneCorner - 1.dp.toPx())
@@ -630,7 +632,7 @@ internal fun DrawScope.drawFrontDisplay(
             val islandTop = bezelSize + 4.dp.toPx()
 
             drawRoundRect(
-                color = Color.Black,
+                color = Color(0xFF1E293B),
                 topLeft = Offset(islandLeft, islandTop),
                 size = Size(islandW, islandH),
                 cornerRadius = CornerRadius(7.dp.toPx(), 7.dp.toPx())
@@ -653,7 +655,7 @@ internal fun DrawScope.drawFrontDisplay(
             val notchH = 14.dp.toPx()
             val notchLeft = (size.width / 2) - (notchW / 2)
             drawRoundRect(
-                color = Color.Black,
+                color = Color(0xFF1E293B),
                 topLeft = Offset(notchLeft, bezelSize - 1.dp.toPx()),
                 size = Size(notchW, notchH),
                 cornerRadius = CornerRadius(6.dp.toPx(), 6.dp.toPx())
@@ -669,7 +671,7 @@ internal fun DrawScope.drawFrontDisplay(
         else -> {
             // Punch-hole (Nokta Delik)
             val holeCenter = Offset(size.width / 2, bezelSize + 10.dp.toPx())
-            drawCircle(color = Color.Black, radius = 4.2.dp.toPx(), center = holeCenter)
+            drawCircle(color = Color(0xFF1E293B), radius = 4.2.dp.toPx(), center = holeCenter)
             drawCircle(
                 brush = Brush.radialGradient(listOf(Color(0xFF38BDF8), Color(0xFF0284C7), Color(0xFF030712)), center = holeCenter, radius = 2.8.dp.toPx()),
                 radius = 2.5.dp.toPx(),

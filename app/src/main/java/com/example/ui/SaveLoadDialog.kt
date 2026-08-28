@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
+import com.example.ui.Button3D
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -88,7 +89,7 @@ fun SaveLoadDialog(
                     TextButton(onClick = { confirmingNewGame = true }) {
                         Text("Yeni Oyun Başlat", color = MaterialTheme.colorScheme.error)
                     }
-                    Button(onClick = onDismiss) { Text("Kapat") }
+                    Button3D(onClick = onDismiss) { Text("Kapat") }
                 }
             }
         }

@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.*
+import com.example.ui.Button3D
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -162,7 +163,7 @@ fun ChipsetStudioView(
                 }
 
                 // CTA Button: Tasarla
-                Button(
+                Button3D(
                     onClick = {
                         editingChipset = null
                         showDesignerDialog = true
@@ -239,7 +240,7 @@ fun ChipsetStudioView(
                         textAlign = TextAlign.Center,
                         lineHeight = 18.sp
                     )
-                    Button(
+                    Button3D(
                         onClick = {
                             editingChipset = null
                             showDesignerDialog = true

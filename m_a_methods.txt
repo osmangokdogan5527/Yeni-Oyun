@@ -1,0 +1,139 @@
+    private fun updateAcquisitions(currentState: GameState): List<AcquisitionTarget> {
+        var targets = currentState.acquisitionTargets.toMutableList()
+        
+        // Remove old targets
+        targets = targets.map { it.copy(remainingMonthsAvailable = it.remainingMonthsAvailable - 1) }.filter { it.remainingMonthsAvailable > 0 }.toMutableList()
+
+        // Randomly generate new targets if empty or rare chance
+        if (targets.isEmpty() || kotlin.random.Random.nextFloat() < 0.05f) {
+            val names = listOf("Pulse", "Nexa", "Vanguard", "CyberCore", "Zeni", "Titan", "Aura", "Nebula", "Spectra", "Lumina")
+            val name = names.random()
+            
+            val type = CompanyType.values().random()
+            val baseVal = kotlin.random.Random.nextLong(10_000_000L, 200_000_000L)
+            val valMult = when(type) {
+                CompanyType.STRUGGLING -> 0.5f
+                CompanyType.NORMAL -> 1.0f
+                CompanyType.SUCCESSFUL -> 2.0f
+                CompanyType.TECH_STARTUP -> 0.3f
+            }
+            
+            val finalValuation = (baseVal * valMult).toLong()
+            val debt = if (type == CompanyType.STRUGGLING) (finalValuation * 0.8f).toLong() else (finalValuation * 0.1f).toLong()
+            val rep = kotlin.random.Random.nextInt(10, 80)
+            val emps = kotlin.random.Random.nextInt(50, 2000)
+            
+            val numSeries = if (type == CompanyType.TECH_STARTUP) 0 else kotlin.random.Random.nextInt(1, 4)
+            val generatedSeries = mutableListOf<PhoneSeriesLegacy>()
+            for (i in 0 until numSeries) {
+                generatedSeries.add(
+                    PhoneSeriesLegacy(
+                        seriesName = "${name.take(3)} Series $i",
+                        originCompanyId = name,
+                        launchYear = currentState.year - kotlin.random.Random.nextInt(1, 5),
+                        totalModelsReleased = kotlin.random.Random.nextInt(1, 6),
+                        averageReviewScore = kotlin.random.Random.nextInt(40, 95),
+                        seriesReputation = kotlin.random.Random.nextInt(30, 90),
+                        totalSales = kotlin.random.Random.nextLong(1_000_000, 20_000_000)
+                    )
+                )
+            }
+            
+            targets.add(
+                AcquisitionTarget(
+                    id = "MNA_${currentState.year}_${kotlin.random.Random.nextInt(1000, 9999)}",
+                    name = "$name Mobile",
+                    logoEmoji = listOf("📱", "💻", "🌐", "⚡", "🔮").random(),
+                    type = type,
+                    cash = (finalValuation * 0.2f).toLong(),
+                    debt = debt,
+                    brandReputation = rep,
+                    employees = emps,
+                    patents = emptyList(), // Can add random tech nodes
+                    activeSeries = generatedSeries,
+                    valuation = finalValuation,
+                    minimumAcceptableMultiplier = type.baseMultiplier * kotlin.random.Random.nextFloat().coerceAtLeast(0.8f),
+                    remainingMonthsAvailable = kotlin.random.Random.nextInt(6, 18)
+                )
+            )
+        }
+        
+        return targets
+    }
+
+    fun bidForCompany(targetId: String, bidAmount: Long, strategy: PostAcquisitionStrategy) {
+        val currentState = _state.value
+        val target = currentState.acquisitionTargets.find { it.id == targetId } ?: return
+        
+        if (currentState.budget < bidAmount) {
+            _state.update { it.copy(noticeMessage = "Bu teklif için yeterli bütçeniz yok.") }
+            return
+        }
+        
+        val minAcceptable = (target.valuation * target.minimumAcceptableMultiplier).toLong()
+        
+        if (bidAmount >= minAcceptable) {
+            // Acquired!
+            val newSubBrands = currentState.ownedSubBrands.toMutableList()
+            val newLegacySeries = currentState.ownedLegacySeries.toMutableList()
+            var newEngineers = currentState.engineers
+            var newQa = currentState.qaInspectors
+            var newWorkers = currentState.assemblyWorkers
+            
+            val totalCost = bidAmount + target.debt
+            if (currentState.budget < totalCost) {
+                _state.update { it.copy(noticeMessage = "Borçlarla birlikte toplam satın alma maliyetini karşılayamıyorsunuz.") }
+                return
+            }
+            
+            when (strategy) {
+                PostAcquisitionStrategy.INDEPENDENT_BRAND -> {
+                    newSubBrands.add(
+                        OwnedSubBrand(
+                            id = target.id,
+                            name = target.name,
+                            logoEmoji = target.logoEmoji,
+                            brandReputation = target.brandReputation,
+                            cash = target.cash
+                        )
+                    )
+                    newLegacySeries.addAll(target.activeSeries)
+                }
+                PostAcquisitionStrategy.MERGE_TO_MAIN -> {
+                    newLegacySeries.addAll(target.activeSeries.map { it.copy(seriesReputation = (it.seriesReputation * 0.8f).toInt()) })
+                    newEngineers += (target.employees * 0.1f).toInt()
+                    newWorkers += (target.employees * 0.5f).toInt()
+                }
+                PostAcquisitionStrategy.LIQUIDATE_ASSETS -> {
+                    newEngineers += (target.employees * 0.2f).toInt()
+                    // Get their cash
+                    // Kill brand and series
+                }
+            }
+            
+            val report = MarketReport(
+                title = "Şirket Satın Alındı: ${target.name}",
+                text = "${target.name} şirketi $${"%,d".format(bidAmount)} bedelle satın alındı. Strateji: $strategy.",
+                profit = -totalCost,
+                unitsSold = 0,
+                reviewScore = 0
+            )
+            
+            _state.update {
+                it.copy(
+                    budget = it.budget - bidAmount - target.debt + if(strategy == PostAcquisitionStrategy.LIQUIDATE_ASSETS) target.cash else 0L,
+                    acquisitionTargets = it.acquisitionTargets.filter { t -> t.id != targetId },
+                    ownedSubBrands = newSubBrands,
+                    ownedLegacySeries = newLegacySeries,
+                    engineers = newEngineers,
+                    qaInspectors = newQa,
+                    assemblyWorkers = newWorkers,
+                    reports = it.reports + report,
+                    noticeMessage = "Satın alma BAŞARILI! ${target.name} artık sizin."
+                )
+            }
+        } else {
+            // Rejected
+            _state.update { it.copy(noticeMessage = "Teklifiniz reddedildi! Şirket daha yüksek bir değer biçiyor.") }
+        }
+    }

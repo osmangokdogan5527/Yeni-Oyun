@@ -1,0 +1,101 @@
+191:    fun advanceTime() {
+192-        val currentState = _state.value
+193-        val isSecondHalf = currentState.period == 2
+194-        val newPeriod = if (isSecondHalf) 1 else 2
+195-        val newMonth = if (isSecondHalf) (if (currentState.month == 12) 1 else currentState.month + 1) else currentState.month
+196-        val newYear = if (isSecondHalf && currentState.month == 12) currentState.year + 1 else currentState.year
+197-        val periodName = if (newPeriod == 1) "1. Yarı (1-15 Gün)" else "2. Yarı (16-30 Gün)"
+198-
+199-        var totalMonthlyRevenue = 0L
+200-        var totalMonthlyUnitsSold = 0
+201-        var qualityWeightedReviewSum = 0.0
+202-        var totalRecallCost = 0L
+203-        var totalRecallReputationPenalty = 0
+204-        val newNewsList = currentState.newsList.toMutableList()
+205-        val finishedModelsNews = mutableListOf<NewsArticle>()
+206-        val newCrisesList = mutableListOf<HardwareCrisis>()
+207-
+208-        // Update Market Trends (Progresses every full month / 2 periods)
+209-        var updatedTrend = currentState.currentTrend
+210-        if (isSecondHalf) {
+211-            if (updatedTrend.remainingMonths <= 1) {
+212-                val newGeneratedTrend = generateNewTrend(newYear, updatedTrend.category)
+213-                updatedTrend = newGeneratedTrend
+214-                newNewsList.add(
+215-                    NewsArticle(
+216-                        id = "trend_news_${newYear}_${newMonth}_${Random.nextInt(100, 999)}",
+217-                        title = "🔥 YENİ TÜKETİCİ TRENDİ: ${newGeneratedTrend.title}",
+218-                        text = "${newGeneratedTrend.description} Bu trende uygun cihazlar pazarda +%50 daha fazla talep görecek! (${newGeneratedTrend.category.tip})",
+219-                        category = "Pazar",
+220-                        year = newYear,
+221-                        month = newMonth
+222-                    )
+223-                )
+224-            } else {
+225-                updatedTrend = updatedTrend.copy(remainingMonths = updatedTrend.remainingMonths - 1)
+226-            }
+227-        }
+228-
+229-        // Process bi-weekly sales (2-week cycle, 24 periods per year) for each active model
+230-        // Fabrika, bu periyotta paylaşılan sınırlı bir üretim kapasitesine sahiptir; kapasite,
+231-        // üretimi devam eden (backlog'u olan) modellere piyasaya çıkış sırasına göre (FIFO) dağıtılır.
+232-        var remainingFactoryCapacityThisPeriod = currentState.currentFactoryTier.periodCapacity
+233-        val updatedActiveModels = currentState.activeModels.map { model ->
+234-            // 0. ÜRETİM ADIMI: Fabrika kapasitesi izin verdiğince backlog'u kapat
+235-            var workingModel = model
+236-            if (model.hasPendingProduction && remainingFactoryCapacityThisPeriod > 0) {
+237-                val backlog = model.totalStock - model.producedStock
+238-                val producedThisPeriod = backlog.coerceAtMost(remainingFactoryCapacityThisPeriod)
+239-                if (producedThisPeriod > 0) {
+240-                    workingModel = model.copy(
+241-                        producedStock = model.producedStock + producedThisPeriod,
+242-                        remainingStock = model.remainingStock + producedThisPeriod
+243-                    )
+244-                    remainingFactoryCapacityThisPeriod -= producedThisPeriod
+245-                }
+246-            }
+247-
+248-            if (!workingModel.isCompleted && workingModel.remainingStock > 0) {
+249-                val model = workingModel
+250-                val newPeriods = model.periodsOnMarket + 1
+251-                val newMonths = newPeriods / 2
+252-                
+253-                // Base bi-weekly batch (half of monthly)
+254-                val basePeriodBatch = model.totalStock / (model.maxMonthsOnMarket * 2).toFloat()
+255-                
+256-                // Quality, reputation and active marketing campaign demand multiplier
+257-                val qualityFactor = (model.reviewScore / 55.0f).coerceIn(0.4f, 2.0f)
+258-                
+259-                // 1. ZORLUK & İTİBAR DENGESİ: Şirket olgunluğu ve marka itibarına göre satış hacmi kademeli açılır.
+260-                // İlk modellerde ve düşük itibarda sınırlı satış ve mütevazı kâr, itibar oluştukça (ve 3-5 başarılı model sonrasında) büyük kârlar açılır.
+261-                val repFactor = when {
+262-                    currentState.reputation < 15 -> 0.20f + (currentState.reputation / 15.0f) * 0.20f // 0.20x - 0.40x (Bilinmeyen yeni marka dönemi)
+263-                    currentState.reputation < 35 -> 0.40f + ((currentState.reputation - 15) / 20.0f) * 0.30f // 0.40x - 0.70x (İlk tanınma evresi)
+264-                    currentState.reputation < 60 -> 0.70f + ((currentState.reputation - 35) / 25.0f) * 0.35f // 0.70x - 1.05x (Büyüyen şirket)
+265-                    currentState.reputation < 85 -> 1.05f + ((currentState.reputation - 60) / 25.0f) * 0.45f // 1.05x - 1.50x (Güçlü pazar aktörü)
+266-                    else -> 1.50f + ((currentState.reputation - 85) / 15.0f) * 0.50f // 1.50x - 2.00x (Dev marka / amiral gemisi lideri)
+267-                }
+268-
+269-                // Şirket Olgunluk & Tecrübe Çarpanı (3-5 modelden sonra pazar güveni ve kanal dağıtımı oturur)
+270-                val marketMaturityFactor = when {
+271-                    currentState.modelCount <= 1 -> 0.65f // İlk telefon: Mütevazı pilot satış
+272-                    currentState.modelCount <= 3 -> 0.82f // 2-3. telefon: Kanal genişlemesi
+273-                    currentState.modelCount <= 5 -> 0.95f // 4-5. model: Yerleşik dağıtım ağı
+274-                    else -> 1.0f + ((currentState.modelCount - 5).coerceAtMost(10) * 0.02f) // Düzenli üretici bonusu
+275-                }
+276-
+277-                // 2. GELİŞMİŞ FİYAT/TALEP ESNEKLİĞİ (ADVANCED PRICE ELASTICITY & DISCOUNT IMPACT)
+278-                val currentPrice = model.effectivePrice
+279-                val estimatedUnitCost = model.specs.unitCost.coerceAtLeast(30)
+280-                val markupRatio = currentPrice.toFloat() / estimatedUnitCost.toFloat()
+281-                val (fairMin, fairMax) = when {
+282-                    estimatedUnitCost >= 500 -> 1099 to 1799
+283-                    estimatedUnitCost >= 320 -> 799 to 1199
+284-                    estimatedUnitCost >= 180 -> 499 to 799
+285-                    estimatedUnitCost >= 90 -> 299 to 499
+286-                    else -> 129 to 299
+287-                }
+288-                val basePriceElasticity = when {
+289-                    currentPrice < fairMin * 0.88f -> 1.45f // F/P Patlaması (+%45)
+290-                    currentPrice <= fairMax -> 1.05f // Standart Dengeli Talep
+291-                    currentPrice <= fairMax * 1.25f -> {

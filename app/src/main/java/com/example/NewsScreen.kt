@@ -4,6 +4,8 @@
  */
 package com.example
 
+import androidx.compose.material3.MaterialTheme
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -22,8 +24,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.theme.Slate200
 import com.example.ui.theme.Slate600
-import com.example.ui.theme.Slate800
-import com.example.ui.theme.Slate900
 import com.example.viewmodel.GameViewModel
 import com.example.viewmodel.NewsArticle
 
@@ -32,19 +32,19 @@ fun NewsScreen(
     modifier: Modifier = Modifier,
     viewModel: GameViewModel = viewModel()
 ) {
-    val state by viewModel.state.collectAsState()
+    val marketState by viewModel.marketState.collectAsState()
     var selectedCategory by remember { mutableStateOf("Tümü") }
     var selectedYearFilter by remember { mutableStateOf<Int?>(null) }
 
     val categories = listOf("Tümü", "Teknoloji", "Sektör", "Pazar", "Şirket")
     
     // Extract distinct years present in newsList
-    val availableYears = remember(state.newsList) {
-        state.newsList.map { it.year }.distinct().sortedDescending()
+    val availableYears = remember(marketState.newsList) {
+        marketState.newsList.map { it.year }.distinct().sortedDescending()
     }
 
-    val filteredNews = remember(state.newsList, selectedCategory, selectedYearFilter) {
-        state.newsList
+    val filteredNews = remember(marketState.newsList, selectedCategory, selectedYearFilter) {
+        marketState.newsList
             .filter { article ->
                 (selectedCategory == "Tümü" || article.category == selectedCategory) &&
                 (selectedYearFilter == null || article.year == selectedYearFilter)
@@ -55,7 +55,7 @@ fun NewsScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(Color(0xFFF8FAFC))
     ) {
         Column(
             modifier = Modifier
@@ -66,7 +66,7 @@ fun NewsScreen(
                 text = "Pazar & Sektör Haberleri",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
-                color = Slate900
+                color = Color(0xFF1E293B)
             )
             Text(
                 text = "Yıllara ve gelişmelere göre teknoloji akışı",
@@ -170,7 +170,7 @@ fun NewsItemCard(news: NewsArticle) {
         "Sektör" -> MaterialTheme.colorScheme.onSecondaryContainer
         "Pazar" -> MaterialTheme.colorScheme.onTertiaryContainer
         "Şirket" -> Color(0xFF1B5E20)
-        else -> Slate800
+        else -> Color(0xFF1E293B)
     }
 
     Card(
@@ -256,7 +256,7 @@ fun NewsItemCard(news: NewsArticle) {
                 text = news.title,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = Slate900
+                color = Color(0xFF1E293B)
             )
 
             Spacer(modifier = Modifier.height(6.dp))
@@ -287,7 +287,7 @@ fun NewsItemCard(news: NewsArticle) {
                             text = news.reviewerQuote,
                             fontSize = 12.sp,
                             fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = Color(0xFF1E293B),
                             lineHeight = 16.sp
                         )
                     }

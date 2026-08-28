@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import com.example.ui.Button3D
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -508,7 +509,7 @@ fun ChipsetDesignerDialog(
                         Text("İptal")
                     }
 
-                    Button(
+                    Button3D(
                         onClick = { onConfirm(previewChip) },
                         modifier = Modifier.weight(2f).height(48.dp),
                         shape = RoundedCornerShape(12.dp),

@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -38,6 +40,52 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _state = MutableStateFlow(GameState())
     val state: StateFlow<GameState> = _state.asStateFlow()
+
+    // Modüler StateFlow'lar: Sadece kendi alanı değiştiğinde tetiklenir (Gereksiz Recomposition'ı önler)
+    val financeState: StateFlow<CompanyFinanceState> = _state
+        .map { it.toFinanceState() }
+        .distinctUntilChanged()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = _state.value.toFinanceState()
+        )
+
+    val marketState: StateFlow<MarketEcosystemState> = _state
+        .map { it.toMarketState() }
+        .distinctUntilChanged()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = _state.value.toMarketState()
+        )
+
+    val productionState: StateFlow<ProductionOpsState> = _state
+        .map { it.toProductionState() }
+        .distinctUntilChanged()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = _state.value.toProductionState()
+        )
+
+    val techSoftwareState: StateFlow<TechSoftwareState> = _state
+        .map { it.toTechSoftwareState() }
+        .distinctUntilChanged()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = _state.value.toTechSoftwareState()
+        )
+
+    val companyProfileState: StateFlow<CompanyProfileState> = _state
+        .map { it.toCompanyProfileState() }
+        .distinctUntilChanged()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = _state.value.toCompanyProfileState()
+        )
 
     init {
         val initialNews = getHistoricalNewsForYearMonth(2010, 1)
@@ -201,6 +249,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         var qualityWeightedReviewSum = 0.0
         var totalRecallCost = 0L
         var totalRecallReputationPenalty = 0
+        var directReputationPenaltyFromRefunds = 0
         val newNewsList = currentState.newsList.toMutableList()
         val finishedModelsNews = mutableListOf<NewsArticle>()
         val newCrisesList = mutableListOf<HardwareCrisis>()
@@ -334,17 +383,40 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     model.specs.material == "Alüminyum" || model.specs.backFinish == "Buzlu Mat Cam" -> 1.03f
                     else -> 1.0f
                 }
-
                 // OS & Software Synergy Demand Multiplier
-                val osSynergyFactor = when {
+                var baseOsSynergy = when {
                     model.specs.osFocus.contains("Oyun") && model.specs.style == "Oyuncu" -> 1.30f
                     model.specs.osFocus.contains("Güvenlik") && model.specs.style == "Klasik" -> 1.25f
                     model.specs.osFocus.contains("Yapay Zeka") && model.matchesTrend -> 1.20f
                     model.specs.osFocus.contains("Estetik") -> 1.12f
-                    model.specs.osType.contains("Bağımsız") -> 1.15f
-                    model.specs.osType.contains("Özel") -> 1.08f
                     else -> 1.0f
                 }
+                
+                // Ecosystem Penalty / Windows Phone Effect
+                if (model.specs.osType.contains("Bağımsız") || model.specs.osType.contains("Özel")) {
+                    val appCount = currentState.customOs.totalStoreApps
+                    val requiredAppsForFullSales = 50000L
+                    if (appCount < requiredAppsForFullSales) {
+                        val penalty = (appCount.toFloat() / requiredAppsForFullSales.toFloat()).coerceIn(0.1f, 1.0f)
+                        baseOsSynergy *= penalty
+                        
+                        if (penalty < 0.5f && Random.nextInt(100) < 5) {
+                            newNewsList.add(
+                                NewsArticle(
+                                    id = "no_apps_${model.id}_${newYear}_${newMonth}",
+                                    title = "⚠️ MÜŞTERİLER ŞİKAYETÇİ: Mağazada Uygulama Yok!",
+                                    text = "${model.specs.name} donanım olarak harika olsa da, uygulama mağazasındaki eksiklikler nedeniyle (sadece ${"%,d".format(appCount)} uygulama) satışlar durma noktasına geldi! Geliştirici fonuna acil yatırım yapın.",
+                                    category = "Pazar",
+                                    year = newYear,
+                                    month = newMonth
+                                )
+                            )
+                        }
+                    } else if (appCount > 200000L) {
+                        baseOsSynergy *= 1.2f // Huge ecosystem advantage (iOS effect)
+                    }
+                }
+                val osSynergyFactor = baseOsSynergy
 
                 // Lifecycle Sales Curve Factor (over periods) — yumuşatılmış eğri: pik ay 4'te
                 // eskisi gibi 2.40x'e sıçramıyor, en fazla 1.55x'e çıkıp kademeli iniyor. Bu, iyi bir
@@ -366,24 +438,117 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     else -> 0.04f
                 }
 
-                val demandFactor = qualityFactor * repFactor * marketMaturityFactor * priceElasticityFactor * seriesLoyaltyFactor * tierDemandFactor * campaignFactor * trendFactor * colorFactor * designFactor * osSynergyFactor * lifecycleSalesCurve
+                // --- HYPE & MÜŞTERİ MEMNUNİYETİ DENGESİ (HYPE & SATISFACTION MECHANIC) ---
+                // 1. Hype Evrimi: Doğal soğuma + pazarlama desteği + kulaktan kulağa (Word-of-Mouth)
+                val decayedHype = (model.hypeScore - 2).coerceAtLeast(8)
+                val campaignHypeBoost = if (model.activeCampaign != null) (model.activeCampaign.type.hypeBoost / 3).coerceAtLeast(3) else 0
+
+                val wordOfMouthEffect = when {
+                    model.customerSatisfactionScore >= 88 -> if (model.reviewScore >= 85) 4 else 2
+                    model.customerSatisfactionScore >= 75 -> 1
+                    model.customerSatisfactionScore <= 35 -> -6
+                    model.customerSatisfactionScore <= 50 -> -2
+                    else -> 0
+                }
+                val currentHype = (decayedHype + campaignHypeBoost + wordOfMouthEffect).coerceIn(5, 140)
+
+                // 2. Müşteri Memnuniyeti Hesaplaması (Beklenti vs Gerçek Performans)
+                val expectedQuality = (currentHype * 0.65f + (model.effectivePrice.toFloat() / estimatedUnitCost.coerceAtLeast(30) * 1.5f).coerceIn(10f, 40f))
+                val actualQuality = model.reviewScore.toFloat() + (model.specs.qaBudget.toFloat() / model.totalStock.coerceAtLeast(1) * 0.25f).coerceAtMost(10f) + if (model.benchmarkScore != null && model.benchmarkScore.overallScore >= 120000) 4f else 0f
+
+                val updatedSatisfaction = when {
+                    currentHype >= 55 && model.reviewScore < 60 -> {
+                        // Büyük Hype vs Zayıf Donanım Fiyaskosu (Kullanıcı aldatılmış hisseder, 'telefon ısınıyor' tepkileri!)
+                        val gap = currentHype - model.reviewScore
+                        (40 - (gap * 0.8f) - (if (model.specs.qaBudget == 0L) 10 else 0)).toInt().coerceIn(5, 38)
+                    }
+                    model.reviewScore >= 85 && currentHype <= 35 -> {
+                        // Sıfır/az reklamla çıkan gizli cevher (Beklentinin katbekat üstünde memnuniyet)
+                        (90 + (model.reviewScore - 85)).coerceIn(85, 100)
+                    }
+                    else -> {
+                        (75f + (actualQuality - expectedQuality) * 0.9f).toInt().coerceIn(10, 100)
+                    }
+                }
+
+                // 3. Hype & Memnuniyet Talep Çarpanları
+                val hypeDemandMultiplier = when {
+                    currentHype < 15 -> 0.45f // Sıfır reklam -> Harika telefon bile ilk haftalarda zor satılır
+                    currentHype < 30 -> 0.75f
+                    currentHype < 55 -> 1.05f
+                    currentHype < 80 -> 1.50f // Yüksek Hype -> İlk haftalar satış patlaması!
+                    else -> 2.05f // Zirve Hype -> Kuyruklar ve izdiham!
+                }
+
+                val satisfactionDemandMultiplier = when {
+                    updatedSatisfaction >= 85 -> 1.25f // Mükemmel tavsiyeler, satışlar uzun süre diri kalır
+                    updatedSatisfaction >= 70 -> 1.05f
+                    updatedSatisfaction >= 50 -> 0.85f
+                    updatedSatisfaction >= 30 -> 0.50f // Isınma ve donma şikayetleri satışları keser
+                    else -> 0.20f // Talep bıçak gibi kesilir
+                }
+
+                val wordOfMouthMultiplier = if (updatedSatisfaction >= 85) 1.15f else if (updatedSatisfaction <= 35) 0.65f else 1.0f
+
+                val demandFactor = qualityFactor * repFactor * marketMaturityFactor * priceElasticityFactor * seriesLoyaltyFactor * tierDemandFactor * campaignFactor * trendFactor * colorFactor * designFactor * osSynergyFactor * lifecycleSalesCurve * hypeDemandMultiplier * satisfactionDemandMultiplier * wordOfMouthMultiplier
 
                 // --- SADELEŞTİRİLMİŞ 3 GRUPLU ÖZET (sadece arayüzde gösterim için; matematik yukarıdaki gibi kalıyor) ---
                 // "Ürün Kalitesi": telefonun kendi niteliği — inceleme puanı, tasarım/malzeme, OS uyumu
                 val productQualityGroup = qualityFactor * designFactor * osSynergyFactor
                 // "Pazar Talebi": dış etkenler — trend, renk çeşitliliği, aktif kampanya, fiyat cazibesi
-                val marketDemandGroup = trendFactor * colorFactor * campaignFactor * priceElasticityFactor
-                // "Marka Gücü": şirketin birikimi — itibar, pazar olgunluğu, seri sadakati
-                val brandStrengthGroup = repFactor * marketMaturityFactor * seriesLoyaltyFactor
+                val marketDemandGroup = trendFactor * colorFactor * campaignFactor * priceElasticityFactor * hypeDemandMultiplier
+                // "Marka Gücü": şirketin birikimi — itibar, pazar olgunluğu, seri sadakati, memnuniyet
+                val brandStrengthGroup = repFactor * marketMaturityFactor * seriesLoyaltyFactor * satisfactionDemandMultiplier
                 
-                // 2-week units sold (0 if demand is zero or below)
+                // 4. SATIŞ VE İADE (REFUND WAVE) HESAPLAMASI
                 val calculatedUnits = (basePeriodBatch * demandFactor).toInt().coerceAtLeast(0)
-                val unitsSoldThisPeriod = calculatedUnits.coerceAtMost(model.remainingStock)
-                val revenueThisPeriod = unitsSoldThisPeriod.toLong() * model.effectivePrice
+                val grossUnitsSoldThisPeriod = calculatedUnits.coerceAtMost(model.remainingStock)
+
+                val refundRatePercent = when {
+                    updatedSatisfaction >= 88 -> 0.005f // Binde 5
+                    updatedSatisfaction >= 70 -> 0.015f // %1.5
+                    updatedSatisfaction >= 50 -> 0.045f // %4.5
+                    updatedSatisfaction >= 35 -> 0.16f  // %16 - Hayal kırıklığı ve iade dalgası
+                    updatedSatisfaction >= 20 -> 0.32f  // %32 - İade kuyrukları
+                    else -> 0.50f                      // %50 - Yıkıcı hezimet!
+                }
+
+                val refundUnits = (grossUnitsSoldThisPeriod * refundRatePercent).toInt()
+                val netUnitsSoldThisPeriod = (grossUnitsSoldThisPeriod - refundUnits).coerceAtLeast(0)
+                val grossRevenue = grossUnitsSoldThisPeriod.toLong() * model.effectivePrice
+                val periodRefundCost = refundUnits.toLong() * model.effectivePrice
+                val netRevenueThisPeriod = grossRevenue - periodRefundCost
                 
-                totalMonthlyRevenue += revenueThisPeriod
-                totalMonthlyUnitsSold += unitsSoldThisPeriod
-                qualityWeightedReviewSum += unitsSoldThisPeriod.toDouble() * model.reviewScore
+                totalMonthlyRevenue += netRevenueThisPeriod
+                totalMonthlyUnitsSold += netUnitsSoldThisPeriod
+                qualityWeightedReviewSum += netUnitsSoldThisPeriod.toDouble() * model.reviewScore
+
+                // İade Dalgası Prestij Darbesi ve Haber Tetikleyicisi
+                if (updatedSatisfaction <= 35 && refundUnits >= 80) {
+                    val repPenalty = if (updatedSatisfaction <= 20) 2 else 1
+                    directReputationPenaltyFromRefunds += repPenalty
+                    finishedModelsNews.add(
+                        NewsArticle(
+                            id = "news_refund_${model.id}_${newYear}_${newMonth}_${newPeriod}",
+                            title = "🚨 ŞİKAYET VE İADE DALGASI: ${model.specs.name}",
+                            text = "${model.specs.name} modelinde yoğun pazarlama sonrası beklentiyi bulamayan kullanıcılardan 'Isınma ve Düşük Performans' tepkileri yağıyor! Bu dönem ${"%,d".format(refundUnits)} adet cihaz iade edildi ($${"%,d".format(periodRefundCost)} geri ödendi). Marka prestijiniz -$repPenalty darbe aldı!",
+                            category = "Pazar",
+                            year = newYear,
+                            month = newMonth
+                        )
+                    )
+                } else if (updatedSatisfaction >= 90 && netUnitsSoldThisPeriod >= 2500 && newPeriods == 2) {
+                    finishedModelsNews.add(
+                        NewsArticle(
+                            id = "news_happy_${model.id}_${newYear}_${newMonth}",
+                            title = "🌟 MÜŞTERİ MEMNUNİYETİ REKORU: ${model.specs.name}",
+                            text = "${model.specs.name} modeli %${updatedSatisfaction} kullanıcı memnuniyet oranı ve sıfıra yakın iadeyle pazarda efsaneleşti! Kulaktan kulağa övgüler satışları patlatıyor.",
+                            category = "Pazar",
+                            year = newYear,
+                            month = newMonth
+                        )
+                    )
+                }
 
                 var isExtendedNewsSent = model.isExtendedNewsSent
                 if (newMonths == 12 && model.maxMonthsOnMarket == 24 && !model.isExtendedNewsSent) {
@@ -407,11 +572,17 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 val updatedModel = model.copy(
-                    remainingStock = model.remainingStock - unitsSoldThisPeriod,
-                    totalSold = model.totalSold + unitsSoldThisPeriod,
-                    totalRevenue = model.totalRevenue + revenueThisPeriod,
+                    remainingStock = (model.remainingStock - netUnitsSoldThisPeriod).coerceAtLeast(0),
+                    totalSold = model.totalSold + netUnitsSoldThisPeriod,
+                    totalRevenue = model.totalRevenue + netRevenueThisPeriod,
                     periodsOnMarket = newPeriods,
                     monthsOnMarket = newMonths,
+                    hypeScore = currentHype,
+                    customerSatisfactionScore = updatedSatisfaction,
+                    totalRefundsCount = model.totalRefundsCount + refundUnits,
+                    lastPeriodRefunds = refundUnits,
+                    lastPeriodRefundCost = periodRefundCost,
+                    wordOfMouthBoost = wordOfMouthMultiplier,
                     isExtendedNewsSent = isExtendedNewsSent,
                     activeCampaign = updatedCampaign,
                     matchesTrend = isTrendActive,
@@ -517,41 +688,42 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
             val newThirdPartyActiveDevices = updatedCustomOs.thirdPartyActiveDevices + thirdPartyPeriodProduction
 
-            // 4. Popularity increment
-            val devGrowthFactor = (devCount * 0.15f)
-            val versionFactor = (updatedCustomOs.majorVersionCount * 0.20f)
-            val playerSalesFactor = (totalMonthlyUnitsSold / 15000f)
-            val adoptionBonus = (adopters * 0.30f * licenseType.adoptionSpeedMultiplier)
-            val popularityDelta = (devGrowthFactor + versionFactor + playerSalesFactor + adoptionBonus + 0.15f) * 0.18f
+            // 4. Popularity increment (Significantly slowed down as requested)
+            val devGrowthFactor = (devCount * 0.05f)
+            val versionFactor = (updatedCustomOs.majorVersionCount * 0.10f)
+            val playerSalesFactor = (totalMonthlyUnitsSold / 40000f) // Slower scaling from sales
+            val adoptionBonus = (adopters * 0.10f * licenseType.adoptionSpeedMultiplier)
+            // Reduced multiplier from 0.18f to 0.035f for realistic, slow growth
+            val popularityDelta = (devGrowthFactor + versionFactor + playerSalesFactor + adoptionBonus) * 0.035f
             
             val newPopularity = (updatedCustomOs.popularityPercent + popularityDelta).coerceIn(1.0f, 85.0f)
-            val newEcosystemScore = (15 + (newPopularity * 0.8f).toInt() + (devCount * 3) + (updatedCustomOs.majorVersionCount * 5)).coerceIn(10, 100)
+            val newEcosystemScore = (15 + (newPopularity * 0.5f).toInt() + (devCount * 1) + (updatedCustomOs.majorVersionCount * 3)).coerceIn(10, 100)
 
             // 5. App Store Revenue & License Revenue Calculation (Bi-weekly)
             val totalEcosystemDevices = activePlayerUserBase + newThirdPartyActiveDevices
             if (totalEcosystemDevices > 0) {
                 val baseUserRate = updatedCustomOs.type.storeRevenuePerUser / 2f
                 val commissionMultiplier = (updatedCustomOs.commissionRate.percent / 20.0f) * updatedCustomOs.commissionRate.marketLoyaltyBonus
-                val popMultiplier = (newPopularity / 20.0f).coerceIn(0.25f, 2.5f)
-                val storeModuleBonus = 1.0f + (updatedCustomOs.appStoreLevel - 1) * 0.25f
+                val popMultiplier = (newPopularity / 40.0f).coerceIn(0.10f, 1.5f)
+                val storeModuleBonus = 1.0f + (updatedCustomOs.appStoreLevel - 1) * 0.15f
                 
-                appStoreRevenueThisPeriod = (totalEcosystemDevices * baseUserRate * commissionMultiplier * popMultiplier * licenseType.storeRevenueMultiplier * storeModuleBonus / 3.5f).toLong()
+                appStoreRevenueThisPeriod = (totalEcosystemDevices * baseUserRate * commissionMultiplier * popMultiplier * licenseType.storeRevenueMultiplier * storeModuleBonus / 5.0f).toLong()
             }
 
             // 6. Cloud & Ecosystem Subscription Revenue
             val cloudRevenueThisPeriod = if (updatedCustomOs.cloudLevel > 1 && totalEcosystemDevices > 0) {
-                val payingUsersRatio = 0.08f + (updatedCustomOs.cloudLevel * 0.04f)
+                val payingUsersRatio = 0.04f + (updatedCustomOs.cloudLevel * 0.02f)
                 val cloudUsers = (totalEcosystemDevices * payingUsersRatio).toLong()
-                (cloudUsers * 0.75f).toLong() // $0.75 per 2-weeks ($1.5/mo)
+                (cloudUsers * 0.50f).toLong() // $0.50 per 2-weeks ($1/mo)
             } else 0L
 
             if (licenseType == OsLicenseType.CLOSED_PROPRIETARY && updatedCustomOs.perDeviceLicenseFee > 0 && thirdPartyPeriodProduction > 0) {
                 licenseRevenueThisPeriod = thirdPartyPeriodProduction * updatedCustomOs.perDeviceLicenseFee
             }
 
-            // 7. Store Apps Catalog Growth
-            val appsFromDevFund = (updatedCustomOs.devFundBalance / 80000L).coerceAtLeast(0L)
-            val newAppsAdded = ((1200L * updatedCustomOs.appStoreLevel) + (devCount * 600L) + (updatedCustomOs.ecosystemScore * 450L) + appsFromDevFund) / 2L
+            // 7. Store Apps Catalog Growth (Made significantly harder)
+            val appsFromDevFund = (updatedCustomOs.devFundBalance / 250000L).coerceAtLeast(0L)
+            val newAppsAdded = ((150L * updatedCustomOs.appStoreLevel) + (devCount * 50L) + (updatedCustomOs.ecosystemScore * 20L) + appsFromDevFund) / 2L
             val newTotalApps = updatedCustomOs.totalStoreApps + newAppsAdded
 
             // 8. Dynamic Customer Loyalty calculation
@@ -936,6 +1108,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             passiveReputationDelta = kotlin.math.ceil(updatedReputationMomentum).toInt()
             updatedReputationMomentum -= passiveReputationDelta
         }
+        passiveReputationDelta -= directReputationPenaltyFromRefunds
 
         // --- TEDARİK ZİNCİRİ OLAYI (SUPPLY CHAIN EVENT) — ana state.update'ten ÖNCE hesaplanmalı ---
         val (nextSupplyEvent, supplyEventJustStarted, endedSupplyEvent) = tickSupplyChainEvent(currentState.activeSupplyChainEvent, newYear)
@@ -1048,6 +1221,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
 
+        val updatedAcquisitionTargets = updateAcquisitions(currentState)
+
         _state.update {
             it.copy(
                 period = newPeriod,
@@ -1066,6 +1241,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 unlockedTech = updatedUnlockedTech,
                 activeResearch = currentActiveResearch,
                 researchQueue = updatedResearchQueue,
+                acquisitionTargets = updatedAcquisitionTargets,
                 reports = it.reports + researchReports + report,
                 newsList = newNewsList,
                 currentTrend = updatedTrend,
@@ -1342,7 +1518,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun manufacturePhone(specs: PhoneSpecs) {
         val currentState = _state.value
         val productionCost = calculateProductionCost(specs)
-        val totalCost = (productionCost.toLong() * specs.quantity) + specs.qaBudget
+        val launchMarketingCost = (specs.launchCampaign.cost * currentState.scaleMultiplier).toLong()
+        val totalCost = (productionCost.toLong() * specs.quantity) + specs.qaBudget + launchMarketingCost
         
         if (currentState.budget < totalCost) {
             return
@@ -1401,7 +1578,30 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             else -> 0
         }
 
-        val reviewScore = (baseQuality + qaFactor + zeroQaPenalty + currentState.qaScoreBonus + designBonus + osBonus + specs.tier.reviewBonus + Random.nextInt(-3, 4)).coerceIn(10, 100)
+        var legacyBonus = 0
+        val legacySeriesList = currentState.ownedLegacySeries.toMutableList()
+        val legacyIndex = legacySeriesList.indexOfFirst { it.seriesName == specs.seriesName }
+        var legacyReputationText = ""
+        
+        if (legacyIndex != -1) {
+            val legacy = legacySeriesList[legacyIndex]
+            legacyBonus = ((legacy.seriesReputation - 50) / 10).coerceIn(-5, 8)
+            legacyReputationText = " (Miras Kalan Seri: ${if (legacyBonus > 0) "+$legacyBonus" else "$legacyBonus"} Etki)"
+        }
+
+        val reviewScore = (baseQuality + qaFactor + zeroQaPenalty + currentState.qaScoreBonus + designBonus + osBonus + specs.tier.reviewBonus + legacyBonus + Random.nextInt(-3, 4)).coerceIn(10, 100)
+
+        if (legacyIndex != -1) {
+            val legacy = legacySeriesList[legacyIndex]
+            val newRep = (legacy.seriesReputation + if (reviewScore > 80) 5 else if (reviewScore < 60) -8 else 1).coerceIn(0, 100)
+            val newAvg = ((legacy.averageReviewScore * legacy.totalModelsReleased) + reviewScore) / (legacy.totalModelsReleased + 1)
+            
+            legacySeriesList[legacyIndex] = legacy.copy(
+                totalModelsReleased = legacy.totalModelsReleased + 1,
+                averageReviewScore = newAvg,
+                seriesReputation = newRep
+            )
+        }
 
         // Geri Çağırma (Recall) Riski
         val recallRiskPercent = calculateRecallRisk(qaPerUnit = qaPerUnit, reviewScore = reviewScore)
@@ -1430,6 +1630,29 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val factoryPeriodCapacity = currentState.currentFactoryTier.periodCapacity
         val initialProducedBatch = specs.quantity.coerceAtMost(factoryPeriodCapacity)
 
+        val baseHype = specs.launchCampaign.initialHype
+        val repHypeBonus = when {
+            currentState.reputation >= 80 -> 18
+            currentState.reputation >= 60 -> 10
+            currentState.reputation >= 40 -> 5
+            else -> 0
+        }
+        val trendHype = if (isTrendMatched) 10 else 0
+        val initialHype = (baseHype + repHypeBonus + trendHype).coerceIn(5, 140)
+
+        val estimatedUnitCost = productionCost.coerceAtLeast(30)
+        val expectedQuality = (initialHype * 0.65f + (specs.price / estimatedUnitCost.toFloat() * 1.5f).coerceIn(10f, 40f))
+        val actualQuality = reviewScore.toFloat() + (specs.qaBudget.toFloat() / specs.quantity.coerceAtLeast(1) * 0.25f).coerceAtMost(10f)
+
+        val initialSatisfaction = when {
+            initialHype >= 55 && reviewScore < 60 -> {
+                val gap = initialHype - reviewScore
+                (40 - (gap * 0.8f) - (if (specs.qaBudget == 0L) 10 else 0)).toInt().coerceIn(5, 40)
+            }
+            reviewScore >= 85 && initialHype <= 35 -> (90 + (reviewScore - 85)).coerceIn(85, 100)
+            else -> (75f + (actualQuality - expectedQuality) * 0.9f).toInt().coerceIn(10, 100)
+        }
+
         val newActiveModel = ActiveModel(
             id = "${specs.name}_${currentState.year}_${currentState.month}_${Random.nextInt(1000, 9999)}",
             specs = finalSpecs,
@@ -1444,7 +1667,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             launchMonth = currentState.month,
             matchesTrend = isTrendMatched,
             benchmarkScore = computedBenchmark,
-            recallRiskPercent = recallRiskPercent
+            recallRiskPercent = recallRiskPercent,
+            hypeScore = initialHype,
+            customerSatisfactionScore = initialSatisfaction
         )
 
         val productionNote = if (initialProducedBatch < specs.quantity) {
@@ -1454,7 +1679,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val launchNews = NewsArticle(
             id = "news_launch_${newActiveModel.id}",
             title = "${currentState.companyName.uppercase()} LANSMANI: ${specs.name} Piyasada!",
-            text = "${currentState.companyName}, ${specs.name} modelini üretti! ${"%,d".format(specs.quantity)} adetlik stok hedeflendi ve 12-24 ay boyunca satılacak.$productionNote $techComment$colorNote$osNote$trendBonusNote$tierNote$genNote Eleştirmen puanı: $reviewScore/100.",
+            text = "${currentState.companyName}, ${specs.name} modelini üretti! ${"%,d".format(specs.quantity)} adetlik stok hedeflendi ve 12-24 ay boyunca satılacak.$productionNote $techComment$colorNote$osNote$trendBonusNote$tierNote$genNote Eleştirmen puanı: $reviewScore/100.$legacyReputationText",
             category = "Şirket",
             year = currentState.year,
             month = currentState.month
@@ -1462,7 +1687,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         val report = MarketReport(
             title = "${specs.name} Üretimi Başladı",
-            text = "${specs.name} modelinin ${"%,d".format(specs.quantity)} adetlik stok üretimi tamamlandı ($${"%,d".format(totalCost)} harcandı). Eleştirmenler $reviewScore/100 verdi.$colorNote$osNote$trendBonusNote$tierNote$genNote",
+            text = "${specs.name} modelinin ${"%,d".format(specs.quantity)} adetlik stok üretimi tamamlandı ($${"%,d".format(totalCost)} harcandı). Eleştirmenler $reviewScore/100 verdi.$colorNote$osNote$trendBonusNote$tierNote$genNote$legacyReputationText",
             profit = -totalCost,
             unitsSold = 0,
             reviewScore = reviewScore
@@ -1475,6 +1700,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 modelCount = it.modelCount + 1,
                 manufacturedPhones = it.manufacturedPhones + specs,
                 activeModels = it.activeModels + newActiveModel,
+                ownedLegacySeries = legacySeriesList,
                 reports = it.reports + report,
                 newsList = it.newsList + launchNews
             )
@@ -1770,13 +1996,18 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     fun launchCampaign(modelId: String, campaignType: CampaignType) {
         val currentState = _state.value
-        if (currentState.budget < campaignType.cost) return
+        val dynamicCost = (campaignType.cost * currentState.scaleMultiplier).toLong()
+        
+        if (currentState.budget < dynamicCost) return
 
         val model = currentState.activeModels.find { it.id == modelId } ?: return
 
         val updatedModels = currentState.activeModels.map { m ->
             if (m.id == modelId) {
-                m.copy(activeCampaign = ActiveCampaign(campaignType, campaignType.durationMonths))
+                m.copy(
+                    activeCampaign = ActiveCampaign(campaignType, campaignType.durationMonths),
+                    hypeScore = (m.hypeScore + campaignType.hypeBoost).coerceAtMost(140)
+                )
             } else m
         }
 
@@ -1791,21 +2022,22 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         val report = MarketReport(
             title = "${campaignType.title} Başlatıldı",
-            text = "${model.specs.name} cihazı için $${"%,d".format(campaignType.cost)} bütçe ayrılarak ${campaignType.title} başlatıldı.",
-            profit = -campaignType.cost,
+            text = "${model.specs.name} cihazı için $${"%,d".format(dynamicCost)} bütçe ayrılarak ${campaignType.title} başlatıldı.",
+            profit = -dynamicCost,
             unitsSold = 0,
             reviewScore = model.reviewScore
         )
 
         _state.update {
             it.copy(
-                budget = it.budget - campaignType.cost,
+                budget = it.budget - dynamicCost,
                 activeModels = updatedModels,
                 newsList = it.newsList + news,
                 reports = it.reports + report
             )
         }
     }
+
 
     fun createOrUpgradeOs(
         name: String, 
@@ -1823,70 +2055,56 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
+        if (currentState.customOs.activeDevelopment != null) {
+            _state.update { it.copy(noticeMessage = "Halihazırda devam eden bir OS geliştirme projeniz var.") }
+            return
+        }
+
         val devCost = type.devCost
         if (currentState.budget < devCost) {
             _state.update { it.copy(noticeMessage = "İşletim sistemi geliştirme için yetersiz bütçe! Gereken: $${"%,d".format(devCost)}") }
             return
         }
 
-        val initialVersion = if (type == currentState.customOs.type && currentState.customOs.name == name) {
-            "${currentState.customOs.majorVersionCount + 1}.0"
-        } else {
-            "1.0"
-        }
+        val isMajorUpdate = (type == currentState.customOs.type && currentState.customOs.name == name)
+        val initialVersion = if (isMajorUpdate) "${currentState.customOs.majorVersionCount + 1}.0" else "1.0"
 
-        val repBonus = when (type) {
-            OsType.PROPRIETARY_KERNEL -> 18
-            OsType.CUSTOM_UI_SKIN -> 10
-            OsType.STOCK_ANDROID -> 0
-        }
+        val baseMonths = if (type == OsType.PROPRIETARY_KERNEL) 24 else if (type == OsType.CUSTOM_UI_SKIN) 12 else 0
+        val engineerFactor = (currentState.engineers / 500.0).coerceIn(0.1, 3.0)
+        val totalMonths = (baseMonths / engineerFactor).toInt().coerceAtLeast(3)
+        val totalPeriods = totalMonths * 2
 
-        val news = NewsArticle(
-            id = "os_launch_${currentState.year}_${currentState.month}_${Random.nextInt(100, 999)}",
-            title = "🌐 BÜYÜK YAZILIM HAMLESİ: ${name} v$initialVersion (${licenseType.badge})!",
-            text = "Şirketimiz ${type.title} ve ${licenseType.title} mimarisine sahip ${name} yazılımını başarıyla geliştirdi! Odak: ${focus.title}. ${focus.bonusDescription} Bu hamle şirketinizin bağımsızlık ve ekosistem gücünü zirveye taşıyor.",
-            category = "Şirket",
-            year = currentState.year,
-            month = currentState.month
-        )
+        val qaInvestment = (currentState.qaInspectors * 5000L).coerceAtMost(devCost)
 
-        val report = MarketReport(
-            title = "Yeni İşletim Sistemi Geliştirildi: $name",
-            text = "$name v$initialVersion ($type - ${licenseType.shortLabel}) yazılımı tamamlandı ($${"%,d".format(devCost)} harcandı). Marka İtibarı +$repBonus arttı. Odak: ${focus.title}.",
-            profit = -devCost,
-            unitsSold = 0,
-            reviewScore = 95
-        )
-
-        val initialDevs = (currentState.engineers / 2).coerceAtLeast(1).coerceAtMost(currentState.engineers)
-
-        val updatedOs = currentState.customOs.copy(
+        val activeDev = ActiveOsDevelopment(
             name = name,
-            version = initialVersion,
+            targetVersion = initialVersion,
             type = type,
             licenseType = licenseType,
             focus = focus,
             themeColorHex = themeColorHex,
             perDeviceLicenseFee = perDeviceLicenseFee,
-            assignedDevs = if (currentState.customOs.assignedDevs > 0) currentState.customOs.assignedDevs else initialDevs,
-            popularityPercent = if (currentState.customOs.popularityPercent > 0) currentState.customOs.popularityPercent else (if (licenseType == OsLicenseType.OPEN_SOURCE) 3.5f else 2.0f),
-            optimizationScore = if (currentState.customOs.optimizationScore > 20) currentState.customOs.optimizationScore else 35,
-            ecosystemScore = if (currentState.customOs.ecosystemScore > 10) currentState.customOs.ecosystemScore else 20,
-            thirdPartyAdoptersCount = if (currentState.customOs.thirdPartyAdoptersCount > 0) currentState.customOs.thirdPartyAdoptersCount else (if (licenseType == OsLicenseType.OPEN_SOURCE) 1 else 0),
-            majorVersionCount = if (initialVersion == "1.0") 1 else currentState.customOs.majorVersionCount + 1,
-            minorVersionCount = 0,
-            lastUpdateMonth = currentState.month,
-            lastUpdateYear = currentState.year
+            totalMonths = totalPeriods,
+            remainingMonths = totalPeriods,
+            cost = devCost,
+            isMajorUpdate = isMajorUpdate,
+            qaInvestment = qaInvestment
+        )
+
+        val report = MarketReport(
+            title = "OS Geliştirmesi Başladı: $name v$initialVersion",
+            text = "$name v$initialVersion ($type) için Ar-Ge başladı. Bütçe: $${"%,d".format(devCost)}. Tahmini Süre: $totalPeriods dönem.",
+            profit = -devCost,
+            unitsSold = 0,
+            reviewScore = 0
         )
 
         _state.update {
             it.copy(
                 budget = it.budget - devCost,
-                reputation = (it.reputation + repBonus).coerceIn(0, 100),
-                customOs = updatedOs,
-                newsList = it.newsList + news,
+                customOs = it.customOs.copy(activeDevelopment = activeDev),
                 reports = it.reports + report,
-                noticeMessage = "$name v$initialVersion (${licenseType.badge}) başarıyla faaliyete geçti!"
+                noticeMessage = "OS Geliştirme Projesi başlatıldı!"
             )
         }
     }
@@ -1897,10 +2115,39 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _state.update {
             it.copy(
                 customOs = it.customOs.copy(assignedDevs = validCount),
-                noticeMessage = "Yazılım Ar-Ge ekibine $validCount mühendis görevlendirildi."
+                noticeMessage = "Yazılım ekibine $validCount geliştirici atandı."
             )
         }
+        autoSaveGame()
     }
+    fun releaseOsHotfix() {
+        val currentState = _state.value
+        val customOs = currentState.customOs
+
+        if (!customOs.isCustomActive || customOs.stability >= 95) {
+            _state.update { it.copy(noticeMessage = "Yazılım zaten yeterince stabil, hotfix gerekmiyor.") }
+            return
+        }
+
+        val hotfixCost = 500000L
+        if (currentState.budget < hotfixCost) {
+            _state.update { it.copy(noticeMessage = "Hotfix yayınlamak için $500,000 bütçe gerekiyor.") }
+            return
+        }
+
+        val stabilityGain = (10 + currentState.qaInspectors / 10).coerceIn(10, 30)
+
+        _state.update {
+            it.copy(
+                budget = it.budget - hotfixCost,
+                customOs = customOs.copy(stability = (customOs.stability + stabilityGain).coerceAtMost(100)),
+                noticeMessage = "🛠️ Hotfix yayınlandı! Stabilite +$stabilityGain arttı."
+            )
+        }
+        autoSaveGame()
+    }
+
+
 
     fun setOsLicenseType(licenseType: OsLicenseType) {
         _state.update {
@@ -1920,21 +2167,40 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun releaseMajorOsUpdate() {
+    fun releaseMajorOsUpdate(selectedDeviceIds: List<String> = emptyList()) {
         val currentState = _state.value
-        val updateCost = 150000L
-        if (currentState.budget < updateCost) {
-            _state.update { it.copy(noticeMessage = "Büyük sürüm güncellemesi için yetersiz bütçe! Gereken: $${"%,d".format(updateCost)}") }
+        val baseUpdateCost = 150000L
+        val perDeviceCost = 25000L
+        val totalUpdateCost = baseUpdateCost + (selectedDeviceIds.size * perDeviceCost)
+        
+        if (currentState.budget < totalUpdateCost) {
+            _state.update { it.copy(noticeMessage = "Güncelleme için yetersiz bütçe! Gereken: $${"%,d".format(totalUpdateCost)}") }
             return
         }
 
         val nextMajor = currentState.customOs.majorVersionCount + 1
         val newVersion = "$nextMajor.0"
 
+        val updatedModels = currentState.activeModels.map { model ->
+            if (selectedDeviceIds.contains(model.id)) {
+                model.copy(
+                    reviewScore = (model.reviewScore + 5).coerceAtMost(100),
+                    lastProductQualityScore = model.lastProductQualityScore + 0.15f
+                )
+            } else model
+        }
+
+        val deviceNamesText = if (selectedDeviceIds.isNotEmpty()) {
+            val names = currentState.activeModels.filter { selectedDeviceIds.contains(it.id) }.map { it.specs.name }.joinToString(", ")
+            " Güncelleme şu cihazlara sunuldu: $names."
+        } else {
+            " Sadece yeni üretilecek cihazlar için yayınlandı."
+        }
+
         val news = NewsArticle(
             id = "os_update_${currentState.year}_${currentState.month}_${Random.nextInt(100, 999)}",
-            title = "🚀 GÜNCELLEME: ${currentState.customOs.name} v$newVersion Yayınlandı!",
-            text = "Kullanıcıların merakla beklediği ${currentState.customOs.name} v$newVersion büyük sistem güncellemesi OTA yoluyla tüm aktif cihazlara dağıtıldı. Performans, pil ve yapay zeka optimizasyonları kullanıcılardan tam not aldı.",
+            title = "🚀 GÜNCELLEME: ${currentState.customOs.name} v$newVersion",
+            text = "Kullanıcıların merakla beklediği ${currentState.customOs.name} v$newVersion büyük sistem güncellemesi yayınlandı.$deviceNamesText",
             category = "Teknoloji",
             year = currentState.year,
             month = currentState.month
@@ -1942,8 +2208,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         val report = MarketReport(
             title = "${currentState.customOs.name} v$newVersion Güncellemesi",
-            text = "${currentState.customOs.name} v$newVersion güncellemesi tüm dünyaya sunuldu ($${"%,d".format(updateCost)} Ar-Ge harcandı). Marka İtibarı +5 arttı ve kullanıcı memnuniyeti tazelendi.",
-            profit = -updateCost,
+            text = "${currentState.customOs.name} v$newVersion yayınlandı ($${"%,d".format(totalUpdateCost)} harcandı). ${selectedDeviceIds.size} modele OTA ile dağıtıldı. İtibar ve kalite arttı.",
+            profit = -totalUpdateCost,
             unitsSold = 0,
             reviewScore = 90
         )
@@ -1956,14 +2222,17 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             lastUpdateYear = currentState.year
         )
 
+        val reputationBoost = 2 + selectedDeviceIds.size
+
         _state.update {
             it.copy(
-                budget = it.budget - updateCost,
-                reputation = (it.reputation + 5).coerceIn(0, 100),
+                budget = it.budget - totalUpdateCost,
+                reputation = (it.reputation + reputationBoost).coerceIn(0, 100),
                 customOs = updatedOs,
+                activeModels = updatedModels,
                 newsList = it.newsList + news,
                 reports = it.reports + report,
-                noticeMessage = "${currentState.customOs.name} v$newVersion güncellemesi başarıyla yayınlandı! (+5 İtibar)"
+                noticeMessage = "${currentState.customOs.name} v$newVersion başarıyla yayınlandı!"
             )
         }
     }
@@ -2073,7 +2342,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     fun hostDevConference() {
         val currentState = _state.value
-        val cost = 5000000L
+        val cost = 25000000L
         if (currentState.budget < cost) {
             _state.update { it.copy(noticeMessage = "Geliştirici Konferansı (DevCon) düzenlemek için yetersiz bütçe! Gereken: $${"%,d".format(cost)}") }
             return
@@ -2119,35 +2388,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun investInDeveloperFund(amount: Long) {
-        val currentState = _state.value
-        if (currentState.budget < amount) {
-            _state.update { it.copy(noticeMessage = "Geliştirici Teşvik Fonu için yetersiz bütçe! Gereken: $${"%,d".format(amount)}") }
-            return
-        }
-
-        val customOs = currentState.customOs
-        val addedApps = (amount / 25000L).coerceAtLeast(1000L)
-        val updatedOs = customOs.copy(
-            devFundBalance = customOs.devFundBalance + amount,
-            totalStoreApps = customOs.totalStoreApps + addedApps,
-            ecosystemScore = (customOs.ecosystemScore + (amount / 2000000L).toInt().coerceIn(1, 10)).coerceAtMost(100)
-        )
-
-        _state.update {
-            it.copy(
-                budget = it.budget - amount,
-                customOs = updatedOs,
-                noticeMessage = "Geliştirici Fonuna $${"%,d".format(amount)} aktarıldı! (+$addedApps yeni uygulama mağazaya katıldı)"
-            )
-        }
-    }
-
-    fun dismissTechExpo() {
-        _state.update { it.copy(activeTechExpo = null) }
-    }
-
-    val rivalOperatingSystems: List<CompetitorOsInfo> = DEFAULT_RIVAL_OPERATING_SYSTEMS
 
     fun saveCustomChipset(chipset: CustomChipset) {
         val currentState = _state.value
@@ -2507,7 +2747,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val updatedModels = current.activeModels.map {
             if (it.id == crisis.modelId) {
                 when (strategy) {
-                    CrisisResolutionStrategy.FULL_RECALL_REFUND -> it.copy(remainingStock = 0, isRecalled = true, recalledYear = current.year, recalledMonth = current.month)
+                    CrisisResolutionStrategy.FULL_RECALL_REFUND -> it.copy(remainingStock = 0, isRecalled = true)
                     CrisisResolutionStrategy.SOFTWARE_PATCH_LIMIT -> it.copy(reviewScore = (it.reviewScore - 6).coerceAtLeast(10))
                     CrisisResolutionStrategy.FREE_SERVICE_REPAIR -> it.copy(reviewScore = (it.reviewScore + 2).coerceAtMost(100))
                 }
@@ -2516,8 +2756,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         val news = NewsArticle(
             id = "crisis_res_${crisisId}_${current.year}_${current.month}_${Random.nextInt(100, 999)}",
-            title = "🛡️ KRİZ ÇÖZÜLDÜ: ${crisis.modelName} - ${strategy.title}",
-            text = "${current.companyName}, ${crisis.modelName} modelindeki ${crisis.crisisType.title} sorununa yönelik '${strategy.title}' stratejisini uyguladı ($${"%,d".format(cost)} harcandı). ${strategy.repImpactText}!",
+            title = "🛡️ KRİZ ÇÖZÜLDÜ: ${model?.specs?.name ?: "Bilinmeyen Model"} - ${strategy.title}",
+            text = "${current.companyName}, ${model?.specs?.name ?: "Bilinmeyen Model"} modelindeki ${crisis.crisisType.name} sorununa yönelik '${strategy.title}' stratejisini uyguladı ($${"%,d".format(cost)} harcandı). ${""}!",
             category = "Şirket",
             year = current.year,
             month = current.month
@@ -2530,10 +2770,176 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 activeHardwareCrises = updatedCrises,
                 activeModels = updatedModels,
                 newsList = listOf(news) + state.newsList,
-                noticeMessage = "${crisis.modelName} krizi yönetildi: ${strategy.title} ($${"%,d".format(cost)})"
+                noticeMessage = "${model?.specs?.name ?: "Bilinmeyen Model"} krizi yönetildi: ${strategy.title} ($${"%,d".format(cost)})"
             )
         }
         autoSaveGame()
         return true
+    }
+    private fun updateAcquisitions(currentState: GameState): List<AcquisitionTarget> {
+        var targets = currentState.acquisitionTargets.toMutableList()
+        
+        // Remove old targets
+        targets = targets.map { it.copy(remainingMonthsAvailable = it.remainingMonthsAvailable - 1) }.filter { it.remainingMonthsAvailable > 0 }.toMutableList()
+
+        // Randomly generate new targets if empty or rare chance
+        if (targets.isEmpty() || kotlin.random.Random.nextFloat() < 0.05f) {
+            val names = listOf("Pulse", "Nexa", "Vanguard", "CyberCore", "Zeni", "Titan", "Aura", "Nebula", "Spectra", "Lumina")
+            val name = names.random()
+            
+            val type = CompanyType.values().random()
+            val baseVal = kotlin.random.Random.nextLong(10_000_000L, 200_000_000L)
+            val valMult = when(type) {
+                CompanyType.STRUGGLING -> 0.5f
+                CompanyType.NORMAL -> 1.0f
+                CompanyType.SUCCESSFUL -> 2.0f
+                CompanyType.TECH_STARTUP -> 0.3f
+            }
+            
+            val finalValuation = (baseVal * valMult).toLong()
+            val debt = if (type == CompanyType.STRUGGLING) (finalValuation * 0.8f).toLong() else (finalValuation * 0.1f).toLong()
+            val rep = kotlin.random.Random.nextInt(10, 80)
+            val emps = kotlin.random.Random.nextInt(50, 2000)
+            
+            val numSeries = if (type == CompanyType.TECH_STARTUP) 0 else kotlin.random.Random.nextInt(1, 4)
+            val generatedSeries = mutableListOf<PhoneSeriesLegacy>()
+            for (i in 0 until numSeries) {
+                generatedSeries.add(
+                    PhoneSeriesLegacy(
+                        seriesName = "${name.take(3)} Series $i",
+                        originCompanyId = name,
+                        launchYear = currentState.year - kotlin.random.Random.nextInt(1, 5),
+                        totalModelsReleased = kotlin.random.Random.nextInt(1, 6),
+                        averageReviewScore = kotlin.random.Random.nextInt(40, 95),
+                        seriesReputation = kotlin.random.Random.nextInt(30, 90),
+                        totalSales = kotlin.random.Random.nextLong(1_000_000, 20_000_000)
+                    )
+                )
+            }
+            
+            targets.add(
+                AcquisitionTarget(
+                    id = "MNA_${currentState.year}_${kotlin.random.Random.nextInt(1000, 9999)}",
+                    name = "$name Mobile",
+                    logoEmoji = listOf("📱", "💻", "🌐", "⚡", "🔮").random(),
+                    type = type,
+                    cash = (finalValuation * 0.2f).toLong(),
+                    debt = debt,
+                    brandReputation = rep,
+                    employees = emps,
+                    patents = emptyList(), // Can add random tech nodes
+                    activeSeries = generatedSeries,
+                    valuation = finalValuation,
+                    minimumAcceptableMultiplier = type.baseMultiplier * kotlin.random.Random.nextFloat().coerceAtLeast(0.8f),
+                    remainingMonthsAvailable = kotlin.random.Random.nextInt(6, 18)
+                )
+            )
+        }
+        
+        return targets
+    }
+
+    fun bidForCompany(targetId: String, bidAmount: Long, strategy: PostAcquisitionStrategy) {
+        val currentState = _state.value
+        val target = currentState.acquisitionTargets.find { it.id == targetId } ?: return
+        
+        if (currentState.budget < bidAmount) {
+            _state.update { it.copy(noticeMessage = "Bu teklif için yeterli bütçeniz yok.") }
+            return
+        }
+        
+        val minAcceptable = (target.valuation * target.minimumAcceptableMultiplier).toLong()
+        
+        if (bidAmount >= minAcceptable) {
+            // Acquired!
+            val newSubBrands = currentState.ownedSubBrands.toMutableList()
+            
+            var newEngineers = currentState.engineers
+            var newQa = currentState.qaInspectors
+            var newWorkers = currentState.assemblyWorkers
+            
+            val totalCost = bidAmount + target.debt
+            if (currentState.budget < totalCost) {
+                _state.update { it.copy(noticeMessage = "Borçlarla birlikte toplam satın alma maliyetini karşılayamıyorsunuz.") }
+                return
+            }
+            
+            when (strategy) {
+                PostAcquisitionStrategy.INDEPENDENT_BRAND -> {
+                    newSubBrands.add(
+                        OwnedSubBrand(
+                            id = target.id,
+                            name = target.name,
+                            logoEmoji = "",
+                            brandReputation = target.brandReputation,
+                            cash = target.cash
+                        )
+                    )
+                    
+                }
+                PostAcquisitionStrategy.MERGE_TO_MAIN -> {
+                    
+                    newEngineers += (target.employees * 0.1f).toInt()
+                    newWorkers += (target.employees * 0.5f).toInt()
+                }
+                PostAcquisitionStrategy.LIQUIDATE_ASSETS -> {
+                    newEngineers += (target.employees * 0.2f).toInt()
+                    // Get their cash
+                    // Kill brand and series
+                }
+            }
+            
+            val report = MarketReport(
+                title = "Şirket Satın Alındı: ${target.name}",
+                text = "${target.name} şirketi $${"%,d".format(bidAmount)} bedelle satın alındı. Strateji: $strategy.",
+                profit = -totalCost,
+                unitsSold = 0,
+                reviewScore = 0
+            )
+            
+            _state.update {
+                it.copy(
+                    budget = it.budget - bidAmount - target.debt + if(strategy == PostAcquisitionStrategy.LIQUIDATE_ASSETS) target.cash else 0L,
+                    acquisitionTargets = it.acquisitionTargets.filter { t -> t.id != targetId },
+                    ownedSubBrands = newSubBrands,
+                    
+                    engineers = newEngineers,
+                    qaInspectors = newQa,
+                    assemblyWorkers = newWorkers,
+                    reports = it.reports + report,
+                    noticeMessage = "Satın alma BAŞARILI! ${target.name} artık sizin."
+                )
+            }
+        } else {
+            // Rejected
+            _state.update { it.copy(noticeMessage = "Teklifiniz reddedildi! Şirket daha yüksek bir değer biçiyor.") }
+        }
+    }
+
+    fun dismissTechExpo() {
+        _state.update { it.copy(activeTechExpo = null) }
+    }
+
+    fun investInDeveloperFund(amount: Long) {
+        val currentState = _state.value
+        if (currentState.budget < amount) {
+            _state.update { it.copy(noticeMessage = "Geliştirici Teşvik Fonu için yetersiz bütçe! Gereken: $${"%,d".format(amount)}") }
+            return
+        }
+
+        val customOs = currentState.customOs
+        val updatedOs = customOs.copy(
+            devFundBalance = customOs.devFundBalance + amount,
+            ecosystemScore = (customOs.ecosystemScore + (amount / 2000000L).toInt().coerceIn(1, 10)).coerceAtMost(100)
+        )
+
+        _state.update {
+            it.copy(
+                budget = it.budget - amount,
+                customOs = updatedOs,
+                noticeMessage = "Geliştirici Fonuna $${"%,d".format(amount)} aktarıldı! (Zamanla organik uygulama artışı sağlayacak)"
+            )
+        }
+        autoSaveGame()
     }
 }

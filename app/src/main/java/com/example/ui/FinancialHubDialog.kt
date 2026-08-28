@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import com.example.ui.Button3D
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,7 +83,7 @@ fun FinancialHubDialog(
                                 text = "Finans & Bankacılık Merkezi",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Slate900
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 text = "Kredi paketleri, acil likidite & nakit akış yönetimi",
@@ -96,9 +97,9 @@ fun FinancialHubDialog(
                         onClick = onDismiss,
                         modifier = Modifier
                             .size(36.dp)
-                            .background(Slate100, CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
                     ) {
-                        Icon(Icons.Default.Close, contentDescription = "Kapat", tint = Slate700)
+                        Icon(Icons.Default.Close, contentDescription = "Kapat", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
 
@@ -173,7 +174,7 @@ fun FinancialHubDialog(
                                 text = "$${"%,d".format(state.totalDebt).replace(',', '.')}",
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (state.totalDebt > 0) Color(0xFFE11D48) else Slate700
+                                color = if (state.totalDebt > 0) Color(0xFFE11D48) else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -311,7 +312,7 @@ fun BankLoansTabContent(
                                         text = loan.type.title,
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Slate900
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
                                         text = "Anapara: $${"%,d".format(loan.principalAmount)} • %${loan.interestPercent} Faiz",
@@ -360,10 +361,10 @@ fun BankLoansTabContent(
                                 text = "Dönem Başına: -$${"%,d".format(loan.periodPayment)} (2 Hafta)",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Slate700
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
 
-                            Button(
+                            Button3D(
                                 onClick = { onPayOffEarly(loan.id) },
                                 enabled = state.budget >= loan.earlyPayoffCost,
                                 colors = ButtonDefaults.buttonColors(
@@ -391,7 +392,7 @@ fun BankLoansTabContent(
                 text = "KREDİ TEKLİFLERİ & FİNANSMAN PAKETLERİ",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = Slate700,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 letterSpacing = 0.5.sp
             )
         }
@@ -423,7 +424,7 @@ fun BankLoansTabContent(
                                         text = offer.title,
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (isBailout) Color(0xFFBE123C) else Slate900
+                                        color = if (isBailout) Color(0xFFBE123C) else MaterialTheme.colorScheme.onSurface
                                     )
                                     if (isBailout) {
                                         Spacer(modifier = Modifier.width(6.dp))
@@ -457,7 +458,7 @@ fun BankLoansTabContent(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Slate100, RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
                             .padding(horizontal = 10.dp, vertical = 6.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
@@ -477,7 +478,7 @@ fun BankLoansTabContent(
                                 "%${offer.interestPercent} • ${offer.durationPeriods / 2} Ay",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Slate800
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                         Column(horizontalAlignment = Alignment.End) {
@@ -516,7 +517,7 @@ fun BankLoansTabContent(
                             )
                         }
 
-                        Button(
+                        Button3D(
                             onClick = { onTakeLoan(offer) },
                             enabled = isEligible,
                             colors = ButtonDefaults.buttonColors(
@@ -592,7 +593,7 @@ fun EmergencyRecoveryTabContent(
                                     text = "Risk Sermayesi & Melek Yatırımcı",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Slate900
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
                                     text = "%5 Şirket hissesi karşılığı sermaye girişi",
@@ -604,13 +605,13 @@ fun EmergencyRecoveryTabContent(
 
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = Slate100
+                            color = MaterialTheme.colorScheme.surfaceVariant
                         ) {
                             Text(
                                 text = "Satılan: %${state.equitySoldPercent} / %25",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Slate700,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
@@ -640,7 +641,7 @@ fun EmergencyRecoveryTabContent(
                             color = Green500
                         )
 
-                        Button(
+                        Button3D(
                             onClick = onSeekVentureCapital,
                             enabled = state.equitySoldPercent < 25,
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
@@ -675,7 +676,7 @@ fun EmergencyRecoveryTabContent(
                                     text = "Ar-Ge Patent Lisansı Devri",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Slate900
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
                                     text = "Patent kullanım hakkını üreticilere devret",
@@ -732,7 +733,7 @@ fun EmergencyRecoveryTabContent(
                             )
                         }
 
-                        Button(
+                        Button3D(
                             onClick = onLiquidatePatents,
                             enabled = state.unlockedTech.isNotEmpty() && state.patentLiquidationCooldown <= 0,
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD97706)),
@@ -763,7 +764,7 @@ fun EmergencyRecoveryTabContent(
                                 text = "Acil Depo Stok Tasfiyesi (Toptan Satış)",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Slate900
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 text = "Elde kalan cihazları %50 indirimle tek seferde nakde çevir",
@@ -791,7 +792,7 @@ fun EmergencyRecoveryTabContent(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 4.dp)
-                                    .background(Slate50, RoundedCornerShape(8.dp))
+                                    .background(MaterialTheme.colorScheme.background, RoundedCornerShape(8.dp))
                                     .padding(horizontal = 8.dp, vertical = 6.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
@@ -801,7 +802,7 @@ fun EmergencyRecoveryTabContent(
                                         model.specs.name,
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Slate900
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
                                         "${"%,d".format(model.remainingStock)} adet stok • Birim: $$unitWholesale (Normal: $${model.specs.price})",
@@ -810,7 +811,7 @@ fun EmergencyRecoveryTabContent(
                                     )
                                 }
 
-                                Button(
+                                Button3D(
                                     onClick = { onLiquidateStock(model.id) },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
                                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
@@ -961,7 +962,7 @@ fun FinancialStatementTabContent(state: GameState) {
                             text = "NET AYLIK NAKİT AKIŞI",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Slate800
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = if (isNetPositive) "Şirket nakit fazlası üretiyor" else "Sabit giderler geliri aşıyor!",

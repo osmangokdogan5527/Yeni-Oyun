@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.*
 import com.example.viewmodel.CustomOsState
+import com.example.viewmodel.LaunchCampaign
 import com.example.viewmodel.ModelTier
 import com.example.viewmodel.OsLicenseType
 import com.example.viewmodel.OsType
@@ -55,7 +56,7 @@ fun PhoneBuilderDesignTab(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Renk Seçenekleri & Palet (Çoklu Seçim)", fontWeight = FontWeight.Bold, color = Slate800)
+            Text("Renk Seçenekleri & Palet (Çoklu Seçim)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             Text("${selectedColors.size} Renk Seçildi", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
         }
         Text("Çoklu renk sunmak pazar çekiciliğini ve satışları artırır (Her ek renk: +$3)", fontSize = 11.sp, color = Slate500)
@@ -275,14 +276,14 @@ fun PhoneBuilderScreenCameraTab(
         border = BorderStroke(1.dp, Slate200)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text("Fiziksel Boyut", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Slate900)
+            Text("Fiziksel Boyut", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
 
             Column {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Ekran Boyutu", fontWeight = FontWeight.Medium, fontSize = 12.sp, color = Slate700)
+                    Text("Ekran Boyutu", fontWeight = FontWeight.Medium, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("${"%.1f".format(screenSizeInch)}\"", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 13.sp)
                 }
                 Slider(
@@ -305,7 +306,7 @@ fun PhoneBuilderScreenCameraTab(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Gövde Kalınlığı", fontWeight = FontWeight.Medium, fontSize = 12.sp, color = Slate700)
+                    Text("Gövde Kalınlığı", fontWeight = FontWeight.Medium, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("${"%.1f".format(thicknessMm)} mm", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 13.sp)
                 }
                 Slider(
@@ -409,7 +410,7 @@ fun PhoneBuilderSoftwareTab(
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text("📲 Bu Cihaz İçin OS Seçimi", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Slate900)
+            Text("📲 Bu Cihaz İçin OS Seçimi", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
             Text("Bu telefonda hangi işletim sisteminin çalışacağını seçin. Kendi platformunuzu geliştirmek/yükseltmek için Yazılım ekranına gidin — burada sadece bu cihaza hangisini yükleyeceğinizi seçiyorsunuz.", fontSize = 11.sp, color = Slate600)
 
             val hasCompanyOs = customOs != null && customOs.type != OsType.STOCK_ANDROID
@@ -434,7 +435,7 @@ fun PhoneBuilderSoftwareTab(
                                 text = if (hasCompanyOs) "🚀 Şirket Yazılımı: ${customOs?.name} v${customOs?.version}" else "🔒 Şirket Yazılımı (Geliştirilmedi)",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp,
-                                color = if (hasCompanyOs) (if (isCompanyOsSelected) MaterialTheme.colorScheme.primary else Slate900) else Slate400
+                                color = if (hasCompanyOs) (if (isCompanyOsSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface) else Slate400
                             )
                             if (hasCompanyOs) {
                                 Surface(
@@ -461,8 +462,8 @@ fun PhoneBuilderSoftwareTab(
                     if (hasCompanyOs) {
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text("• Lisans Bedeli: $0 (Kendi ekosisteminiz, ekstra cihaz maliyeti yok)", fontSize = 11.sp, color = Green500, fontWeight = FontWeight.SemiBold)
-                            Text("• Optimizasyon Puanı: +${(customOs?.optimizationScore ?: 0) / 5} İnceleme Bonusu", fontSize = 11.sp, color = Slate700)
-                            Text("• Pazar Popülaritesi: %${"%.1f".format(customOs?.popularityPercent ?: 1.0f)} (${customOs?.focus?.title} Odaklı)", fontSize = 11.sp, color = Slate700)
+                            Text("• Optimizasyon Puanı: +${(customOs?.optimizationScore ?: 0) / 5} İnceleme Bonusu", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("• Pazar Popülaritesi: %${"%.1f".format(customOs?.popularityPercent ?: 1.0f)} (${customOs?.focus?.title} Odaklı)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text("• Ekosistem Kazancı: Satılan cihazlardan aylık App Store mağaza geliri!", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                         }
                     } else {
@@ -487,14 +488,14 @@ fun PhoneBuilderSoftwareTab(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text("🌐 Saf Açık Kaynak Android (AOSP)", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = if (isAospSelected) MaterialTheme.colorScheme.primary else Slate900)
+                            Text("🌐 Saf Açık Kaynak Android (AOSP)", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = if (isAospSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
                             Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFF10B981).copy(alpha = 0.15f)) {
                                 Text("Ücretsiz", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
                             }
                         }
                         RadioButton(selected = isAospSelected, onClick = { onOsChoiceChange(0) })
                     }
-                    Text("• Lisans Bedeli: $0 • Standart temel optimizasyon", fontSize = 11.sp, color = Slate700)
+                    Text("• Lisans Bedeli: $0 • Standart temel optimizasyon", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("• Ekosistem Mağaza Geliri: Yok (Gelir üçüncü taraf arama devine gider)", fontSize = 11.sp, color = Slate500)
                 }
             }
@@ -515,7 +516,7 @@ fun PhoneBuilderSoftwareTab(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text("🏢 Ticari Lisanslı GlobalOS", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = if (isGlobalOsSelected) MaterialTheme.colorScheme.primary else Slate900)
+                            Text("🏢 Ticari Lisanslı GlobalOS", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = if (isGlobalOsSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
                             Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFFF59E0B).copy(alpha = 0.2f)) {
                                 Text("+$10 Lisans", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFB45309), modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
                             }
@@ -523,7 +524,7 @@ fun PhoneBuilderSoftwareTab(
                         RadioButton(selected = isGlobalOsSelected, onClick = { onOsChoiceChange(2) })
                     }
                     Text("• Lisans Maliyeti: Cihaz başı $10 OEM lisans ücreti", fontSize = 11.sp, color = Color(0xFFB45309), fontWeight = FontWeight.SemiBold)
-                    Text("• Küresel hazır servisler ve popüler ön yüklü uygulamalar (+3 İnceleme Bonusu)", fontSize = 11.sp, color = Slate700)
+                    Text("• Küresel hazır servisler ve popüler ön yüklü uygulamalar (+3 İnceleme Bonusu)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -554,7 +555,9 @@ fun PhoneBuilderProductionTab(
     onPriceChange: (Float) -> Unit,
     onQuantityChange: (Float) -> Unit,
     onQaBudgetChange: (Float) -> Unit,
-    factoryPeriodCapacity: Int = 0
+    factoryPeriodCapacity: Int = 0,
+    selectedLaunchCampaign: LaunchCampaign = LaunchCampaign.ORGANIC,
+    onLaunchCampaignChange: (LaunchCampaign) -> Unit = {}
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -562,7 +565,7 @@ fun PhoneBuilderProductionTab(
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("📱 Seri ve Model Ailesi Yönetimi", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Slate900)
+            Text("📱 Seri ve Model Ailesi Yönetimi", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
             Text("Aynı seriyi devam ettirmek marka sadakatini ve tekrar eden müşteri satışlarını artırır.", fontSize = 11.sp, color = Slate600)
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -580,7 +583,7 @@ fun PhoneBuilderProductionTab(
             }
 
             if (seriesMode == 0 && existingSeries.isNotEmpty()) {
-                Text("Mevcut Seriler:", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Slate800)
+                Text("Mevcut Seriler:", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(existingSeries) { sName ->
                         val isSel = selectedExistingSeries == sName
@@ -606,7 +609,7 @@ fun PhoneBuilderProductionTab(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Nesil Numarası (Gen):", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Slate800)
+                Text("Nesil Numarası (Gen):", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     IconButton(onClick = { if (generationNumber > 1) onGenerationNumberChange(generationNumber - 1) }) {
                         Icon(Icons.Default.Remove, contentDescription = "-")
@@ -632,7 +635,7 @@ fun PhoneBuilderProductionTab(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("🏆 Model Segmenti & Seri İsimlendirmesi", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Slate900)
+                Text("🏆 Model Segmenti & Seri İsimlendirmesi", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                 Surface(
                     color = MaterialTheme.colorScheme.primaryContainer,
                     shape = RoundedCornerShape(6.dp)
@@ -685,7 +688,7 @@ fun PhoneBuilderProductionTab(
                                 text = tier.title,
                                 fontWeight = if (isTierSelected) FontWeight.Bold else FontWeight.Medium,
                                 fontSize = 11.sp,
-                                color = if (isTierSelected) MaterialTheme.colorScheme.primary else Slate800
+                                color = if (isTierSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -770,7 +773,7 @@ fun PhoneBuilderProductionTab(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("📊 Canlı Segment & Fiyat/Talep Analizi", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Slate900)
+                Text("📊 Canlı Segment & Fiyat/Talep Analizi", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                 Surface(
                     color = MaterialTheme.colorScheme.primaryContainer,
                     shape = RoundedCornerShape(6.dp)
@@ -839,7 +842,7 @@ fun PhoneBuilderProductionTab(
                     Text(
                         text = elasticityDesc,
                         fontSize = 11.sp,
-                        color = Slate700,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 15.sp
                     )
                 }
@@ -920,7 +923,72 @@ fun PhoneBuilderProductionTab(
                 }
             }
 
+            // Lansman Pazarlama ve Hype Kampanyası
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("📢 Lansman Pazarlama & Hype", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Text(
+                        "Hype: ${selectedLaunchCampaign.initialHype}",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 12.sp
+                    )
+                }
+
+                Text(
+                    "Harika bir telefon sıfır reklamla satılmaz; zayıf bir telefona devasa reklam bütçesi dökerseniz Hype patlar ancak ikinci hafta ısınma/donma iadeleriyle ve itibar kaybıyla yüzleşirsiniz!",
+                    fontSize = 10.5.sp,
+                    color = Slate600,
+                    lineHeight = 14.sp
+                )
+
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    LaunchCampaign.entries.forEach { campaign ->
+                        val isSelected = selectedLaunchCampaign == campaign
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onLaunchCampaignChange(campaign) },
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface,
+                            border = if (isSelected) BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Text(campaign.title, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                        Text(
+                                            "+${campaign.initialHype} Hype",
+                                            fontSize = 10.sp,
+                                            color = if (campaign.initialHype >= 90) Color(0xFFEF4444) else if (campaign.initialHype >= 50) Color(0xFFF59E0B) else Green500,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                    Text(campaign.description, fontSize = 10.sp, color = Slate600)
+                                    Text(campaign.riskWarning, fontSize = 9.5.sp, color = if (campaign == LaunchCampaign.ORGANIC) Color(0xFFB45309) else Color(0xFFDC2626))
+                                }
+                                Text(
+                                    if (campaign.cost == 0L) "Ücretsiz" else "$${"%,d".format(campaign.cost).replace(',', '.')}",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    color = if (campaign.cost == 0L) Green500 else MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             // Kâr Marjı ve Maliyet Özeti
+            val totalBatchCost = (unitCost.toLong() * quantity.toLong()) + qaBudget.toLong() + selectedLaunchCampaign.cost
             Surface(
                 color = if (margin > 0) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f) else MaterialTheme.colorScheme.errorContainer,
                 shape = RoundedCornerShape(10.dp)
@@ -931,7 +999,7 @@ fun PhoneBuilderProductionTab(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("Birim Kâr & Marj", fontSize = 11.sp, color = Slate700)
+                        Text("Birim Kâr & Marj", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
                             text = if (margin >= 0) "+$${margin.toInt()} (%$marginPercent Marj)" else "-$${kotlin.math.abs(margin).toInt()} (Zararına Satış!)",
                             fontWeight = FontWeight.Bold,
@@ -940,8 +1008,8 @@ fun PhoneBuilderProductionTab(
                         )
                     }
                     Column(horizontalAlignment = Alignment.End) {
-                        Text("Parti Toplam Maliyeti", fontSize = 11.sp, color = Slate700)
-                        Text("$${"%,d".format((unitCost.toLong() * quantity.toLong()) + qaBudget.toLong()).replace(',', '.')}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 13.sp)
+                        Text("Parti + Lansman Maliyeti", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("$${"%,d".format(totalBatchCost).replace(',', '.')}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 13.sp)
                     }
                 }
             }

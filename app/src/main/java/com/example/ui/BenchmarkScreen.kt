@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -21,7 +22,6 @@ import androidx.compose.ui.unit.sp
 import com.example.model.BenchmarkScore
 import com.example.ui.theme.Slate400
 import com.example.ui.theme.Slate600
-import com.example.ui.theme.Slate900
 import com.example.viewmodel.ActiveModel
 import com.example.viewmodel.GameViewModel
 
@@ -32,8 +32,8 @@ import com.example.viewmodel.GameViewModel
  */
 @Composable
 fun BenchmarkScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
-    val state by viewModel.state.collectAsState()
-    val modelsWithBenchmark = state.activeModels.filter { it.benchmarkScore != null }
+    val productionState by viewModel.productionState.collectAsState()
+    val modelsWithBenchmark = productionState.activeModels.filter { it.benchmarkScore != null }
 
     if (modelsWithBenchmark.isEmpty()) {
         Box(
@@ -68,7 +68,7 @@ fun BenchmarkScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
                 text = "Test Lab",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Slate900
+                color = Color(0xFF1E293B)
             )
             Text(
                 text = "Piyasadaki cihazlarının bağımsız laboratuvar sonuçları.",
@@ -101,7 +101,7 @@ private fun BenchmarkCard(model: ActiveModel) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text(model.specs.name, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Slate900)
+                    Text(model.specs.name, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
                     Text(
                         text = "${model.specs.processor} • ${model.specs.ramCapacity}",
                         fontSize = 11.sp,

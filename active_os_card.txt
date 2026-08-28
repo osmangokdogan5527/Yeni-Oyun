@@ -1,0 +1,24 @@
+    if (customOs.activeDevelopment != null) {
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("🚀 İşletim Sistemi Geliştirme Sürecinde", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Proje: ${customOs.activeDevelopment.name} v${customOs.activeDevelopment.targetVersion}", fontSize = 14.sp)
+                    Text("Tür: ${customOs.activeDevelopment.type.title}", fontSize = 14.sp)
+                    Text("Kalan Süre: ${customOs.activeDevelopment.remainingMonths} Dönem", fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LinearProgressIndicator(
+                        progress = { 
+                            1f - (customOs.activeDevelopment.remainingMonths.toFloat() / customOs.activeDevelopment.totalMonths.toFloat())
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+    }

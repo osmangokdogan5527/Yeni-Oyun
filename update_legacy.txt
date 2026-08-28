@@ -1,0 +1,20 @@
+        var legacyBonus = 0
+        val legacySeriesList = currentState.ownedLegacySeries.toMutableList()
+        val legacyIndex = legacySeriesList.indexOfFirst { it.seriesName == specs.seriesName }
+        var legacyReputationText = ""
+        
+        if (legacyIndex != -1) {
+            val legacy = legacySeriesList[legacyIndex]
+            legacyBonus = ((legacy.seriesReputation - 50) / 10).coerceIn(-3, 8)
+            
+            // Update legacy stats
+            val newRep = (legacy.seriesReputation + if (reviewScore > 75) 5 else if (reviewScore < 60) -5 else 0).coerceIn(0, 100)
+            val newAvg = ((legacy.averageReviewScore * legacy.totalModelsReleased) + reviewScore) / (legacy.totalModelsReleased + 1)
+            
+            legacySeriesList[legacyIndex] = legacy.copy(
+                totalModelsReleased = legacy.totalModelsReleased + 1,
+                averageReviewScore = newAvg,
+                seriesReputation = newRep
+            )
+            legacyReputationText = " (Miras Kalan Seri Etkisi: " + if(legacyBonus > 0) "+ Puan" else if(legacyBonus < 0) "- Puan" else "Nötr" + ")"
+        }

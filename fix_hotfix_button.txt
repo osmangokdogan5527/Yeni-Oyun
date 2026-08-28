@@ -1,0 +1,22 @@
+                    if (customOs.isCustomActive) {
+                        OutlinedButton(
+                            onClick = onOpenReleaseDialog,
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(Icons.Default.RocketLaunch, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("OTA Güncellemesi ($150k)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        
+                        if (customOs.stability < 90) {
+                            Button(
+                                onClick = onReleaseHotfix,
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))
+                            ) {
+                                Icon(Icons.Default.BugReport, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Acil Hotfix ($500k)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
