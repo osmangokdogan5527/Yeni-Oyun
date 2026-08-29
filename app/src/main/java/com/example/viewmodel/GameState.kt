@@ -553,10 +553,23 @@ enum class CompanyType(val description: String, val baseMultiplier: Float) {
 }
 
 @Serializable
-enum class PostAcquisitionStrategy {
-    INDEPENDENT_BRAND,
-    MERGE_TO_MAIN,
-    LIQUIDATE_ASSETS
+enum class PostAcquisitionStrategy(val title: String, val description: String) {
+    BECOME_MAIN_BRAND(
+        "Yeni Sahibi & CEO'su Ol (Ana Şirketim Yap)",
+        "Satın alınan şirketin (Örn: Apple, Samsung) doğrudan yeni sahibi olun! Şirket adı, logosu, pazar payı ve modelleri ana markanız haline gelir."
+    ),
+    INDEPENDENT_BRAND(
+        "Holdinge Bağlı Alt Marka Yap",
+        "Şirket holdinginiz çatısı altında bağımsız çalışmaya devam eder ve her ay kasaya düzenli kâr payı (temettü) öder."
+    ),
+    MERGE_TO_MAIN(
+        "Mevcut Şirkete Kat & Varlıkları Birleştir",
+        "Şirketin pazar payı, mühendisleri ve üretim hatları doğrudan mevcut şirketinize transfer edilir, marka pazardan çekilir."
+    ),
+    LIQUIDATE_ASSETS(
+        "Varlıkları Tasfiye Et & Nakde Çevir",
+        "Şirketin nakit kasası, patentleri ve çalışanları devralınır, marka kapatılır."
+    )
 }
 
 @Serializable
@@ -575,10 +588,16 @@ data class PhoneSeriesLegacy(
 data class OwnedSubBrand(
     val id: String,
     val name: String,
-    val logoEmoji: String,
-    val brandReputation: Int,
+    val logoEmoji: String = "📱",
+    val brandReputation: Int = 80,
     val cash: Long = 0L,
-    val autoManage: Boolean = true
+    val autoManage: Boolean = true,
+    val brandColorHex: Long = 0xFF2563EB,
+    val marketSharePercent: Float = 0f,
+    val monthlySales: Int = 0,
+    val monthlyDividend: Long = 0L,
+    val strategyType: String = "Bağımsız İştirak Markası",
+    val logoId: String? = null
 )
 
 @Serializable
@@ -603,7 +622,7 @@ data class AcquisitionTarget(
 @Serializable
 data class CompetitorCompany(
     val id: String,
-    val name: String, // "Armut", "Samsong", "Xiaomeme", "Gugıl"
+    val name: String, // "Apple", "Samsung", "Xiaomi", "Google", "Oppo" etc.
     val logoEmoji: String,
     val slogan: String,
     val brandColorHex: Long,
@@ -614,8 +633,28 @@ data class CompetitorCompany(
     val currentModelScore: Int,
     val strategyType: String,
     val strengthText: String,
-    val weaknessText: String
-)
+    val weaknessText: String,
+    val isAcquiredByPlayer: Boolean = false
+) {
+    val estimatedValuation: Long
+        get() {
+            val annualSalesRevenue = monthlySales.toLong() * currentModelPrice.coerceAtLeast(120) * 12L
+            val shareBase = (marketSharePercent * 320_000_000L).toLong()
+            val prestigeMultiplier = when {
+                name.contains("Apple", ignoreCase = true) || id == "comp_apple" -> 2.6f
+                name.contains("Samsung", ignoreCase = true) || id == "comp_samsung" -> 2.2f
+                name.contains("Xiaomi", ignoreCase = true) || id == "comp_xiaomi" -> 1.6f
+                name.contains("Huawei", ignoreCase = true) || id == "comp_huawei" -> 1.5f
+                name.contains("Google", ignoreCase = true) || id == "comp_google" -> 1.5f
+                name.contains("Oppo", ignoreCase = true) || name.contains("Vivo", ignoreCase = true) -> 1.35f
+                name.contains("Sony", ignoreCase = true) || name.contains("OnePlus", ignoreCase = true) -> 1.25f
+                name.contains("Motorola", ignoreCase = true) || name.contains("Realme", ignoreCase = true) || name.contains("Honor", ignoreCase = true) -> 1.15f
+                else -> 1.0f
+            }
+            val calculated = ((annualSalesRevenue * 1.6f + shareBase) * prestigeMultiplier).toLong()
+            return calculated.coerceAtLeast(40_000_000L)
+        }
+}
 
 @Serializable
 data class CompetitorReleaseHistory(
@@ -1243,4 +1282,78 @@ data class GameState(
     fun marginalEngineerBonus(): Int = ((engineers + 1).let { n -> (kotlin.math.sqrt(n.toDouble()) * 3.5).toInt().coerceAtMost(30) }) - engineerTechBonus
     fun marginalQaBonus(): Int = ((qaInspectors + 1).let { n -> (kotlin.math.sqrt(n.toDouble()) * 2.6).toInt().coerceAtMost(20) }) - qaScoreBonus
     fun marginalWorkerDiscount(): Float = (((assemblyWorkers + 1).let { n -> (kotlin.math.sqrt(n.toDouble()) * 0.97).toFloat().coerceAtMost(22f) }) - workerDiscountPercent)
+
+    // --- DEĞERLEME & M&A FİNANS MOTORU ---
+    val factoryValuation: Long
+        get() = when (factoryLevel) {
+            0 -> 10_000_000L
+            1 -> 35_000_000L
+            2 -> 120_000_000L
+            3 -> 400_000_000L
+            4 -> 1_200_000_000L
+            else -> 3_500_000_000L
+        }
+
+    val officeValuation: Long
+        get() = when (officeLevel) {
+            0 -> 3_000_000L
+            1 -> 12_000_000L
+            2 -> 35_000_000L
+            3 -> 120_000_000L
+            else -> 400_000_000L
+        }
+
+    val employeeValuation: Long
+        get() = (engineers * 80_000L) + (qaInspectors * 50_000L) + (assemblyWorkers * 25_000L)
+
+    val techAndChipValuation: Long
+        get() {
+            val techVal = unlockedTech.size * 12_000_000L
+            val chipVal = customChipsets.size * 40_000_000L
+            val osVal = if (customOs.type != OsType.STOCK_ANDROID) {
+                (customOs.thirdPartyActiveDevices * 75L + customOs.ecosystemScore * 2_000_000L).coerceAtLeast(20_000_000L)
+            } else 0L
+            return techVal + chipVal + osVal
+        }
+
+    val marketShareValuation: Long
+        get() {
+            val shareVal = (playerMarketSharePercent * 400_000_000L).toLong()
+            val runRateVal = (monthlyIncome.coerceAtLeast(0L) * 6L)
+            return shareVal + runRateVal
+        }
+
+    val subBrandsValuation: Long
+        get() = ownedSubBrands.sumOf { (it.monthlyDividend * 24L).coerceAtLeast(30_000_000L) }
+
+    val reputationMultiplier: Float
+        get() = (1.0f + (reputation / 75f)).coerceIn(0.8f, 3.0f)
+
+    /**
+     * Şirketin toplam kurumsal piyasa değeri (Enterprise Valuation).
+     * Kasa + Tesisler + İK + Ar-Ge/Patentler + Pazar Payı & Gelir + Alt Markalar x İtibar Çarpanı.
+     */
+    val playerValuation: Long
+        get() {
+            val baseCash = budget.coerceAtLeast(0L)
+            val sumAssets = baseCash + factoryValuation + officeValuation + employeeValuation + techAndChipValuation + marketShareValuation + subBrandsValuation
+            val total = (sumAssets * reputationMultiplier).toLong()
+            return total.coerceAtLeast(25_000_000L)
+        }
 }
+
+/**
+ * Para birimini kompakt ve okunabilir biçimde formatlar ($1.25B, $450M, $12K vb.)
+ */
+fun formatShortCurrency(amount: Long): String {
+    val absAmount = kotlin.math.abs(amount)
+    val sign = if (amount < 0) "-" else ""
+    return when {
+        absAmount >= 1_000_000_000_000L -> "$sign$${"%.2f".format(absAmount / 1_000_000_000_000.0)}T"
+        absAmount >= 1_000_000_000L -> "$sign$${"%.2f".format(absAmount / 1_000_000_000.0)}B"
+        absAmount >= 1_000_000L -> "$sign$${"%.1f".format(absAmount / 1_000_000.0)}M"
+        absAmount >= 1_000L -> "$sign$${"%,d".format(absAmount / 1000)}K"
+        else -> "$sign$$absAmount"
+    }
+}
+

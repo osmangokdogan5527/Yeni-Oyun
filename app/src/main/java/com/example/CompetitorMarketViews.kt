@@ -69,16 +69,25 @@ fun CompetitorProfileCard(competitor: CompetitorCompany) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = Color(competitor.brandColorHex).copy(alpha = 0.12f)
-                ) {
+                Column(horizontalAlignment = Alignment.End) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(competitor.brandColorHex).copy(alpha = 0.12f)
+                    ) {
+                        Text(
+                            "%${"%.1f".format(competitor.marketSharePercent)} Pazar",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(competitor.brandColorHex),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        "%${"%.1f".format(competitor.marketSharePercent)} Pazar",
+                        "Değer: $${com.example.viewmodel.formatShortCurrency(competitor.estimatedValuation)}",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(competitor.brandColorHex),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }

@@ -923,7 +923,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
-        val totalCombinedRevenue = totalMonthlyRevenue + appStoreRevenueThisPeriod + licenseRevenueThisPeriod + (updatedCustomOs.lastMonthCloudRevenue / 2) + periodChipsetIncome
+        // Holding bünyesindeki alt markalardan gelen dönemsel temettü/kâr payı
+        val subBrandDividendsThisPeriod = currentState.ownedSubBrands.sumOf { (it.monthlyDividend / 2).coerceAtLeast(0L) }
+
+        val totalCombinedRevenue = totalMonthlyRevenue + appStoreRevenueThisPeriod + licenseRevenueThisPeriod + (updatedCustomOs.lastMonthCloudRevenue / 2) + periodChipsetIncome + subBrandDividendsThisPeriod
         val periodExpenses = (currentState.totalMonthlyExpenses / 2).coerceAtLeast(0)
         val netIncome = totalCombinedRevenue - periodExpenses
 
@@ -3047,12 +3050,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val minAcceptable = (target.valuation * target.minimumAcceptableMultiplier).toLong()
         
         if (bidAmount >= minAcceptable) {
-            // Acquired!
             val newSubBrands = currentState.ownedSubBrands.toMutableList()
             
             var newEngineers = currentState.engineers
             var newQa = currentState.qaInspectors
             var newWorkers = currentState.assemblyWorkers
+            var newCompanyName = currentState.companyName
+            var newLogoId = currentState.companyLogoId
+            var newColorHex = currentState.companyBrandColorHex
+            var newSlogan = currentState.companySlogan
             
             val totalCost = bidAmount + target.debt
             if (currentState.budget < totalCost) {
@@ -3061,36 +3067,53 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
             
             when (strategy) {
+                PostAcquisitionStrategy.BECOME_MAIN_BRAND -> {
+                    newCompanyName = target.name
+                    newLogoId = "ic_logo_crown"
+                    newSlogan = "${target.name} Ekosistemi"
+                    newEngineers += (target.employees * 0.4f).toInt()
+                    newWorkers += (target.employees * 0.6f).toInt()
+                }
                 PostAcquisitionStrategy.INDEPENDENT_BRAND -> {
                     newSubBrands.add(
                         OwnedSubBrand(
                             id = target.id,
                             name = target.name,
-                            logoEmoji = "",
+                            logoEmoji = target.logoEmoji,
                             brandReputation = target.brandReputation,
-                            cash = target.cash
+                            cash = target.cash,
+                            marketSharePercent = 1.0f,
+                            monthlySales = target.employees * 30,
+                            monthlyDividend = (target.valuation * 0.008f).toLong().coerceAtLeast(50_000L),
+                            strategyType = "Bağımsız Girişim Portföyü",
+                            logoId = "ic_logo_crown"
                         )
                     )
-                    
                 }
                 PostAcquisitionStrategy.MERGE_TO_MAIN -> {
-                    
-                    newEngineers += (target.employees * 0.1f).toInt()
-                    newWorkers += (target.employees * 0.5f).toInt()
+                    newEngineers += (target.employees * 0.3f).toInt()
+                    newWorkers += (target.employees * 0.7f).toInt()
                 }
                 PostAcquisitionStrategy.LIQUIDATE_ASSETS -> {
-                    newEngineers += (target.employees * 0.2f).toInt()
-                    // Get their cash
-                    // Kill brand and series
+                    newEngineers += (target.employees * 0.15f).toInt()
                 }
             }
             
             val report = MarketReport(
                 title = "Şirket Satın Alındı: ${target.name}",
-                text = "${target.name} şirketi $${"%,d".format(bidAmount)} bedelle satın alındı. Strateji: $strategy.",
+                text = "${target.name} şirketi $${formatShortCurrency(bidAmount)} bedelle satın alındı. Strateji: ${strategy.title}.",
                 profit = -totalCost,
                 unitsSold = 0,
                 reviewScore = 0
+            )
+
+            val news = NewsArticle(
+                id = "acq_target_${target.id}_${currentState.year}_${currentState.month}",
+                title = "💼 M&A HABERİ: ${target.name} Satın Alındı!",
+                text = "${currentState.companyName}, ${target.name} girişimini $${formatShortCurrency(bidAmount)} bedelle bünyesine kattı.",
+                category = "Şirket",
+                year = currentState.year,
+                month = currentState.month
             )
             
             _state.update {
@@ -3098,18 +3121,302 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     budget = it.budget - bidAmount - target.debt + if(strategy == PostAcquisitionStrategy.LIQUIDATE_ASSETS) target.cash else 0L,
                     acquisitionTargets = it.acquisitionTargets.filter { t -> t.id != targetId },
                     ownedSubBrands = newSubBrands,
-                    
+                    companyName = newCompanyName,
+                    companyLogoId = newLogoId,
+                    companyBrandColorHex = newColorHex,
+                    companySlogan = newSlogan,
                     engineers = newEngineers,
                     qaInspectors = newQa,
                     assemblyWorkers = newWorkers,
                     reports = it.reports + report,
+                    newsList = listOf(news) + it.newsList,
                     noticeMessage = "Satın alma BAŞARILI! ${target.name} artık sizin."
                 )
             }
+            autoSaveGame()
         } else {
-            // Rejected
-            _state.update { it.copy(noticeMessage = "Teklifiniz reddedildi! Şirket daha yüksek bir değer biçiyor.") }
+            _state.update { it.copy(noticeMessage = "Teklifiniz reddedildi! Şirket yönetim kurulu $${formatShortCurrency(minAcceptable)} üzerinde teklif bekliyor.") }
         }
+    }
+
+    /**
+     * Küresel bir rakip şirkete (Samsung, Apple, Xiaomi, Google, Huawei, Oppo vb.) satın alma teklifi verir.
+     */
+    fun bidForCompetitorCompany(competitorId: String, bidAmount: Long, strategy: PostAcquisitionStrategy) {
+        val currentState = _state.value
+        val competitor = currentState.competitors.find { it.id == competitorId } ?: return
+
+        if (currentState.budget < bidAmount) {
+            _state.update { it.copy(noticeMessage = "Bu teklif için yeterli bütçeniz yok! Gereken: $${formatShortCurrency(bidAmount)}") }
+            return
+        }
+
+        // Kabul barajı (Prestijli markalar için değerlemenin %100 - %115'i)
+        val minAcceptableMultiplier = when {
+            competitor.name.contains("Apple", ignoreCase = true) || competitor.id == "comp_apple" -> 1.15f
+            competitor.name.contains("Samsung", ignoreCase = true) || competitor.id == "comp_samsung" -> 1.10f
+            competitor.name.contains("Xiaomi", ignoreCase = true) -> 1.05f
+            else -> 0.95f
+        }
+        val minAcceptable = (competitor.estimatedValuation * minAcceptableMultiplier).toLong()
+
+        if (bidAmount >= minAcceptable) {
+            // SATIN ALMA KABUL EDİLDİ!
+            val newSubBrands = currentState.ownedSubBrands.toMutableList()
+            var newCompanyName = currentState.companyName
+            var newLogoId = currentState.companyLogoId
+            var newBrandColorHex = currentState.companyBrandColorHex
+            var newSlogan = currentState.companySlogan
+            var newPlayerMarketShare = currentState.playerMarketSharePercent
+            var newEngineers = currentState.engineers
+            var newQa = currentState.qaInspectors
+            var newWorkers = currentState.assemblyWorkers
+            var newReputation = currentState.reputation
+
+            when (strategy) {
+                PostAcquisitionStrategy.BECOME_MAIN_BRAND -> {
+                    // OYUNCU DOĞRUDAN SATIN ALINAN DEVİN SAHİBİ VE CEO'SU OLUR!
+                    newCompanyName = competitor.name
+                    newLogoId = competitor.id
+                    newBrandColorHex = competitor.brandColorHex
+                    newSlogan = competitor.slogan
+                    newPlayerMarketShare = (currentState.playerMarketSharePercent + competitor.marketSharePercent).coerceAtMost(85f)
+                    newEngineers += (competitor.monthlySales / 800).coerceIn(15, 120)
+                    newQa += (competitor.monthlySales / 1600).coerceIn(8, 60)
+                    newWorkers += (competitor.monthlySales / 200).coerceIn(50, 500)
+                    newReputation = (currentState.reputation + 25).coerceAtMost(100)
+                }
+                PostAcquisitionStrategy.INDEPENDENT_BRAND -> {
+                    // Holding çatısı altında bağımsız alt marka
+                    val monthlyDividend = (competitor.monthlySales.toLong() * competitor.currentModelPrice * 0.08).toLong().coerceAtLeast(500_000L)
+                    newSubBrands.add(
+                        OwnedSubBrand(
+                            id = competitor.id,
+                            name = competitor.name,
+                            logoEmoji = competitor.logoEmoji,
+                            brandReputation = 90,
+                            cash = (competitor.estimatedValuation * 0.05).toLong(),
+                            brandColorHex = competitor.brandColorHex,
+                            marketSharePercent = competitor.marketSharePercent,
+                            monthlySales = competitor.monthlySales,
+                            monthlyDividend = monthlyDividend,
+                            strategyType = competitor.strategyType,
+                            logoId = competitor.id
+                        )
+                    )
+                    newReputation = (currentState.reputation + 15).coerceAtMost(100)
+                }
+                PostAcquisitionStrategy.MERGE_TO_MAIN -> {
+                    // Varlıkları ana markaya birleştir
+                    newPlayerMarketShare = (currentState.playerMarketSharePercent + competitor.marketSharePercent * 0.85f).coerceAtMost(85f)
+                    newEngineers += (competitor.monthlySales / 1000).coerceIn(10, 80)
+                    newWorkers += (competitor.monthlySales / 250).coerceIn(40, 400)
+                    newReputation = (currentState.reputation + 10).coerceAtMost(100)
+                }
+                PostAcquisitionStrategy.LIQUIDATE_ASSETS -> {
+                    // Tasfiye et ve nakit çek
+                    newEngineers += (competitor.monthlySales / 1500).coerceIn(5, 40)
+                    newPlayerMarketShare = (currentState.playerMarketSharePercent + competitor.marketSharePercent * 0.4f).coerceAtMost(85f)
+                }
+            }
+
+            // Rakibi aktif rakipler listesinden çıkar (Artık oyuncuya ait)
+            val updatedCompetitors = currentState.competitors.filter { it.id != competitorId }
+
+            val headline = "👑 TARİHİ SATIN ALMA: ${currentState.companyName}, ${competitor.name.uppercase()}'ı Satın Aldı!"
+            val articleText = "Küresel teknoloji dünyasında deprem etkisi! ${currentState.companyName}, $${formatShortCurrency(bidAmount)} rekor bedelle ${competitor.name} şirketini satın alarak bünyesine kattı. Seçilen Strateji: '${strategy.title}'."
+
+            val news = NewsArticle(
+                id = "acq_comp_${competitor.id}_${currentState.year}_${currentState.month}_${currentState.period}",
+                title = headline,
+                text = articleText,
+                category = "Sektör",
+                year = currentState.year,
+                month = currentState.month
+            )
+
+            val report = MarketReport(
+                title = "Dev Satın Alma: ${competitor.name}",
+                text = "${competitor.name} şirketi $${formatShortCurrency(bidAmount)} bedelle başarıyla satın alındı. ($articleText)",
+                profit = -bidAmount,
+                unitsSold = 0,
+                reviewScore = 0
+            )
+
+            _state.update {
+                it.copy(
+                    budget = it.budget - bidAmount,
+                    competitors = updatedCompetitors,
+                    ownedSubBrands = newSubBrands,
+                    companyName = newCompanyName,
+                    companyLogoId = newLogoId,
+                    companyBrandColorHex = newBrandColorHex,
+                    companySlogan = newSlogan,
+                    playerMarketSharePercent = newPlayerMarketShare,
+                    engineers = newEngineers,
+                    qaInspectors = newQa,
+                    assemblyWorkers = newWorkers,
+                    reputation = newReputation,
+                    reports = it.reports + report,
+                    newsList = listOf(news) + it.newsList,
+                    noticeMessage = "🎉 TEBRİKLER! ${competitor.name} şirketi $${formatShortCurrency(bidAmount)} bedelle satın alındı!"
+                )
+            }
+            autoSaveGame()
+        } else {
+            _state.update {
+                it.copy(
+                    noticeMessage = "Teklifiniz ${competitor.name} Yönetim Kurulu tarafından REDDEDİLDİ! Minimum kabul eşiği: $${formatShortCurrency(minAcceptable)}."
+                )
+            }
+        }
+    }
+
+    /**
+     * Kendi şirketinin belirli bir hissesini (%5, %10, %20, %49) yatırımcılara satar ve kasaya nakit sağlar.
+     */
+    fun sellCompanyEquity(percentToSell: Int): Boolean {
+        val currentState = _state.value
+        val currentSold = currentState.equitySoldPercent
+        val maxSellable = 49 - currentSold
+
+        if (percentToSell <= 0 || percentToSell > maxSellable) {
+            _state.update { it.copy(noticeMessage = "Maksimum %49 hisse satabilirsiniz (Şirket çoğunluk kontrolünü korumak için). Kalan satılabilir pay: %$maxSellable.") }
+            return false
+        }
+
+        val valuation = currentState.playerValuation
+        val cashYield = (valuation * (percentToSell / 100.0)).toLong()
+
+        val news = NewsArticle(
+            id = "equity_sale_${currentState.year}_${currentState.month}_${currentState.period}_$percentToSell",
+            title = "📈 YATIRIM TURU: ${currentState.companyName} %$percentToSell Hisse Sattı",
+            text = "Yatırım konsorsiyumu, ${currentState.companyName} şirketinin %$percentToSell hissesine karşılık kasaya +$${formatShortCurrency(cashYield)} nakit sermaye yatırımı yaptı. Şirket değerlemesi: $${formatShortCurrency(valuation)}.",
+            category = "Şirket",
+            year = currentState.year,
+            month = currentState.month
+        )
+
+        val report = MarketReport(
+            title = "Hisse Satışı Geliri (+%$percentToSell)",
+            text = "%$percentToSell şirket hissesi satılarak kasaya $${formatShortCurrency(cashYield)} sermaye girişi sağlandı.",
+            profit = cashYield,
+            unitsSold = 0,
+            reviewScore = 0
+        )
+
+        _state.update {
+            it.copy(
+                budget = it.budget + cashYield,
+                equitySoldPercent = it.equitySoldPercent + percentToSell,
+                reports = it.reports + report,
+                newsList = listOf(news) + it.newsList,
+                noticeMessage = "Hisse satışı tamamlandı! Kasaya +$${formatShortCurrency(cashYield)} eklendi."
+            )
+        }
+        autoSaveGame()
+        return true
+    }
+
+    /**
+     * Daha önce yatırımcılara satılmış hisseleri şirket bütçesiyle geri satın alır (Share Buyback).
+     */
+    fun buybackCompanyEquity(percentToBuyback: Int): Boolean {
+        val currentState = _state.value
+        if (percentToBuyback <= 0 || percentToBuyback > currentState.equitySoldPercent) {
+            _state.update { it.copy(noticeMessage = "Geri satın alınabilecek hisse payı: %${currentState.equitySoldPercent}.") }
+            return false
+        }
+
+        val valuation = currentState.playerValuation
+        val cost = (valuation * (percentToBuyback / 100.0) * 1.05).toLong() // %5 prim ile geri alış
+
+        if (currentState.budget < cost) {
+            _state.update { it.copy(noticeMessage = "Hisseleri geri almak için yetersiz bütçe! Gereken: $${formatShortCurrency(cost)}") }
+            return false
+        }
+
+        val news = NewsArticle(
+            id = "equity_buyback_${currentState.year}_${currentState.month}_${currentState.period}_$percentToBuyback",
+            title = "💎 HİSSE GERİ ALIMI: ${currentState.companyName} %$percentToBuyback Hisselerini Geri Aldı",
+            text = "${currentState.companyName}, yatırımcılardaki %$percentToBuyback payını $${formatShortCurrency(cost)} karşılığında geri satın alarak kurucu sahiplik oranını artırdı.",
+            category = "Şirket",
+            year = currentState.year,
+            month = currentState.month
+        )
+
+        _state.update {
+            it.copy(
+                budget = it.budget - cost,
+                equitySoldPercent = (it.equitySoldPercent - percentToBuyback).coerceAtLeast(0),
+                newsList = listOf(news) + it.newsList,
+                noticeMessage = "%$percentToBuyback hisse $${formatShortCurrency(cost)} bedelle başarıyla geri alındı!"
+            )
+        }
+        autoSaveGame()
+        return true
+    }
+
+    /**
+     * Kendi şirketini tamamen (%100) global bir holdinge / yatırım fonuna satıp (Full Exit)
+     * tam piyasa değerini kasaya nakit çeker.
+     */
+    fun sellCompanyEntirely(): Boolean {
+        val currentState = _state.value
+        val fullValuation = currentState.playerValuation
+        val oldCompanyName = currentState.companyName
+
+        val news = NewsArticle(
+            id = "full_exit_${currentState.year}_${currentState.month}_${currentState.period}",
+            title = "🔥 TARİHİ DEVİR: $oldCompanyName $${formatShortCurrency(fullValuation)} Bedelle Satıldı!",
+            text = "Teknoloji dünyasının başarılı ismi, $oldCompanyName şirketini $${formatShortCurrency(fullValuation)} değerleme üzerinden uluslararası yatırım fonuna devretti. Kasadaki dev nakit birikimiyle yeni bir küresel devi devralmaya hazırlanıyor!",
+            category = "Şirket",
+            year = currentState.year,
+            month = currentState.month
+        )
+
+        val report = MarketReport(
+            title = "Şirket Tam Devri (Exit Geliri)",
+            text = "$oldCompanyName şirketinin tamamı satılarak $${formatShortCurrency(fullValuation)} nakit sermaye elde edildi.",
+            profit = fullValuation,
+            unitsSold = 0,
+            reviewScore = 0
+        )
+
+        _state.update {
+            it.copy(
+                budget = it.budget + fullValuation,
+                equitySoldPercent = 0,
+                companyName = "Apex Capital",
+                companyLogoId = "ic_logo_crown",
+                companySlogan = "Küresel Teknoloji Yatırımları & Holding",
+                reports = it.reports + report,
+                newsList = listOf(news) + it.newsList,
+                noticeMessage = "🎉 Şirketiniz $${formatShortCurrency(fullValuation)} bedelle satıldı! Kasadaki dev servetle artık Apple, Samsung veya dilediğiniz devi satın alabilirsiniz."
+            )
+        }
+        autoSaveGame()
+        return true
+    }
+
+    /**
+     * Satın alınan alt markalardan birini aktif birincil marka yapar.
+     */
+    fun rebrandToAcquiredBrand(subBrandId: String): Boolean {
+        val currentState = _state.value
+        val subBrand = currentState.ownedSubBrands.find { it.id == subBrandId } ?: return false
+
+        _state.update {
+            it.copy(
+                companyName = subBrand.name,
+                companyLogoId = subBrand.logoId ?: "ic_logo_crown",
+                companyBrandColorHex = subBrand.brandColorHex,
+                companySlogan = "${subBrand.name} - Küresel Güç",
+                noticeMessage = "Birincil marka '${subBrand.name}' olarak güncellendi!"
+            )
+        }
+        autoSaveGame()
+        return true
     }
 
     fun dismissTechExpo() {

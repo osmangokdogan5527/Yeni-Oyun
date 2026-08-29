@@ -934,16 +934,18 @@ fun PhoneBuilderProductionTab(
                     steps = 98
                 )
                 if (factoryPeriodCapacity > 0) {
+                    val dailyCapacity = (factoryPeriodCapacity / 15).coerceAtLeast(1)
                     val periodsNeeded = kotlin.math.ceil(quantity / factoryPeriodCapacity.toFloat()).toInt().coerceAtLeast(1)
+                    val estimatedDays = kotlin.math.ceil(quantity / dailyCapacity.toFloat()).toInt().coerceAtLeast(1)
                     val instantPart = quantity.toInt().coerceAtMost(factoryPeriodCapacity)
                     val note = if (quantity.toInt() <= factoryPeriodCapacity) {
-                        "🏭 Fabrikanız bu partiyi tek periyotta üretebilir."
+                        "🏭 Fabrika Kapasitesi: ~${"%,d".format(dailyCapacity)} adet/gün (${"%,d".format(factoryPeriodCapacity)} adet/dönem). Bu parti tek periyotta üretilebilir."
                     } else {
-                        "🏭 Fabrika kapasitesi periyotta ${"%,d".format(factoryPeriodCapacity)} adet. İlk periyotta ${"%,d".format(instantPart)} adet üretilir, tamamı yaklaşık $periodsNeeded periyotta (${(periodsNeeded / 2f).let { "%.1f".format(it) }} ay) tamamlanır."
+                        "🏭 Fabrika Kapasitesi: ~${"%,d".format(dailyCapacity)} adet/gün (${"%,d".format(factoryPeriodCapacity)} adet/dönem). İlk periyotta ${"%,d".format(instantPart)} adet üretilir, tamamı yaklaşık $estimatedDays günde ($periodsNeeded periyot / ${(periodsNeeded / 2f).let { "%.1f".format(it) }} ay) tamamlanır."
                     }
                     Text(
                         text = note,
-                        fontSize = 10.sp,
+                        fontSize = 10.5.sp,
                         color = if (quantity.toInt() <= factoryPeriodCapacity) Green500 else Color(0xFFB45309),
                         modifier = Modifier.padding(top = 4.dp)
                     )

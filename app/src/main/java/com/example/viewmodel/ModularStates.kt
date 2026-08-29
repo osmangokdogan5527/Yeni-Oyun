@@ -26,7 +26,8 @@ data class CompanyFinanceState(
     val patentLiquidationCooldown: Int = 0,
     val totalChipsetOemRevenue: Long = 0L,
     val lastPeriodChipsetOemRevenue: Long = 0L,
-    val scaleMultiplier: Double = 1.0
+    val scaleMultiplier: Double = 1.0,
+    val playerValuation: Long = 25000000L
 )
 
 /**
@@ -117,7 +118,12 @@ data class CompanyProfileState(
     val noticeMessage: String? = null,
     val acquisitionTargets: List<AcquisitionTarget> = emptyList(),
     val ownedSubBrands: List<OwnedSubBrand> = emptyList(),
-    val ownedLegacySeries: List<PhoneSeriesLegacy> = emptyList()
+    val ownedLegacySeries: List<PhoneSeriesLegacy> = emptyList(),
+    val budget: Long = 1200000L,
+    val playerValuation: Long = 25000000L,
+    val equitySoldPercent: Int = 0,
+    val playerMarketSharePercent: Float = 0f,
+    val competitors: List<CompetitorCompany> = DEFAULT_COMPETITORS
 )
 
 // Extension mapper fonksiyonları
@@ -140,7 +146,8 @@ fun GameState.toFinanceState(): CompanyFinanceState = CompanyFinanceState(
     patentLiquidationCooldown = patentLiquidationCooldown,
     totalChipsetOemRevenue = totalChipsetOemRevenue,
     lastPeriodChipsetOemRevenue = lastPeriodChipsetOemRevenue,
-    scaleMultiplier = scaleMultiplier
+    scaleMultiplier = scaleMultiplier,
+    playerValuation = playerValuation
 )
 
 fun GameState.toMarketState(): MarketEcosystemState = MarketEcosystemState(
@@ -203,5 +210,10 @@ fun GameState.toCompanyProfileState(): CompanyProfileState = CompanyProfileState
     noticeMessage = noticeMessage,
     acquisitionTargets = acquisitionTargets,
     ownedSubBrands = ownedSubBrands,
-    ownedLegacySeries = ownedLegacySeries
+    ownedLegacySeries = ownedLegacySeries,
+    budget = budget,
+    playerValuation = playerValuation,
+    equitySoldPercent = equitySoldPercent,
+    playerMarketSharePercent = playerMarketSharePercent,
+    competitors = competitors
 )

@@ -55,6 +55,7 @@ fun MarketScreen(
         logoEmoji = "📱",
         isPlayer = true,
         marketShare = state.playerMarketSharePercent,
+        valuation = state.playerValuation,
         monthlySales = state.activeModels.filter { !it.isCompleted }.sumOf { model ->
             // Current monthly run-rate estimate
             val baseBatch = model.totalStock / model.maxMonthsOnMarket.toFloat()
@@ -78,6 +79,7 @@ fun MarketScreen(
             logoEmoji = comp.logoEmoji,
             isPlayer = false,
             marketShare = comp.marketSharePercent,
+            valuation = comp.estimatedValuation,
             monthlySales = comp.monthlySales,
             currentModel = comp.currentTopModel,
             modelPrice = comp.currentModelPrice,
@@ -684,7 +686,7 @@ fun MarketParticipantRowCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Top model info
+            // Valuation & Top model info
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -712,12 +714,16 @@ fun MarketParticipantRowCard(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                if (participant.modelPrice > 0) {
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                ) {
                     Text(
-                        text = "$${participant.modelPrice} • ${participant.modelScore}/100 Puan",
+                        text = "Değer: $${com.example.viewmodel.formatShortCurrency(participant.valuation)}",
                         fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                         maxLines = 1,
                         softWrap = false
                     )

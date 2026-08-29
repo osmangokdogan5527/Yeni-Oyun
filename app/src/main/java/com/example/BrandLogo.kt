@@ -133,5 +133,6 @@ data class MarketParticipant(
     val modelScore: Int,
     val strategy: String,
     val brandColorHex: Long,
-    val logoId: String? = null
+    val logoId: String? = null,
+    val valuation: Long = 0L
 )

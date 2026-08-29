@@ -18,6 +18,8 @@ import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.*
 import com.example.ui.Button3D
+import com.example.viewmodel.FactoryTier
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -871,7 +873,7 @@ fun DevicesScreen(
             model = targetModel,
             unitCost = unitCost,
             currentBudget = state.budget,
-            factoryPeriodCapacity = state.currentFactoryTier.periodCapacity,
+            factoryTier = state.currentFactoryTier,
             onDismiss = { selectedModelForRestock = null },
             onConfirmRestock = { qty ->
                 viewModel.remanufactureModel(targetModel.id, qty)
@@ -1278,27 +1280,286 @@ fun RestockDialog(
     model: ActiveModel,
     unitCost: Int,
     currentBudget: Long,
-    factoryPeriodCapacity: Int = 0,
+    factoryTier: FactoryTier,
     onDismiss: () -> Unit,
     onConfirmRestock: (Int) -> Unit
 ) {
-    var selectedQty by remember { mutableIntStateOf(10000) }
+    val factoryPeriodCapacity = factoryTier.periodCapacity
+    val dailyCapacity = (factoryPeriodCapacity / 15).coerceAtLeast(1)
+    val monthlyCapacity = factoryPeriodCapacity * 2
+
+    val initialQty = dailyCapacity.coerceIn(1000, 50000)
+    var selectedQty by remember { mutableIntStateOf(initialQty) }
+
     val totalCost = unitCost.toLong() * selectedQty
     val canAfford = currentBudget >= totalCost
+
+    // Backlog and duration calculations
+    val existingBacklog = (model.totalStock - model.producedStock).coerceAtLeast(0)
+    val totalBacklogAfter = existingBacklog + selectedQty
+    val periodsNeeded = kotlin.math.ceil(totalBacklogAfter / factoryPeriodCapacity.toFloat()).toInt().coerceAtLeast(1)
+    val estimatedDays = kotlin.math.ceil(totalBacklogAfter / dailyCapacity.toFloat()).toInt().coerceAtLeast(1)
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("${model.specs.name} - Tekrar Üretim", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Text("${model.specs.name} - Stok Ekle & Üretim", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            }
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text(
-                    "Bu model için ilave stok üreterek satış kanalını besleyebilirsiniz. Popüler ürünler 24 aya kadar pazarda satılmaya devam eder.",
-                    fontSize = 13.sp,
-                    color = Slate600
+                    "Bu model için ilave parti sipariş ederek satış kanalını besleyebilirsiniz. Maksimum ilave stok limiti tek seferde 50.000 adettir.",
+                    fontSize = 12.sp,
+                    color = Slate600,
+                    lineHeight = 16.sp
                 )
 
+                // 🏭 Fabrika Kapasite Bilgi Paneli
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "🏭 ${factoryTier.name}",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            ) {
+                                Text(
+                                    "Seviye ${factoryTier.level + 1}",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            // Günlük Kapasite
+                            Surface(
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.surface
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 5.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text("⚡ Günlük Üretim", fontSize = 9.sp, color = Slate500, maxLines = 1, softWrap = false)
+                                    Text(
+                                        "${"%,d".format(dailyCapacity)} adet/gün",
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF10B981),
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
+                            }
+
+                            // Dönemlik Kapasite
+                            Surface(
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.surface
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 5.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text("📦 Dönem (15 Gün)", fontSize = 9.sp, color = Slate500, maxLines = 1, softWrap = false)
+                                    Text(
+                                        "${"%,d".format(factoryPeriodCapacity)} adet",
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
+                            }
+
+                            // Aylık Kapasite
+                            Surface(
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.surface
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 5.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text("📅 Aylık Kapasite", fontSize = 9.sp, color = Slate500, maxLines = 1, softWrap = false)
+                                    Text(
+                                        "${"%,d".format(monthlyCapacity)} adet",
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF8B5CF6),
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Seçilen Adet ve Slider Alanı
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Sipariş Edilecek Adet:", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            "${"%,d".format(selectedQty)} Adet (Maks 50.000)",
+                            fontSize = 13.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    // Slider (1.000 - 50.000 Adet)
+                    Slider(
+                        value = selectedQty.toFloat(),
+                        onValueChange = { floatVal ->
+                            val step = if (floatVal < 10000) 1000 else 5000
+                            selectedQty = ((floatVal / step).toInt() * step).coerceIn(1000, 50000)
+                        },
+                        valueRange = 1000f..50000f,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // İnce Ayar Butonları
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { selectedQty = (selectedQty - 1000).coerceAtLeast(1000) },
+                            modifier = Modifier.weight(1f).height(30.dp),
+                            contentPadding = PaddingValues(0.dp),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text("-1k", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        }
+                        OutlinedButton(
+                            onClick = { selectedQty = (selectedQty - 5000).coerceAtLeast(1000) },
+                            modifier = Modifier.weight(1f).height(30.dp),
+                            contentPadding = PaddingValues(0.dp),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text("-5k", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        }
+                        OutlinedButton(
+                            onClick = { selectedQty = (selectedQty + 5000).coerceAtMost(50000) },
+                            modifier = Modifier.weight(1f).height(30.dp),
+                            contentPadding = PaddingValues(0.dp),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text("+5k", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        }
+                        OutlinedButton(
+                            onClick = { selectedQty = (selectedQty + 10000).coerceAtMost(50000) },
+                            modifier = Modifier.weight(1f).height(30.dp),
+                            contentPadding = PaddingValues(0.dp),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text("+10k", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
+                // Hızlı Seçim Butonları (Kapasite & Hazır Paketler)
+                Text("Hızlı Kapasite Seçimi:", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Slate600)
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    val maxAffordable = (currentBudget / unitCost.coerceAtLeast(1)).toInt().coerceIn(1000, 50000)
+                    val quickPresets = buildList {
+                        add(Pair("⚡ Günlük (${"%,d".format(dailyCapacity)})", dailyCapacity.coerceIn(1000, 50000)))
+                        if (factoryPeriodCapacity in 1001..50000) {
+                            add(Pair("Dönemlik (${factoryPeriodCapacity / 1000}k)", factoryPeriodCapacity))
+                        }
+                        add(Pair("5k", 5000))
+                        add(Pair("10k", 10000))
+                        add(Pair("25k", 25000))
+                        add(Pair("50k (Maks)", 50000))
+                        if (canAfford || maxAffordable >= 1000) {
+                            add(Pair("Maks Bütçe (${"%,d".format(maxAffordable)})", maxAffordable))
+                        }
+                    }
+
+                    items(quickPresets.size) { idx ->
+                        val (label, qty) = quickPresets[idx]
+                        FilterChip(
+                            selected = selectedQty == qty,
+                            onClick = { selectedQty = qty },
+                            label = { Text(label, fontSize = 10.5.sp, maxLines = 1, softWrap = false) },
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                    }
+                }
+
+                // Üretim Süresi & Tahmin Notu
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    color = if (totalBacklogAfter <= factoryPeriodCapacity) Green500.copy(alpha = 0.1f) else Color(0xFFFEF3C7)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Text(
+                            text = "⏱️ Tahmini Üretim: Yaklaşık $estimatedDays gün (~$periodsNeeded dönem / ${"%.1f".format(periodsNeeded / 2f)} ay)",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (totalBacklogAfter <= factoryPeriodCapacity) Green500 else Color(0xFFB45309)
+                        )
+                        if (existingBacklog > 0) {
+                            Text(
+                                text = "ℹ️ Sırada bekleyen ${"%,d".format(existingBacklog)} adet üretim de hesaba katılmıştır.",
+                                fontSize = 9.5.sp,
+                                color = Slate600
+                            )
+                        }
+                    }
+                }
+
+                HorizontalDivider(color = Slate200)
+
+                // Maliyet Detayları
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -1307,51 +1568,15 @@ fun RestockDialog(
                     Text("$${unitCost} / adet", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 }
 
-                Text("Üretilecek Adet:", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    listOf(5000, 10000, 25000, 50000).forEach { qty ->
-                        FilterChip(
-                            selected = selectedQty == qty,
-                            onClick = { selectedQty = qty },
-                            label = { Text("${qty / 1000}k", fontSize = 11.sp) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-
-                if (factoryPeriodCapacity > 0) {
-                    val existingBacklog = (model.totalStock - model.producedStock).coerceAtLeast(0)
-                    val totalBacklogAfter = existingBacklog + selectedQty
-                    val periodsNeeded = kotlin.math.ceil(totalBacklogAfter / factoryPeriodCapacity.toFloat()).toInt().coerceAtLeast(1)
-                    val note = if (totalBacklogAfter <= factoryPeriodCapacity) {
-                        "🏭 Fabrikanız bu siparişi (sıradaki bekleyen üretimle birlikte) tek periyotta karşılayabilir."
-                    } else {
-                        "🏭 Fabrika kapasitesi periyotta ${"%,d".format(factoryPeriodCapacity)} adet." +
-                            (if (existingBacklog > 0) " Zaten ${"%,d".format(existingBacklog)} adetlik bekleyen üretim var;" else "") +
-                            " bu siparişle birlikte tamamı yaklaşık $periodsNeeded periyotta (${"%.1f".format(periodsNeeded / 2f)} ay) tamamlanır."
-                    }
-                    Text(
-                        text = note,
-                        fontSize = 10.sp,
-                        color = if (totalBacklogAfter <= factoryPeriodCapacity) Green500 else Color(0xFFB45309),
-                        modifier = Modifier.padding(top = 6.dp)
-                    )
-                }
-
-                HorizontalDivider(color = Slate200)
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Toplam Maliyet:", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Text("Toplam Sipariş Tutarı:", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     Text(
                         "$${"%,d".format(totalCost)}",
-                        fontSize = 14.sp,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (canAfford) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                     )
@@ -1359,8 +1584,9 @@ fun RestockDialog(
 
                 if (!canAfford) {
                     Text(
-                        "Yetersiz Bütçe! (Mevcut: $${"%,d".format(currentBudget)})",
+                        "⚠️ Yetersiz Bütçe! (Mevcut Bütçe: $${"%,d".format(currentBudget)})",
                         fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.error
                     )
                 }
@@ -1369,7 +1595,7 @@ fun RestockDialog(
         confirmButton = {
             Button3D(
                 onClick = { onConfirmRestock(selectedQty) },
-                enabled = canAfford,
+                enabled = canAfford && selectedQty > 0,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text("Üret ve Stokla", fontWeight = FontWeight.Bold)
