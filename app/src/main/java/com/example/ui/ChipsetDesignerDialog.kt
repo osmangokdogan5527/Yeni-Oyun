@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -119,12 +120,12 @@ fun ChipsetDesignerDialog(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                if (isEditing) "Yongayı Revize Et (Ücretsiz Revizyon)" else "Öz Tasarım Yonga Stüdyosu",
+                                if (isEditing) "İşlemciyi Revize Et (Ücretsiz Revizyon)" else "Öz İşlemci Tasarım Stüdyosu",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp
                             )
                             Text(
-                                if (isEditing) "Mevcut yongayı güncelleyin. Yeniden tape-out maske bedeli alınmaz." else "Özellikleri artırıp azaltarak bütçenize veya tepe güce göre çip üretin",
+                                if (isEditing) "Mevcut işlemciyi güncelleyin. Yeniden tape-out maske bedeli alınmaz." else "Özellikleri artırıp azaltarak bütçenize veya tepe güce göre işlemci üretin",
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -394,13 +395,19 @@ fun ChipsetDesignerDialog(
 
                             // Power Profile
                             Text("Güç & Isı / TDP Profili", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                PowerProfile.values().forEach { profile ->
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                items(PowerProfile.values()) { profile ->
                                     val isSelected = powerProfile == profile
                                     FilterChip(
                                         selected = isSelected,
                                         onClick = { powerProfile = profile },
-                                        label = { Text(profile.title.substringBefore(" ("), fontSize = 11.sp) }
+                                        label = {
+                                            Text(
+                                                profile.title.substringBefore(" ("),
+                                                fontSize = 11.sp,
+                                                softWrap = false
+                                            )
+                                        }
                                     )
                                 }
                             }
@@ -476,17 +483,17 @@ fun ChipsetDesignerDialog(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Column {
-                                        Text("Sentetik Güç Puanı", fontSize = 10.sp, color = Color(0xFF94A3B8))
-                                        Text("${"%,d".format(previewChip.performanceScore)} Puan", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF38BDF8))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("Sentetik Güç Puanı", fontSize = 10.sp, color = Color(0xFF94A3B8), softWrap = false, overflow = TextOverflow.Ellipsis)
+                                        Text("${"%,d".format(previewChip.performanceScore)} Puan", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF38BDF8), softWrap = false)
                                     }
-                                    Column {
-                                        Text("Telefon Üretim Maliyeti", fontSize = 10.sp, color = Color(0xFF94A3B8))
-                                        Text("$${previewChip.unitCost} / Adet", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("Üretim Maliyeti", fontSize = 10.sp, color = Color(0xFF94A3B8), softWrap = false, overflow = TextOverflow.Ellipsis)
+                                        Text("$${previewChip.unitCost} / Adet", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981), softWrap = false)
                                     }
-                                    Column {
-                                        Text("Ar-Ge & Maske Maliyeti", fontSize = 10.sp, color = Color(0xFF94A3B8))
-                                        Text("$${"%,d".format(tapeOutCost)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = if (canAfford) Color(0xFFFBBF24) else Color(0xFFEF4444))
+                                    Column(modifier = Modifier.weight(1.1f)) {
+                                        Text("Ar-Ge & Maske Bedeli", fontSize = 10.sp, color = Color(0xFF94A3B8), softWrap = false, overflow = TextOverflow.Ellipsis)
+                                        Text("$${"%,d".format(tapeOutCost)}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = if (canAfford) Color(0xFFFBBF24) else Color(0xFFEF4444), softWrap = false)
                                     }
                                 }
                             }
@@ -517,9 +524,11 @@ fun ChipsetDesignerDialog(
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
                     ) {
                         Text(
-                            if (isEditing) "GÜNCELLEMEYİ ONAYLA ($0) ✏️" else if (canAfford) "YONGAYI ONAYLA ($${"%,d".format(tapeOutCost)}) ⚡" else "Yetersiz Bütçe ($${"%,d".format(tapeOutCost)})",
+                            if (isEditing) "İŞLEMCİYİ GÜNCELLE ($0) ✏️" else if (canAfford) "İŞLEMCİYİ ONAYLA ($${"%,d".format(tapeOutCost)}) ⚡" else "Yetersiz Bütçe ($${"%,d".format(tapeOutCost)})",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
+                            fontSize = 11.5.sp,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }

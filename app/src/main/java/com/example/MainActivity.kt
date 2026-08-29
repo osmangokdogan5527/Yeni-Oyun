@@ -354,7 +354,7 @@ fun MainApp(viewModel: GameViewModel = viewModel()) {
                     TabRow(selectedTabIndex = selectedTab) {
                         Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Ar-Ge") })
                         Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Yazılım") })
-                        Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("Yonga") })
+                        Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("İşlemci") })
                         Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = { Text("Test Lab") })
                     }
                     when (selectedTab) {

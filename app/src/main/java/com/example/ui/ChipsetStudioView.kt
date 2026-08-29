@@ -97,13 +97,13 @@ fun ChipsetStudioView(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "Öz Tasarım Yonga Stüdyosu (In-House Silicon)",
+                                text = "Öz İşlemci Tasarım Stüdyosu (In-House Silicon)",
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 15.sp
                             )
                             Text(
-                                text = "Kendi mimarinizi tasarlayın, telefonlarınızda kullanın veya dış pazara (OEM) satın!",
+                                text = "Kendi mobil işlemcinizi tasarlayın, telefonlarınızda kullanın veya dış pazara (OEM) satın!",
                                 color = Color(0xFF94A3B8),
                                 fontSize = 11.sp
                             )
@@ -247,7 +247,7 @@ fun ChipsetStudioView(
                         },
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("İlk Yonganı Tasarla ⚡", fontWeight = FontWeight.Bold)
+                        Text("İlk İşlemcini Tasarla ⚡", fontWeight = FontWeight.Bold)
                     }
                 }
             }

@@ -101,69 +101,51 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // --- TAB SELECTOR ---
+            // --- TAB SELECTOR (YATAY KAYDIRILABİLİR, DİKEY VE KESİK YAZILARI ÖNLEYEN DÜZEN) ---
             item {
-                TabRow(
+                ScrollableTabRow(
                     selectedTabIndex = selectedTab,
+                    edgePadding = 0.dp,
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                    modifier = Modifier.clip(RoundedCornerShape(12.dp))
+                    modifier = Modifier.clip(RoundedCornerShape(14.dp)),
+                    divider = {}
                 ) {
-                    Tab(
-                        selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 },
-                        text = {
-                            Text(
-                                "İşletim Sistemi",
-                                fontSize = 11.sp,
-                                fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        },
-                        icon = { Icon(Icons.Default.PhoneAndroid, contentDescription = null, modifier = Modifier.size(17.dp)) }
+                    val tabs = listOf(
+                        Triple(0, "İşletim Sistemi", Icons.Default.PhoneAndroid),
+                        Triple(1, "Cihaz Güncellemeleri", Icons.Default.SystemUpdate),
+                        Triple(2, "Ekosistem", Icons.AutoMirrored.Filled.TrendingUp),
+                        Triple(3, "Küresel Rekabet", Icons.Default.Public)
                     )
-                    Tab(
-                        selected = selectedTab == 1,
-                        onClick = { selectedTab = 1 },
-                        text = {
-                            Text(
-                                "Cihaz Güncellemeleri",
-                                fontSize = 11.sp,
-                                fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        },
-                        icon = { Icon(Icons.Default.SystemUpdate, contentDescription = null, modifier = Modifier.size(17.dp)) }
-                    )
-                    Tab(
-                        selected = selectedTab == 2,
-                        onClick = { selectedTab = 2 },
-                        text = {
-                            Text(
-                                "Ekosistem",
-                                fontSize = 11.sp,
-                                fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        },
-                        icon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, modifier = Modifier.size(17.dp)) }
-                    )
-                    Tab(
-                        selected = selectedTab == 3,
-                        onClick = { selectedTab = 3 },
-                        text = {
-                            Text(
-                                "Küresel Rekabet",
-                                fontSize = 11.sp,
-                                fontWeight = if (selectedTab == 3) FontWeight.Bold else FontWeight.Normal,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        },
-                        icon = { Icon(Icons.Default.Public, contentDescription = null, modifier = Modifier.size(17.dp)) }
-                    )
+
+                    tabs.forEach { (index, title, icon) ->
+                        val isSelected = selectedTab == index
+                        Tab(
+                            selected = isSelected,
+                            onClick = { selectedTab = index },
+                            text = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = title,
+                                        fontSize = 12.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
+                            }
+                        )
+                    }
                 }
             }
 
@@ -274,31 +256,112 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
                     }
                 }
 
-                // 2. HERO OS STATUS CARD
-    if (customOs.activeDevelopment != null) {
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("🚀 İşletim Sistemi Geliştirme Sürecinde", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Proje: ${customOs.activeDevelopment.name} v${customOs.activeDevelopment.targetVersion}", fontSize = 14.sp)
-                    Text("Tür: ${customOs.activeDevelopment.type.title}", fontSize = 14.sp)
-                    Text("Kalan Süre: ${customOs.activeDevelopment.remainingMonths} Dönem", fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.primary)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LinearProgressIndicator(
-                        progress = { 
-                            1f - (customOs.activeDevelopment.remainingMonths.toFloat() / customOs.activeDevelopment.totalMonths.toFloat())
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                // 2. HERO OS STATUS CARD (GELİŞTİRME SÜRECİ VEYA AKTİF DURUM)
+                if (customOs.activeDevelopment != null) {
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("🚀", fontSize = 22.sp)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text(
+                                                "İşletim Sistemi Geliştirme Sürecinde",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 15.sp,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                            Text(
+                                                "${customOs.activeDevelopment.name} v${customOs.activeDevelopment.targetVersion} • ${customOs.activeDevelopment.type.title}",
+                                                fontSize = 12.sp,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                            )
+                                        }
+                                    }
+
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = MaterialTheme.colorScheme.primary
+                                    ) {
+                                        Text(
+                                            text = "${customOs.activeDevelopment.remainingMonths} Dönem Kaldı",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
+                                    }
+                                }
+
+                                val progressFraction = (1f - (customOs.activeDevelopment.remainingMonths.toFloat() / customOs.activeDevelopment.totalMonths.coerceAtLeast(1).toFloat())).coerceIn(0f, 1f)
+                                val progressPercent = (progressFraction * 100).toInt()
+
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = "Tamamlanma: %$progressPercent",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                        Text(
+                                            text = "~${"%.1f".format(customOs.activeDevelopment.remainingMonths / 2.0)} Ay",
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                    LinearProgressIndicator(
+                                        progress = { progressFraction },
+                                        modifier = Modifier.fillMaxWidth().height(8.dp),
+                                        color = MaterialTheme.colorScheme.primary,
+                                        trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f)
+                                    )
+                                }
+
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.Engineering, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                "Atanan Mühendisler: ${customOs.assignedDevs} / ${state.engineers}",
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
+                                        val speedText = when {
+                                            customOs.assignedDevs >= 35 -> "🚀 Süper Hızlı (3x)"
+                                            customOs.assignedDevs >= 12 -> "⚡ Hızlı (2x)"
+                                            customOs.assignedDevs >= 1 -> "🔹 Standart (1x)"
+                                            else -> "⚠️ Düşük Hız"
+                                        }
+                                        Text(speedText, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-            }
-        }
-    }
                 item {
                     OsHeroStatusCard(
                         customOs = customOs,

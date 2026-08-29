@@ -91,21 +91,21 @@ fun EcosystemRevenueOverviewCard(customOs: CustomOsState, state: GameState) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 RevenueBreakdownTile(
-                    title = "App Store Komisyonu",
+                    title = "App Store",
                     amount = customOs.lastMonthAppStoreIncome,
                     icon = Icons.Default.ShoppingBag,
                     color = Color(0xFF3B82F6),
                     modifier = Modifier.weight(1f)
                 )
                 RevenueBreakdownTile(
-                    title = "Bulut Abonelikleri",
+                    title = "Bulut Servisi",
                     amount = customOs.lastMonthCloudRevenue,
                     icon = Icons.Default.Cloud,
                     color = Color(0xFF8B5CF6),
                     modifier = Modifier.weight(1f)
                 )
                 RevenueBreakdownTile(
-                    title = "OEM Cihaz Lisansı",
+                    title = "OEM Lisans",
                     amount = customOs.lastMonthLicenseIncome,
                     icon = Icons.Default.Business,
                     color = Color(0xFFF59E0B),
@@ -130,19 +130,31 @@ fun RevenueBreakdownTile(
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     ) {
         Column(
-            modifier = Modifier.padding(8.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(12.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(title, fontSize = 9.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(13.dp))
+                Text(
+                    text = title,
+                    fontSize = 9.5.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
             Text(
                 "+$${"%,d".format(amount)}",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                softWrap = false
             )
         }
     }

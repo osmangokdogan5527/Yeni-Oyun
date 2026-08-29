@@ -173,46 +173,82 @@ fun OsHeroStatusCard(
                     }
                 }
 
-                // Action Buttons
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                // Action Buttons (Yatay ve Düzenli Buton Dizilimi)
+                if (!customOs.isCustomActive) {
                     Button3D(
                         onClick = onOpenCreateDialog,
                         enabled = isUnlocked,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = themeColor),
-                        shape = RoundedCornerShape(10.dp)
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Default.Tune, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (customOs.isCustomActive) "İşletim Sistemini Düzenle" else "Özel OS Geliştir",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
+                            text = "Özel İşletim Sistemi Geliştir",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
-
-                    if (customOs.isCustomActive) {
-                        OutlinedButton(
-                            onClick = onOpenReleaseDialog,
-                            shape = RoundedCornerShape(10.dp)
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(Icons.Default.RocketLaunch, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("OTA Güncellemesi ($150k)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Button3D(
+                                onClick = onOpenCreateDialog,
+                                enabled = isUnlocked,
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = themeColor),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Icon(Icons.Default.Tune, contentDescription = null, modifier = Modifier.size(15.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "OS Ayarları",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+
+                            OutlinedButton(
+                                onClick = onOpenReleaseDialog,
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Icon(Icons.Default.RocketLaunch, contentDescription = null, modifier = Modifier.size(15.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "OTA Güncelle ($150k)",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
                         }
-                        
+
                         if (customOs.stability < 90) {
                             Button3D(
                                 onClick = onReleaseHotfix,
+                                modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(10.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))
                             ) {
                                 Icon(Icons.Default.BugReport, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Acil Hotfix ($500k)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Text(
+                                    text = "Acil Yama / Hotfix Yayınla ($500k)",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
                             }
                         }
                     }
@@ -465,13 +501,33 @@ fun UpdateGuaranteeSelectorSection(
                     color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface
                 ) {
                     Column(
-                        modifier = Modifier.padding(8.dp),
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
-                        Text(guarantee.title, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                        Text("+${guarantee.reputationBonus} İtibar", fontSize = 9.sp, color = Color(0xFF10B981), fontWeight = FontWeight.SemiBold)
-                        Text("$${"%,d".format(guarantee.monthlyCost)}/ay", fontSize = 9.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            text = guarantee.title,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                        Text(
+                            text = "+${guarantee.reputationBonus} İtibar",
+                            fontSize = 9.sp,
+                            color = Color(0xFF10B981),
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                        Text(
+                            text = "$${"%,d".format(guarantee.monthlyCost)}/ay",
+                            fontSize = 8.5.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            softWrap = false
+                        )
                     }
                 }
             }

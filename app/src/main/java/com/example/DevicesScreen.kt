@@ -416,11 +416,14 @@ fun DevicesScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 10.dp, vertical = 7.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Row(
+                                            modifier = Modifier.weight(1f),
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
@@ -434,14 +437,18 @@ fun DevicesScreen(
                                                 text = "🔥 %${model.discountPercent} İndirim Kampanyası Aktif!",
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color(0xFFDC2626)
+                                                color = Color(0xFFDC2626),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
                                             )
                                         }
+                                        Spacer(modifier = Modifier.width(6.dp))
                                         Text(
                                             text = "$${model.effectivePrice} (Eski: $${model.specs.price})",
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color(0xFFB91C1C)
+                                            color = Color(0xFFB91C1C),
+                                            softWrap = false
                                         )
                                     }
                                 }
@@ -459,11 +466,14 @@ fun DevicesScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 10.dp, vertical = 7.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Row(
+                                            modifier = Modifier.weight(1f),
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
@@ -474,19 +484,29 @@ fun DevicesScreen(
                                                 tint = Color(0xFFD97706)
                                             )
                                             Text(
-                                                text = "📦 Depo Şişmesi Uyarısı (${"%,d".format(model.remainingStock)} stok beklemede)",
+                                                text = "📦 Depo Şişmesi (${"%,d".format(model.remainingStock)} stok)",
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color(0xFFB45309)
+                                                color = Color(0xFFB45309),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
                                             )
                                         }
-                                        Text(
-                                            text = "İndirim Uygula",
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold,
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
                                             color = Color(0xFFD97706),
                                             modifier = Modifier.clickable { selectedModelForDiscount = model }
-                                        )
+                                        ) {
+                                            Text(
+                                                text = "İndirim Uygula",
+                                                fontSize = 10.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                                softWrap = false
+                                            )
+                                        }
                                     }
                                 }
                             } else if (isStockCritical) {
@@ -498,29 +518,42 @@ fun DevicesScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 10.dp, vertical = 7.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Row(
+                                            modifier = Modifier.weight(1f),
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
                                             Text("⚡", fontSize = 13.sp)
                                             Text(
-                                                text = "Stok Tükenmek Üzere (${"%,d".format(model.remainingStock)} adet kaldı)",
+                                                text = "Stok Azaldı (${"%,d".format(model.remainingStock)} kaldı)",
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color(0xFFC2410C)
+                                                color = Color(0xFFC2410C),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
                                             )
                                         }
-                                        Text(
-                                            text = "Stok Ekle",
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold,
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
                                             color = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.clickable { selectedModelForRestock = model }
-                                        )
+                                        ) {
+                                            Text(
+                                                text = "Stok Ekle",
+                                                fontSize = 10.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                                softWrap = false
+                                            )
+                                        }
                                     }
                                 }
                             }

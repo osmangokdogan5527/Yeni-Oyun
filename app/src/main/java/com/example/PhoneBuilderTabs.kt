@@ -178,7 +178,7 @@ fun PhoneBuilderHardwareTab(
     onLockedClick: (String) -> Unit
 ) {
     SelectionGroup(
-        title = "İşlemci / Yonga Seti",
+        title = "İşlemci (CPU & GPU)",
         options = currentProcessors,
         selectedOption = selectedProcessor,
         unlockedTech = unlockedTech,

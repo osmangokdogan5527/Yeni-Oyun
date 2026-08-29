@@ -466,78 +466,78 @@ fun getCompetitorHardwareSpecs(companyName: String, year: Int): CompetitorModelH
     val cleanName = companyName.lowercase()
     return when {
         cleanName.contains("apple") -> when {
-            year <= 2011 -> CompetitorModelHardware("Apple A4/A5 Bionic", "512 MB", "5 MP HDR Kamera", "1420 mAh", "3.5\" Retina IPS")
-            year in 2012..2015 -> CompetitorModelHardware("Apple A6/A8 Çip", "1-2 GB", "8 MP iSight Kamera", "1810 mAh", "4.0\"-5.5\" Retina HD")
-            year in 2016..2019 -> CompetitorModelHardware("Apple A11/A13 Bionic", "3-4 GB", "12 MP Çift OIS Kamera", "3110 mAh", "5.8\" Super Retina OLED")
-            year in 2020..2022 -> CompetitorModelHardware("Apple A15 Bionic 5G", "6 GB", "12 MP Üçlü Pro Kamera", "4352 mAh", "6.7\" ProMotion 120Hz")
-            else -> CompetitorModelHardware("Apple A18 Pro 3nm AI", "8 GB LPDDR5X", "48 MP Fusion 5x Periskop", "4685 mAh", "6.9\" Dynamic Island 120Hz")
+            year <= 2011 -> CompetitorModelHardware("Apple A4/A5 Bionic", "512 MB", "5 MP HDR Kamera", "1420 mAh (5W Standart)", "3.5\" Retina IPS")
+            year in 2012..2015 -> CompetitorModelHardware("Apple A6/A8 Çip", "1-2 GB", "8 MP iSight Kamera", "1810 mAh (5W Standart)", "4.0\"-5.5\" Retina HD")
+            year in 2016..2019 -> CompetitorModelHardware("Apple A11/A13 Bionic", "3-4 GB", "12 MP Çift OIS Kamera", "3110 mAh (18W Hızlı Şarj)", "5.8\" Super Retina OLED")
+            year in 2020..2022 -> CompetitorModelHardware("Apple A15 Bionic 5G", "6 GB", "12 MP Üçlü Pro Kamera", "4352 mAh (27W Hızlı Şarj)", "6.7\" ProMotion 120Hz")
+            else -> CompetitorModelHardware("Apple A18 Pro 3nm AI", "8 GB LPDDR5X", "48 MP Fusion 5x Periskop", "4685 mAh (30W MagSafe Hızlı)", "6.9\" Dynamic Island 120Hz")
         }
         cleanName.contains("samsung") -> when {
-            year <= 2011 -> CompetitorModelHardware("Exynos 4210 Dual", "1 GB", "8 MP 1080p Kamera", "1650 mAh", "4.3\" Super AMOLED Plus")
-            year in 2012..2015 -> CompetitorModelHardware("Exynos 7420 Octa", "3 GB", "16 MP OIS Kamera", "2550 mAh", "5.1\" Quad HD Kavisli AMOLED")
-            year in 2016..2019 -> CompetitorModelHardware("Exynos 9820 / Snapdragon 855", "8 GB", "12 MP Değişken Diyafram", "4100 mAh", "6.4\" Dinamik AMOLED Infinity-O")
-            year in 2020..2022 -> CompetitorModelHardware("Snapdragon 8 Gen 1", "12 GB", "108 MP 100x Uzay Zoom", "5000 mAh", "6.8\" Edge QHD+ 120Hz")
-            else -> CompetitorModelHardware("Snapdragon 8 Elite Galaxy", "16 GB LPDDR5X", "200 MP ISOCELL 100x Zoom", "5500 mAh", "6.8\" Düz Titanyum 120Hz AMOLED")
+            year <= 2011 -> CompetitorModelHardware("Exynos 4210 Dual", "1 GB", "8 MP 1080p Kamera", "1650 mAh (5W Standart)", "4.3\" Super AMOLED Plus")
+            year in 2012..2015 -> CompetitorModelHardware("Exynos 7420 Octa", "3 GB", "16 MP OIS Kamera", "2550 mAh (15W Hızlı & Kablosuz)", "5.1\" Quad HD Kavisli AMOLED")
+            year in 2016..2019 -> CompetitorModelHardware("Exynos 9820 / Snapdragon 855", "8 GB", "12 MP Değişken Diyafram", "4100 mAh (15W Hızlı Şarj)", "6.4\" Dinamik AMOLED Infinity-O")
+            year in 2020..2022 -> CompetitorModelHardware("Snapdragon 8 Gen 1", "12 GB", "108 MP 100x Uzay Zoom", "5000 mAh (45W Süper Hızlı)", "6.8\" Edge QHD+ 120Hz")
+            else -> CompetitorModelHardware("Snapdragon 8 Elite Galaxy", "16 GB LPDDR5X", "200 MP ISOCELL 100x Zoom", "5500 mAh (45W Süper Hızlı)", "6.8\" Düz Titanyum 120Hz AMOLED")
         }
         cleanName.contains("oneplus") -> when {
-            year <= 2013 -> CompetitorModelHardware("Snapdragon 600 Quad", "2 GB", "13 MP Kamera", "2600 mAh", "5.0\" Full HD IPS")
-            year in 2014..2015 -> CompetitorModelHardware("Snapdragon 801 Flagship", "3 GB", "13 MP Sony IMX214", "3100 mAh", "5.5\" FHD IPS")
-            year in 2016..2017 -> CompetitorModelHardware("Snapdragon 820/835", "6 GB", "16 MP Dash Charge", "3400 mAh", "5.5\" Optic AMOLED")
-            year in 2018..2019 -> CompetitorModelHardware("Snapdragon 845/855", "8 GB", "48 MP OIS Warp Charge", "3700 mAh", "6.41\" Fluid AMOLED 90Hz")
-            year in 2020..2022 -> CompetitorModelHardware("Snapdragon 8 Gen 1 Pro", "12 GB", "50 MP Hasselblad Kamera", "5000 mAh (80W)", "6.7\" Fluid AMOLED 120Hz")
-            else -> CompetitorModelHardware("Snapdragon 8 Gen 3 / 8 Elite", "16 GB LPDDR5X", "50 MP Hasselblad Periskop", "5400 mAh (100W)", "6.82\" 2K 120Hz LTPO")
+            year <= 2013 -> CompetitorModelHardware("Snapdragon 600 Quad", "2 GB", "13 MP Kamera", "2600 mAh (10W Standart)", "5.0\" Full HD IPS")
+            year in 2014..2015 -> CompetitorModelHardware("Snapdragon 801 Flagship", "3 GB", "13 MP Sony IMX214", "3100 mAh (10W Standart)", "5.5\" FHD IPS")
+            year in 2016..2017 -> CompetitorModelHardware("Snapdragon 820/835", "6 GB", "16 MP Dash Charge", "3400 mAh (20W Dash Charge)", "5.5\" Optic AMOLED")
+            year in 2018..2019 -> CompetitorModelHardware("Snapdragon 845/855", "8 GB", "48 MP OIS Warp Charge", "3700 mAh (30W Warp Charge)", "6.41\" Fluid AMOLED 90Hz")
+            year in 2020..2022 -> CompetitorModelHardware("Snapdragon 8 Gen 1 Pro", "12 GB", "50 MP Hasselblad Kamera", "5000 mAh (80W SuperVOOC)", "6.7\" Fluid AMOLED 120Hz")
+            else -> CompetitorModelHardware("Snapdragon 8 Gen 3 / 8 Elite", "16 GB LPDDR5X", "50 MP Hasselblad Periskop", "5400 mAh (100W SuperVOOC)", "6.82\" 2K 120Hz LTPO")
         }
         cleanName.contains("xiaomi") -> when {
-            year <= 2013 -> CompetitorModelHardware("Snapdragon S4 / 800", "2 GB", "13 MP Sony Sensör", "3050 mAh", "5.0\" IPS 1080p")
-            year in 2014..2018 -> CompetitorModelHardware("Snapdragon 845 Flagship", "6 GB", "12 MP Çift AI Kamera", "3400 mAh", "6.21\" AMOLED Çentikli")
-            year in 2019..2022 -> CompetitorModelHardware("Snapdragon 8 Gen 1 Pro", "12 GB", "50 MP 1/1.28\" Sensör", "4600 mAh (120W)", "6.73\" 2K 120Hz AMOLED")
-            else -> CompetitorModelHardware("Snapdragon 8 Elite Ultra", "16 GB", "50 MP 1-İnç Leica Sensör", "5500 mAh (90W)", "6.73\" 120Hz 3000nit OLED")
+            year <= 2013 -> CompetitorModelHardware("Snapdragon S4 / 800", "2 GB", "13 MP Sony Sensör", "3050 mAh (10W Standart)", "5.0\" IPS 1080p")
+            year in 2014..2018 -> CompetitorModelHardware("Snapdragon 845 Flagship", "6 GB", "12 MP Çift AI Kamera", "3400 mAh (18W Quick Charge)", "6.21\" AMOLED Çentikli")
+            year in 2019..2022 -> CompetitorModelHardware("Snapdragon 8 Gen 1 Pro", "12 GB", "50 MP 1/1.28\" Sensör", "4600 mAh (120W HyperCharge)", "6.73\" 2K 120Hz AMOLED")
+            else -> CompetitorModelHardware("Snapdragon 8 Elite Ultra", "16 GB", "50 MP 1-İnç Leica Sensör", "5500 mAh (90W HyperCharge)", "6.73\" 120Hz 3000nit OLED")
         }
         cleanName.contains("google") -> when {
-            year <= 2015 -> CompetitorModelHardware("Snapdragon 810 Octa", "3 GB", "12.3 MP 1.55µm Piksel", "3450 mAh", "5.7\" WQHD AMOLED")
-            year in 2016..2020 -> CompetitorModelHardware("Snapdragon 845/765G", "6 GB", "12.2 MP Dual Pixel HDR+", "4080 mAh", "6.0\" OLED 90Hz")
-            year in 2021..2023 -> CompetitorModelHardware("Google Tensor G2 AI", "12 GB", "50 MP GN1 + 48 MP 5x Zoom", "5000 mAh", "6.7\" LTPO 120Hz")
-            else -> CompetitorModelHardware("Google Tensor G4 Gemini AI", "16 GB", "50 MP AI Pro + Gemini Studio", "5060 mAh", "6.8\" Super Actua LTPO")
+            year <= 2015 -> CompetitorModelHardware("Snapdragon 810 Octa", "3 GB", "12.3 MP 1.55µm Piksel", "3450 mAh (15W Hızlı Şarj)", "5.7\" WQHD AMOLED")
+            year in 2016..2020 -> CompetitorModelHardware("Snapdragon 845/765G", "6 GB", "12.2 MP Dual Pixel HDR+", "4080 mAh (18W Hızlı Şarj)", "6.0\" OLED 90Hz")
+            year in 2021..2023 -> CompetitorModelHardware("Google Tensor G2 AI", "12 GB", "50 MP GN1 + 48 MP 5x Zoom", "5000 mAh (30W Hızlı Şarj)", "6.7\" LTPO 120Hz")
+            else -> CompetitorModelHardware("Google Tensor G4 Gemini AI", "16 GB", "50 MP AI Pro + Gemini Studio", "5060 mAh (45W Hızlı Şarj)", "6.8\" Super Actua LTPO")
         }
         cleanName.contains("huawei") -> when {
-            year <= 2015 -> CompetitorModelHardware("Kirin 950 Octa-core", "3-4 GB", "12 MP Leica Çift Kamera", "3000 mAh", "5.2\" Full HD IPS")
-            year in 2016..2019 -> CompetitorModelHardware("Kirin 980 7nm Dual NPU", "8 GB", "40 MP RYYB Sensör + 5x Zoom", "4200 mAh (40W)", "6.39\" Kavisli OLED")
-            year in 2020..2022 -> CompetitorModelHardware("Kirin 9000 5nm 5G", "8-12 GB", "50 MP Ultra Vision XMAGE", "4400 mAh (66W)", "6.76\" 90Hz Horizon OLED")
-            else -> CompetitorModelHardware("Kirin 9010 XMAGE Engine", "16 GB", "50 MP Geri Çekilebilir 1-İnç", "5200 mAh (100W)", "6.8\" 120Hz Dört Kavisli LTPO")
+            year <= 2015 -> CompetitorModelHardware("Kirin 950 Octa-core", "3-4 GB", "12 MP Leica Çift Kamera", "3000 mAh (18W Hızlı Şarj)", "5.2\" Full HD IPS")
+            year in 2016..2019 -> CompetitorModelHardware("Kirin 980 7nm Dual NPU", "8 GB", "40 MP RYYB Sensör + 5x Zoom", "4200 mAh (40W SuperCharge)", "6.39\" Kavisli OLED")
+            year in 2020..2022 -> CompetitorModelHardware("Kirin 9000 5nm 5G", "8-12 GB", "50 MP Ultra Vision XMAGE", "4400 mAh (66W SuperCharge)", "6.76\" 90Hz Horizon OLED")
+            else -> CompetitorModelHardware("Kirin 9010 XMAGE Engine", "16 GB", "50 MP Geri Çekilebilir 1-İnç", "5200 mAh (100W SuperCharge)", "6.8\" 120Hz Dört Kavisli LTPO")
         }
         cleanName.contains("sony") -> when {
-            year <= 2013 -> CompetitorModelHardware("Snapdragon S4 Pro", "2 GB", "13 MP Exmor RS", "2330 mAh", "5.0\" Full HD")
-            year in 2014..2017 -> CompetitorModelHardware("Snapdragon 801/820", "3-4 GB", "20.7 MP 4K Video", "3200 mAh", "5.2\" Triluminos FHD")
-            year in 2018..2021 -> CompetitorModelHardware("Snapdragon 855/888", "8-12 GB", "12 MP Üçlü ZEISS T*", "4000 mAh", "6.5\" 4K HDR OLED 120Hz")
-            else -> CompetitorModelHardware("Snapdragon 8 Gen 3 ZEISS", "16 GB", "48 MP Exmor-T Pro Sensör", "5000 mAh", "6.5\" 120Hz LTPO OLED")
+            year <= 2013 -> CompetitorModelHardware("Snapdragon S4 Pro", "2 GB", "13 MP Exmor RS", "2330 mAh (5W Standart)", "5.0\" Full HD")
+            year in 2014..2017 -> CompetitorModelHardware("Snapdragon 801/820", "3-4 GB", "20.7 MP 4K Video", "3200 mAh (18W Quick Charge)", "5.2\" Triluminos FHD")
+            year in 2018..2021 -> CompetitorModelHardware("Snapdragon 855/888", "8-12 GB", "12 MP Üçlü ZEISS T*", "4000 mAh (21W Hızlı Şarj)", "6.5\" 4K HDR OLED 120Hz")
+            else -> CompetitorModelHardware("Snapdragon 8 Gen 3 ZEISS", "16 GB", "48 MP Exmor-T Pro Sensör", "5000 mAh (30W Hızlı Şarj)", "6.5\" 120Hz LTPO OLED")
         }
         cleanName.contains("asus") -> when {
-            year <= 2015 -> CompetitorModelHardware("Intel Atom Z3580 Quad", "4 GB", "13 MP PixelMaster", "3000 mAh", "5.5\" IPS FHD")
-            year in 2016..2019 -> CompetitorModelHardware("Snapdragon 845/855+ ROG", "8-12 GB", "48 MP Sony Sensör", "6000 mAh", "6.59\" 120Hz AMOLED")
-            year in 2020..2022 -> CompetitorModelHardware("Snapdragon 8 Gen 1 ROG", "16 GB", "50 MP Sony IMX766", "6000 mAh (65W)", "6.78\" 165Hz AMOLED")
-            else -> CompetitorModelHardware("Snapdragon 8 Gen 3 Ultimate", "24 GB", "50 MP Gimbal OIS", "5500 mAh (65W)", "6.78\" 165Hz LTPO OLED")
+            year <= 2015 -> CompetitorModelHardware("Intel Atom Z3580 Quad", "4 GB", "13 MP PixelMaster", "3000 mAh (18W BoostMaster)", "5.5\" IPS FHD")
+            year in 2016..2019 -> CompetitorModelHardware("Snapdragon 845/855+ ROG", "8-12 GB", "48 MP Sony Sensör", "6000 mAh (30W HyperCharge)", "6.59\" 120Hz AMOLED")
+            year in 2020..2022 -> CompetitorModelHardware("Snapdragon 8 Gen 1 ROG", "16 GB", "50 MP Sony IMX766", "6000 mAh (65W HyperCharge)", "6.78\" 165Hz AMOLED")
+            else -> CompetitorModelHardware("Snapdragon 8 Gen 3 Ultimate", "24 GB", "50 MP Gimbal OIS", "5500 mAh (65W HyperCharge)", "6.78\" 165Hz LTPO OLED")
         }
         cleanName.contains("oppo") || cleanName.contains("realme") || cleanName.contains("vivo") -> when {
-            year <= 2013 -> CompetitorModelHardware("Snapdragon 600 / MT6589", "2 GB", "13 MP Dönen Kamera", "2500 mAh", "5.0\" IPS 1080p")
-            year in 2014..2017 -> CompetitorModelHardware("Snapdragon 801 / VOOC", "3-4 GB", "16 MP Schneider-Kreuznach", "3000 mAh (VOOC)", "5.5\" AMOLED")
-            year in 2018..2021 -> CompetitorModelHardware("Snapdragon 855 / 865 5G", "8-12 GB", "48-64 MP Çift/Üçlü OIS", "4200 mAh (65W)", "6.5\" 90Hz-120Hz OLED")
-            else -> CompetitorModelHardware("MediaTek D9300 / 8 Gen 3", "16 GB", "50 MP 1-İnç Hasselblad/ZEISS", "5400 mAh (100W)", "6.78\" 120Hz 1.5K LTPO")
+            year <= 2013 -> CompetitorModelHardware("Snapdragon 600 / MT6589", "2 GB", "13 MP Dönen Kamera", "2500 mAh (5W Standart)", "5.0\" IPS 1080p")
+            year in 2014..2017 -> CompetitorModelHardware("Snapdragon 801 / VOOC", "3-4 GB", "16 MP Schneider-Kreuznach", "3000 mAh (20W VOOC Şarj)", "5.5\" AMOLED")
+            year in 2018..2021 -> CompetitorModelHardware("Snapdragon 855 / 865 5G", "8-12 GB", "48-64 MP Çift/Üçlü OIS", "4200 mAh (65W SuperVOOC)", "6.5\" 90Hz-120Hz OLED")
+            else -> CompetitorModelHardware("MediaTek D9300 / 8 Gen 3", "16 GB", "50 MP 1-İnç Hasselblad/ZEISS", "5400 mAh (100W FlashCharge)", "6.78\" 120Hz 1.5K LTPO")
         }
         cleanName.contains("nothing") -> when {
-            year <= 2022 -> CompetitorModelHardware("Snapdragon 778G+ 5G", "8 GB", "50 MP Çift Sony IMX766", "4500 mAh (33W)", "6.55\" 120Hz OLED")
-            year in 2023..2024 -> CompetitorModelHardware("Snapdragon 8+ Gen 1", "12 GB", "50 MP Sony IMX890 OIS", "4700 mAh (45W)", "6.7\" 120Hz LTPO OLED")
-            else -> CompetitorModelHardware("Snapdragon 8 Gen 3 AI", "16 GB", "50 MP Üçlü Pro Glyph", "5000 mAh (65W)", "6.7\" 144Hz LTPO OLED")
+            year <= 2022 -> CompetitorModelHardware("Snapdragon 778G+ 5G", "8 GB", "50 MP Çift Sony IMX766", "4500 mAh (33W Hızlı Şarj)", "6.55\" 120Hz OLED")
+            year in 2023..2024 -> CompetitorModelHardware("Snapdragon 8+ Gen 1", "12 GB", "50 MP Sony IMX890 OIS", "4700 mAh (45W Hızlı Şarj)", "6.7\" 120Hz LTPO OLED")
+            else -> CompetitorModelHardware("Snapdragon 8 Gen 3 AI", "16 GB", "50 MP Üçlü Pro Glyph", "5000 mAh (65W Hızlı Şarj)", "6.7\" 144Hz LTPO OLED")
         }
         cleanName.contains("nokia") -> when {
-            year <= 2012 -> CompetitorModelHardware("Snapdragon S4 Dual", "1 GB", "41 MP PureView Carl Zeiss", "2000 mAh", "4.5\" PureMotion HD+")
-            year in 2013..2017 -> CompetitorModelHardware("Snapdragon 800 / 835", "3-4 GB", "20 MP PureView OIS", "3000 mAh", "5.0\"-5.3\" QHD IPS")
-            else -> CompetitorModelHardware("Snapdragon 778G / 865", "6-8 GB", "64 MP ZEISS Dörtlü", "4500 mAh", "6.67\" FHD+ 120Hz")
+            year <= 2012 -> CompetitorModelHardware("Snapdragon S4 Dual", "1 GB", "41 MP PureView Carl Zeiss", "2000 mAh (5W Standart)", "4.5\" PureMotion HD+")
+            year in 2013..2017 -> CompetitorModelHardware("Snapdragon 800 / 835", "3-4 GB", "20 MP PureView OIS", "3000 mAh (18W Hızlı Şarj)", "5.0\"-5.3\" QHD IPS")
+            else -> CompetitorModelHardware("Snapdragon 778G / 865", "6-8 GB", "64 MP ZEISS Dörtlü", "4500 mAh (33W Hızlı Şarj)", "6.67\" FHD+ 120Hz")
         }
         else -> when {
-            year <= 2013 -> CompetitorModelHardware("Snapdragon S4 / MT6589", "2 GB", "8-13 MP Kamera", "2500 mAh", "4.7\"-5.0\" HD Ekran")
-            year in 2014..2018 -> CompetitorModelHardware("Snapdragon 801 / Helio X10", "3-4 GB", "16 MP Çift Kamera", "3200 mAh", "5.5\" Full HD")
-            year in 2019..2022 -> CompetitorModelHardware("Snapdragon 865 / D800 5G", "8-12 GB", "50-64 MP OIS Kamera", "4500 mAh (65W)", "6.5\" 120Hz AMOLED")
-            else -> CompetitorModelHardware("Snapdragon 8 Gen 3 / D9300", "12-16 GB", "50-200 MP Gelişmiş Lens", "5000+ mAh Hızlı Şarj", "6.7\" 120Hz OLED")
+            year <= 2013 -> CompetitorModelHardware("Snapdragon S4 / MT6589", "2 GB", "8-13 MP Kamera", "2500 mAh (5W Standart)", "4.7\"-5.0\" HD Ekran")
+            year in 2014..2018 -> CompetitorModelHardware("Snapdragon 801 / Helio X10", "3-4 GB", "16 MP Çift Kamera", "3200 mAh (10W Hızlı Şarj)", "5.5\" Full HD")
+            year in 2019..2022 -> CompetitorModelHardware("Snapdragon 865 / D800 5G", "8-12 GB", "50-64 MP OIS Kamera", "4500 mAh (65W Hızlı Şarj)", "6.5\" 120Hz AMOLED")
+            else -> CompetitorModelHardware("Snapdragon 8 Gen 3 / D9300", "12-16 GB", "50-200 MP Gelişmiş Lens", "5000 mAh (80W Hızlı Şarj)", "6.7\" 120Hz OLED")
         }
     }
 }

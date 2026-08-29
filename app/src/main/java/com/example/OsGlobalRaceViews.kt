@@ -126,9 +126,9 @@ fun PlayerOsComparisonCard(customOs: CustomOsState, state: GameState) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OsCompareMetric(label = "Teknoloji Seviyesi", score = customOs.overallTechScore, color = Color(0xFF3B82F6), modifier = Modifier.weight(1f))
-                OsCompareMetric(label = "Ekosistem Gücü", score = customOs.ecosystemScore, color = Color(0xFF8B5CF6), modifier = Modifier.weight(1f))
-                OsCompareMetric(label = "Kullanıcı Sadakati", score = customOs.customerLoyaltyPercent.toInt(), color = Color(0xFF10B981), modifier = Modifier.weight(1f))
+                OsCompareMetric(label = "Teknoloji", score = customOs.overallTechScore, color = Color(0xFF3B82F6), modifier = Modifier.weight(1f))
+                OsCompareMetric(label = "Ekosistem", score = customOs.ecosystemScore, color = Color(0xFF8B5CF6), modifier = Modifier.weight(1f))
+                OsCompareMetric(label = "Sadakat", textValue = "%${customOs.customerLoyaltyPercent.toInt()}", color = Color(0xFF10B981), modifier = Modifier.weight(1f))
             }
 
             // Specs Row
@@ -241,14 +241,15 @@ fun OsCompareMetric(
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
     ) {
         Column(
-            modifier = Modifier.padding(6.dp),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             Text(
                 text = label,
-                fontSize = 9.sp,
+                fontSize = 9.5.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
+                softWrap = false,
                 overflow = TextOverflow.Ellipsis
             )
             Text(

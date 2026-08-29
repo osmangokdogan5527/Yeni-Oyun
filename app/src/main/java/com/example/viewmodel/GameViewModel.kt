@@ -151,7 +151,30 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
         } else loaded.currentTrend
 
-        return loaded.copy(activeModels = sanitizedModels, currentTrend = sanitizedTrend)
+        val sanitizedCustomOs = if (loaded.customOs.activeDevelopment != null) {
+            val dev = loaded.customOs.activeDevelopment!!
+            val assigned = loaded.customOs.assignedDevs.coerceIn(0, loaded.engineers)
+            val realisticTotal = calculateOsDevelopmentPeriods(dev.type, assigned, loaded.engineers)
+            if (dev.totalMonths > 24 || dev.remainingMonths > 24) {
+                val currentProgress = (1f - (dev.remainingMonths.toFloat() / dev.totalMonths.coerceAtLeast(1).toFloat())).coerceIn(0f, 0.95f)
+                val newRem = ((1f - currentProgress) * realisticTotal).toInt().coerceIn(1, realisticTotal)
+                loaded.customOs.copy(
+                    activeDevelopment = dev.copy(
+                        totalMonths = realisticTotal,
+                        remainingMonths = newRem
+                    )
+                )
+            } else loaded.customOs
+        } else loaded.customOs
+
+        return loaded.copy(activeModels = sanitizedModels, currentTrend = sanitizedTrend, customOs = sanitizedCustomOs)
+    }
+
+    fun calculateOsDevelopmentPeriods(type: OsType, assignedDevs: Int, totalEngineers: Int): Int {
+        val basePeriods = if (type == OsType.PROPRIETARY_KERNEL) 14 else 8
+        val effectiveDevs = assignedDevs.coerceAtLeast(1) + (totalEngineers / 8)
+        val speedMultiplier = kotlin.math.sqrt(effectiveDevs.toDouble() / 3.0).coerceIn(0.6, 3.5)
+        return (basePeriods / speedMultiplier).toInt().coerceIn(2, 20)
     }
 
     fun autoSaveGame() {
@@ -687,6 +710,77 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         var updatedCustomOs = currentState.customOs
         var appStoreRevenueThisPeriod = 0L
         var licenseRevenueThisPeriod = 0L
+        val osReports = mutableListOf<MarketReport>()
+        val osNewsList = mutableListOf<NewsArticle>()
+
+        // 0. Active OS Development Countdown & Completion
+        if (updatedCustomOs.activeDevelopment != null) {
+            val activeDev = updatedCustomOs.activeDevelopment!!
+            val assigned = updatedCustomOs.assignedDevs.coerceIn(0, currentState.engineers)
+            val progressSteps = when {
+                assigned >= 35 -> 3
+                assigned >= 12 -> 2
+                else -> 1
+            }
+            val remaining = activeDev.remainingMonths - progressSteps
+
+            if (remaining <= 0) {
+                // OS Development Completed!
+                val isMajor = activeDev.isMajorUpdate
+                val newMajorVer = if (isMajor) updatedCustomOs.majorVersionCount + 1 else 1
+                val newVersionStr = activeDev.targetVersion
+
+                val baseOpt = when (activeDev.focus) {
+                    OsFocus.GAMING_TURBO -> 45
+                    OsFocus.LIGHTWEIGHT -> 50
+                    OsFocus.AI_SMART -> 42
+                    OsFocus.SECURITY -> 40
+                    OsFocus.AESTHETIC -> 38
+                }
+
+                updatedCustomOs = updatedCustomOs.copy(
+                    activeDevelopment = null,
+                    name = activeDev.name,
+                    version = newVersionStr,
+                    type = activeDev.type,
+                    licenseType = activeDev.licenseType,
+                    focus = activeDev.focus,
+                    themeColorHex = activeDev.themeColorHex,
+                    perDeviceLicenseFee = activeDev.perDeviceLicenseFee,
+                    majorVersionCount = newMajorVer,
+                    minorVersionCount = 0,
+                    stability = 100,
+                    optimizationScore = (baseOpt + (assigned * 2)).coerceIn(30, 95),
+                    popularityPercent = if (isMajor) (updatedCustomOs.popularityPercent + 6.0f).coerceAtMost(85f) else 5.0f,
+                    ecosystemScore = if (isMajor) (updatedCustomOs.ecosystemScore + 8).coerceAtMost(100) else 15
+                )
+
+                osNewsList.add(
+                    NewsArticle(
+                        id = "news_os_launch_${newYear}_${newMonth}_${newPeriod}_${Random.nextInt(100, 999)}",
+                        title = "🚀 YENİ İŞLETİM SİSTEMİ: ${activeDev.name} v$newVersionStr Yayında!",
+                        text = "${currentState.companyName} şirketi, geliştirmesini tamamladığı '${activeDev.name} v$newVersionStr' (${activeDev.type.title}) mobil işletim sistemini resmen duyurdu ve ekosistemine kazandırdı!",
+                        category = "Yazılım",
+                        year = newYear,
+                        month = newMonth
+                    )
+                )
+
+                osReports.add(
+                    MarketReport(
+                        title = "İşletim Sistemi Ar-Ge Tamamlandı: ${activeDev.name}",
+                        text = "${activeDev.name} v$newVersionStr projesinin Ar-Ge ve optimizasyon süreci başarıyla bitti. Artık Cihazlar sekmesinden yeni telefon modellerinizde '${activeDev.name}' seçebilir ve mağaza ekosisteminizi büyütebilirsiniz.",
+                        profit = 0,
+                        unitsSold = 0,
+                        reviewScore = 0
+                    )
+                )
+            } else {
+                updatedCustomOs = updatedCustomOs.copy(
+                    activeDevelopment = activeDev.copy(remainingMonths = remaining)
+                )
+            }
+        }
 
         if (updatedCustomOs.isCustomActive) {
             val devCount = updatedCustomOs.assignedDevs.coerceAtMost(currentState.engineers)
@@ -1103,6 +1197,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
         newNewsList.addAll(finishedModelsNews)
         newNewsList.addAll(researchNewsList)
+        newNewsList.addAll(osNewsList)
 
         val activeCount = updatedActiveModels.count { !it.isCompleted }
 
@@ -1304,7 +1399,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 activeResearch = currentActiveResearch,
                 researchQueue = updatedResearchQueue,
                 acquisitionTargets = updatedAcquisitionTargets,
-                reports = it.reports + researchReports + report,
+                reports = it.reports + researchReports + osReports + report,
                 newsList = newNewsList,
                 currentTrend = updatedTrend,
                 competitors = updatedCompetitors,
@@ -2132,10 +2227,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val isMajorUpdate = (type == currentState.customOs.type && currentState.customOs.name == name)
         val initialVersion = if (isMajorUpdate) "${currentState.customOs.majorVersionCount + 1}.0" else "1.0"
 
-        val baseMonths = if (type == OsType.PROPRIETARY_KERNEL) 24 else if (type == OsType.CUSTOM_UI_SKIN) 12 else 0
-        val engineerFactor = (currentState.engineers / 500.0).coerceIn(0.1, 3.0)
-        val totalMonths = (baseMonths / engineerFactor).toInt().coerceAtLeast(3)
-        val totalPeriods = totalMonths * 2
+        val effectiveDevs = if (currentState.customOs.assignedDevs > 0) currentState.customOs.assignedDevs else currentState.engineers.coerceIn(1, 20)
+        val totalPeriods = calculateOsDevelopmentPeriods(type, effectiveDevs, currentState.engineers)
 
         val qaInvestment = (currentState.qaInspectors * 5000L).coerceAtMost(devCost)
 
@@ -2156,7 +2249,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         val report = MarketReport(
             title = "OS Geliştirmesi Başladı: $name v$initialVersion",
-            text = "$name v$initialVersion ($type) için Ar-Ge başladı. Bütçe: $${"%,d".format(devCost)}. Tahmini Süre: $totalPeriods dönem.",
+            text = "$name v$initialVersion ($type) için Ar-Ge başladı. Bütçe: $${"%,d".format(devCost)}. Tahmini Süre: $totalPeriods dönem (Mühendis atayarak süreyi kısaltabilirsiniz).",
             profit = -devCost,
             unitsSold = 0,
             reviewScore = 0
@@ -2165,9 +2258,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _state.update {
             it.copy(
                 budget = it.budget - devCost,
-                customOs = it.customOs.copy(activeDevelopment = activeDev),
+                customOs = it.customOs.copy(
+                    activeDevelopment = activeDev,
+                    assignedDevs = if (it.customOs.assignedDevs == 0) effectiveDevs else it.customOs.assignedDevs
+                ),
                 reports = it.reports + report,
-                noticeMessage = "OS Geliştirme Projesi başlatıldı!"
+                noticeMessage = "OS Geliştirme Projesi başlatıldı! ($totalPeriods Dönem)"
             )
         }
     }
@@ -2176,9 +2272,21 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val maxEng = _state.value.engineers
         val validCount = count.coerceIn(0, maxEng)
         _state.update {
+            val currentDev = it.customOs.activeDevelopment
+            val updatedDev = if (currentDev != null) {
+                val newTotal = calculateOsDevelopmentPeriods(currentDev.type, validCount, maxEng)
+                val currentProg = (1f - (currentDev.remainingMonths.toFloat() / currentDev.totalMonths.coerceAtLeast(1).toFloat())).coerceIn(0f, 0.95f)
+                val newRemaining = ((1f - currentProg) * newTotal).toInt().coerceIn(1, newTotal)
+                currentDev.copy(totalMonths = newTotal, remainingMonths = newRemaining)
+            } else null
+
+            val speedNote = if (updatedDev != null) " (Kalan Süre: ${updatedDev.remainingMonths} Dönem)" else ""
             it.copy(
-                customOs = it.customOs.copy(assignedDevs = validCount),
-                noticeMessage = "Yazılım ekibine $validCount geliştirici atandı."
+                customOs = it.customOs.copy(
+                    assignedDevs = validCount,
+                    activeDevelopment = updatedDev ?: it.customOs.activeDevelopment
+                ),
+                noticeMessage = "Yazılım ekibine $validCount geliştirici atandı$speedNote."
             )
         }
         autoSaveGame()

@@ -213,7 +213,7 @@ fun PhoneBuilderScreen(
                             }
                         }
                         Text("Birim Maliyet: $$unitCost • Toplam: $${"%,d".format(totalCost).replace(',', '.')}", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, maxLines = 1)
-                        val sectionNames = listOf("Tasarım", "Yonga & RAM", "Ekran & Kamera", "OS Seçimi", "Seri & Üretim")
+                        val sectionNames = listOf("Tasarım", "İşlemci & RAM", "Ekran & Kamera", "OS Seçimi", "Seri & Üretim")
                         Text(
                             "Cihazlar  ›  Yeni Model  ›  ${sectionNames.getOrElse(selectedTabSection) { "Tasarım" }}",
                             fontSize = 10.sp,
@@ -550,7 +550,7 @@ fun PhoneBuilderScreen(
             ) {
                 val tabs = listOf(
                     Triple(0, "Tasarım", Icons.Default.Palette),
-                    Triple(1, "Yonga & RAM", Icons.Default.Memory),
+                    Triple(1, "İşlemci & RAM", Icons.Default.Memory),
                     Triple(2, "Ekran & Kamera", Icons.Default.CameraAlt),
                     Triple(3, "OS Seçimi", Icons.Default.Terminal),
                     Triple(4, "Seri & Üretim", Icons.Default.LocalOffer)
