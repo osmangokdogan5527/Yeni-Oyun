@@ -125,7 +125,7 @@ fun PhoneVisualPreview(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(430.dp),
+                .height(360.dp),
             contentAlignment = Alignment.Center
         ) {
             // Stüdyo Zemin Işık Halkası & Spot

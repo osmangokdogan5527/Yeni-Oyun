@@ -34,13 +34,24 @@ fun ProOutlinedButton(
     contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 7.dp),
     content: @Composable RowScope.() -> Unit
 ) {
-    OutlinedButton(
+    val containerColor = if (enabled) {
+        MaterialTheme.colorScheme.surface
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f)
+    }
+
+    Button3D(
         onClick = onClick,
         modifier = modifier,
         enabled = enabled,
         shape = shape,
-        colors = colors,
-        border = border,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = containerColor,
+            contentColor = if (enabled) colors.contentColor else colors.disabledContentColor,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f),
+            disabledContentColor = colors.disabledContentColor
+        ),
+        border = border ?: BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.9f)),
         contentPadding = contentPadding,
         content = content
     )
@@ -60,12 +71,18 @@ fun ProTextButton(
     contentPadding: PaddingValues = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
     content: @Composable RowScope.() -> Unit
 ) {
-    TextButton(
+    Button3D(
         onClick = onClick,
         modifier = modifier,
         enabled = enabled,
         shape = shape,
-        colors = colors,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.60f),
+            contentColor = if (enabled) colors.contentColor else colors.disabledContentColor,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+            disabledContentColor = colors.disabledContentColor
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.75f)),
         contentPadding = contentPadding,
         content = content
     )
@@ -82,16 +99,17 @@ fun ProIconButton(
     Surface(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier.sizeIn(minWidth = 32.dp, minHeight = 32.dp),
-        shape = RoundedCornerShape(10.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.58f),
+        modifier = modifier.sizeIn(minWidth = 34.dp, minHeight = 34.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = if (enabled) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f),
         contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.75f)),
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.88f)),
+        tonalElevation = 0.5.dp,
+        shadowElevation = if (enabled) 6.dp else 1.dp
     ) {
         androidx.compose.foundation.layout.Box(
             contentAlignment = androidx.compose.ui.Alignment.Center,
+            modifier = Modifier.sizeIn(minWidth = 34.dp, minHeight = 34.dp),
             content = { content() }
         )
     }

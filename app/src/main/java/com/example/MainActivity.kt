@@ -183,12 +183,34 @@ fun GameTopBar(
                 
                 Button3D(
                     onClick = onAdvanceTime,
-                    modifier = Modifier.height(34.dp),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                    modifier = Modifier.height(38.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    shape = RoundedCornerShape(11.dp)
+                    shape = RoundedCornerShape(14.dp)
                 ) {
-                    Text("İlerle ⏩", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        "İlerle",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = Color.White.copy(alpha = 0.18f)
+                    ) {
+                        Text(
+                            text = "➜",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
                 }
             }
         }

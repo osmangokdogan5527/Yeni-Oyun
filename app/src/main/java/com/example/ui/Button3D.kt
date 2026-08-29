@@ -30,24 +30,24 @@ fun Button3D(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    shape: Shape = RoundedCornerShape(12.dp),
+    shape: Shape = RoundedCornerShape(14.dp),
     colors: ButtonColors = ButtonDefaults.buttonColors(),
     elevation: ButtonElevation? = null,
     border: BorderStroke? = null,
-    contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 7.dp),
+    contentPadding: PaddingValues = PaddingValues(horizontal = 15.dp, vertical = 8.dp),
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     content: @Composable RowScope.() -> Unit
 ) {
     val isPressed by interactionSource.collectIsPressedAsState()
     val pressOffset by animateDpAsState(
-        targetValue = if (isPressed && enabled) 2.dp else 0.dp,
+        targetValue = if (isPressed && enabled) 2.5.dp else 0.dp,
         label = "button_press"
     )
 
     val containerColor = if (enabled) colors.containerColor else colors.disabledContainerColor
     val contentColor = if (enabled) colors.contentColor else colors.disabledContentColor
-    val bevelColor = if (enabled) containerColor.darken(0.72f) else Color(0xFFB8C2CF)
-    val topHighlight = if (enabled) Color.White.copy(alpha = 0.20f) else Color.White.copy(alpha = 0.08f)
+    val bevelColor = if (enabled) containerColor.darken(0.68f) else Color(0xFFB8C2CF)
+    val topHighlight = if (enabled) Color.White.copy(alpha = 0.26f) else Color.White.copy(alpha = 0.08f)
     val resolvedBorder = border ?: BorderStroke(1.dp, topHighlight)
 
     Box(
@@ -58,7 +58,7 @@ fun Button3D(
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .padding(top = 3.dp)
+                .padding(top = 4.dp)
                 .clip(shape)
                 .background(bevelColor)
         )
@@ -67,10 +67,10 @@ fun Button3D(
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .padding(bottom = 3.dp)
+                .padding(bottom = 4.dp)
                 .offset(y = pressOffset)
                 .shadow(
-                    elevation = if (isPressed || !enabled) 0.dp else 2.dp,
+                    elevation = if (isPressed || !enabled) 0.dp else 4.dp,
                     shape = shape,
                     clip = false
                 )
@@ -96,7 +96,7 @@ fun Button3D(
             ProvideTextStyle(value = MaterialTheme.typography.labelLarge) {
                 Row(
                     modifier = Modifier
-                        .padding(bottom = 3.dp)
+                        .padding(bottom = 4.dp)
                         .offset(y = pressOffset)
                         .padding(contentPadding),
                     horizontalArrangement = Arrangement.Center,

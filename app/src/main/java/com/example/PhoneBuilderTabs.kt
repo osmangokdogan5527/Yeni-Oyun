@@ -435,8 +435,8 @@ fun PhoneBuilderSoftwareTab(
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text("📲 Bu Cihaz İçin OS Seçimi", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
-            Text("Bu telefonda hangi işletim sisteminin çalışacağını seçin. Kendi platformunuzu geliştirmek/yükseltmek için Yazılım ekranına gidin — burada sadece bu cihaza hangisini yükleyeceğinizi seçiyorsunuz.", fontSize = 11.sp, color = Slate600)
+            Text("İşletim Sistemi", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
+            Text("Bu modelde kullanılacak işletim sistemini seç.", fontSize = 11.sp, color = Slate600)
 
             val hasCompanyOs = customOs != null && customOs.type != OsType.STOCK_ANDROID
             val isCompanyOsSelected = selectedOsChoice == 1
@@ -486,10 +486,8 @@ fun PhoneBuilderSoftwareTab(
 
                     if (hasCompanyOs) {
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text("• Lisans Bedeli: $0 (Kendi ekosisteminiz, ekstra cihaz maliyeti yok)", fontSize = 11.sp, color = Green500, fontWeight = FontWeight.SemiBold)
-                            Text("• Optimizasyon Puanı: +${(customOs?.optimizationScore ?: 0) / 5} İnceleme Bonusu", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("• Pazar Popülaritesi: %${"%.1f".format(customOs?.popularityPercent ?: 1.0f)} (${customOs?.focus?.title} Odaklı)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("• Ekosistem Kazancı: Satılan cihazlardan aylık App Store mağaza geliri!", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                            Text("Ücretsiz • +${(customOs?.optimizationScore ?: 0) / 5} optimizasyon", fontSize = 11.sp, color = Green500, fontWeight = FontWeight.SemiBold)
+                            Text("%${"%.1f".format(customOs?.popularityPercent ?: 1.0f)} popülerlik • ${customOs?.focus?.title} odak", fontSize = 10.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     } else {
                         Text("Yazılım & OS sekmesinden $100M Ar-Ge ile kendi işletim sisteminizi oluşturabilirsiniz.", fontSize = 11.sp, color = Slate500)

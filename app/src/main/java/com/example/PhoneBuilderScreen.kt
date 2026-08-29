@@ -637,10 +637,10 @@ fun PhoneBuilderScreen(
             ) {
                 val tabs = listOf(
                     Triple(0, "Tasarım", Icons.Default.Palette),
-                    Triple(1, "İşlemci & RAM", Icons.Default.Memory),
-                    Triple(2, "Ekran & Kamera", Icons.Default.CameraAlt),
-                    Triple(3, "OS Seçimi", Icons.Default.Terminal),
-                    Triple(4, "Seri & Üretim", Icons.Default.LocalOffer)
+                    Triple(1, "Donanım", Icons.Default.Memory),
+                    Triple(2, "Ekran", Icons.Default.CameraAlt),
+                    Triple(3, "Yazılım", Icons.Default.Terminal),
+                    Triple(4, "Üretim", Icons.Default.LocalOffer)
                 )
 
                 tabs.forEach { (index, title, icon) ->
