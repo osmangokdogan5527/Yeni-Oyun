@@ -86,7 +86,7 @@ fun SaveLoadDialog(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    TextButton(onClick = { confirmingNewGame = true }) {
+                    ProTextButton(onClick = { confirmingNewGame = true }) {
                         Text("Yeni Oyun Başlat", color = MaterialTheme.colorScheme.error)
                     }
                     Button3D(onClick = onDismiss) { Text("Kapat") }
@@ -100,7 +100,7 @@ fun SaveLoadDialog(
             onDismissRequest = { namingSlot = null },
             title = { Text("Kayıt Adı") },
             text = {
-                OutlinedTextField(
+                ProOutlinedTextField(
                     value = slotNameInput,
                     onValueChange = { if (it.length <= 24) slotNameInput = it },
                     singleLine = true,
@@ -108,13 +108,13 @@ fun SaveLoadDialog(
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
+                ProTextButton(onClick = {
                     onSaveSlot(slotId, slotNameInput.trim().ifEmpty { "Kayıt Slotu $slotId" })
                     namingSlot = null
                 }) { Text("Kaydet") }
             },
             dismissButton = {
-                TextButton(onClick = { namingSlot = null }) { Text("Vazgeç") }
+                ProTextButton(onClick = { namingSlot = null }) { Text("Vazgeç") }
             }
         )
     }
@@ -125,14 +125,14 @@ fun SaveLoadDialog(
             title = { Text("Yeni Oyuna Başla?") },
             text = { Text("Mevcut ilerlemen kaydedilmediyse kaybolur. Yeni bir şirketle sıfırdan başlamak istediğine emin misin?") },
             confirmButton = {
-                TextButton(onClick = {
+                ProTextButton(onClick = {
                     onNewGame()
                     confirmingNewGame = false
                     onDismiss()
                 }) { Text("Evet, Yeni Oyun", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmingNewGame = false }) { Text("Vazgeç") }
+                ProTextButton(onClick = { confirmingNewGame = false }) { Text("Vazgeç") }
             }
         )
     }
@@ -180,14 +180,14 @@ private fun SaveSlotRow(
             }
 
             Row {
-                IconButton(onClick = onSave) {
+                ProIconButton(onClick = onSave) {
                     Icon(Icons.Default.Save, contentDescription = "Kaydet", tint = MaterialTheme.colorScheme.primary)
                 }
                 if (entity != null) {
-                    IconButton(onClick = onLoad) {
+                    ProIconButton(onClick = onLoad) {
                         Icon(Icons.Default.PlayArrow, contentDescription = "Yükle", tint = Color(0xFF10B981))
                     }
-                    IconButton(onClick = onDelete) {
+                    ProIconButton(onClick = onDelete) {
                         Icon(Icons.Default.Delete, contentDescription = "Sil", tint = MaterialTheme.colorScheme.error)
                     }
                 }

@@ -58,7 +58,7 @@ fun SelectionGroup(
         // Subtitle info for the currently selected item
         if (selectedItem?.desc != null) {
             Text(
-                text = "✓ ${selectedItem.name}: ${selectedItem.desc}",
+                text = selectedItem.desc,
                 fontSize = 11.sp,
                 color = Slate500,
                 maxLines = 1,

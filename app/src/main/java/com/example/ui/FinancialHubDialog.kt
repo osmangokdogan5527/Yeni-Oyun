@@ -47,7 +47,7 @@ fun FinancialHubDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Card(
+        ProCard(
             modifier = Modifier
                 .fillMaxWidth(0.96f)
                 .fillMaxHeight(0.92f),
@@ -94,7 +94,7 @@ fun FinancialHubDialog(
                         }
                     }
 
-                    IconButton(
+                    ProIconButton(
                         onClick = onDismiss,
                         modifier = Modifier
                             .size(36.dp)
@@ -109,7 +109,7 @@ fun FinancialHubDialog(
                 // Financial Health Summary Card
                 val isNegativeBudget = state.budget < 0
                 val budgetColor = if (isNegativeBudget) MaterialTheme.colorScheme.error else Green500
-                Card(
+                ProCard(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
@@ -184,7 +184,7 @@ fun FinancialHubDialog(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // Tab Selector
-                ScrollableTabRow(
+                ProScrollableTabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = Color.Transparent,
                     contentColor = MaterialTheme.colorScheme.primary,
@@ -301,7 +301,7 @@ fun BankLoansTabContent(
             }
 
             items(state.activeLoans, key = { it.id }) { loan ->
-                Card(
+                ProCard(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
@@ -412,7 +412,7 @@ fun BankLoansTabContent(
             val containerColor = if (isBailout) Color(0xFFFFF1F2) else MaterialTheme.colorScheme.surface
             val borderColor = if (isBailout) Color(0xFFFECDD3) else Slate200
 
-            Card(
+            ProCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(containerColor = containerColor),
@@ -559,7 +559,7 @@ fun EmergencyRecoveryTabContent(
         contentPadding = PaddingValues(bottom = 16.dp)
     ) {
         item {
-            Card(
+            ProCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)),
@@ -583,7 +583,7 @@ fun EmergencyRecoveryTabContent(
 
         // 1. Venture Capital (Equity Injection)
         item {
-            Card(
+            ProCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -675,7 +675,7 @@ fun EmergencyRecoveryTabContent(
                 .filter { it.strategy == PatentStrategy.PROTECTED && it.remainingPeriods > 0 }
                 .sumOf { (it.baseValue * 50L / 100L).coerceAtLeast(75000L) }
 
-            Card(
+            ProCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -750,7 +750,7 @@ fun EmergencyRecoveryTabContent(
         // 3. Emergency Inventory Clearance
         val modelsWithStock = state.activeModels.filter { it.remainingStock > 0 }
         item {
-            Card(
+            ProCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -858,7 +858,7 @@ fun FinancialStatementTabContent(state: GameState) {
     ) {
         // Income Statement Breakdown
         item {
-            Card(
+            ProCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -909,7 +909,7 @@ fun FinancialStatementTabContent(state: GameState) {
 
         // Expenses Statement Breakdown
         item {
-            Card(
+            ProCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -958,7 +958,7 @@ fun FinancialStatementTabContent(state: GameState) {
         item {
             val netMonthly = state.monthlyIncome - state.totalMonthlyExpenses
             val isNetPositive = netMonthly >= 0
-            Card(
+            ProCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(

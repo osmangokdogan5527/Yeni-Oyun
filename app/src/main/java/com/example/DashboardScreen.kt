@@ -1,5 +1,6 @@
 package com.example
 
+import com.example.ui.ProCard
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -72,7 +73,7 @@ fun GameDashboard(
     ) {
         // Finansal Kriz / Negatif Bakiye Uyarısı
         if (state.budget < 0) {
-            Card(
+            ProCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 3.dp)
@@ -122,7 +123,7 @@ fun GameDashboard(
         state.activeSupplyChainEvent?.let { event ->
             val isNegative = event.costMultiplierPercent > 100
             val bannerColor = if (isNegative) Color(0xFFEF4444) else Color(0xFF22C55E)
-            Card(
+            ProCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 3.dp),
@@ -156,7 +157,7 @@ fun GameDashboard(
         }
 
         // Company Identity Bar
-        Card(
+        ProCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 3.dp)
@@ -256,74 +257,58 @@ fun GameDashboard(
             onOpenFinance = onOpenFinance
         )
 
-        // Market & Consumer Trend Snapshot Card
-        Card(
+        // Compact market trend snapshot
+        ProCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp)
+                .padding(horizontal = 16.dp, vertical = 3.dp)
                 .clickable { onNavigateToMarket() },
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1B2E))
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
+            val trendBonusPct = state.currentTrend.bonusPercent
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(state.currentTrend.category.icon, fontSize = 24.sp)
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                "TREND: ${state.currentTrend.title}",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFFFB74D),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f, fill = false)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            val trendBonusPct = state.currentTrend.bonusPercent
-                            Surface(
-                                shape = RoundedCornerShape(4.dp),
-                                color = Color(0xFF2E7D32)
-                            ) {
-                                Text(
-                                    "+%$trendBonusPct",
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
-                                    maxLines = 1,
-                                    softWrap = false
-                                )
-                            }
-                        }
-                        Text(
-                            "Pazar Payınız: %${"%.1f".format(state.playerMarketSharePercent)} • Rakipleri & Trendi Gör 🏆",
-                            fontSize = 11.sp,
-                            color = Color(0xFFE0E0E0),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
+                Text(state.currentTrend.category.icon, fontSize = 18.sp)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = state.currentTrend.title,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "Pazar payı %${"%.1f".format(state.playerMarketSharePercent)}",
+                        fontSize = 9.5.sp,
+                        color = Slate500,
+                        maxLines = 1
+                    )
                 }
-
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer
+                ) {
+                    Text(
+                        text = "+%$trendBonusPct",
+                        fontSize = 9.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
+                        maxLines = 1
+                    )
+                }
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowForward,
                     contentDescription = "Pazara Git",
-                    tint = Color(0xFFFFB74D),
-                    modifier = Modifier.size(18.dp)
+                    tint = Slate500,
+                    modifier = Modifier.size(16.dp)
                 )
             }
         }
@@ -376,13 +361,6 @@ fun DashboardAppBar(year: Int, month: Int, onAdvanceTime: (() -> Unit)? = null) 
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     lineHeight = 20.sp
-                )
-                Text(
-                    text = "YÖNETİM PANELİ",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Slate500,
-                    letterSpacing = 0.5.sp
                 )
             }
         }

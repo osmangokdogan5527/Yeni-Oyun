@@ -37,6 +37,8 @@ fun PhoneVisualPreview(
     material: String,
     camera: String,
     display: String,
+    displayResolution: String = "480 x 800 (WVGA)",
+    displayBrightness: String = "350 nit",
     screenSizeInch: Float = 6.1f,
     thicknessMm: Float = 8.0f,
     chargingPort: String = "USB-C 3.1 & DisplayPort Çıkışı",
@@ -54,6 +56,8 @@ fun PhoneVisualPreview(
 ) {
     // 4 Mod: "Çift", "Arka", "Ön", "Port"
     var viewMode by remember { mutableStateOf("Çift") }
+
+    val brightnessNits = displayBrightness.filter { it.isDigit() }.toIntOrNull() ?: 350
 
     // Seçilen fiziksel boyuta göre görsel ölçek: 5.4"-6.9" aralığı ~0.90x-1.08x arasına haritalanır
     val sizeScale = 0.90f + ((screenSizeInch - 5.4f) / (6.9f - 5.4f)).coerceIn(0f, 1f) * 0.18f
@@ -199,7 +203,8 @@ fun PhoneVisualPreview(
                                     material = material,
                                     notchStyle = notchStyle,
                                     display = display,
-                                    colorHex = colorHex
+                                    colorHex = colorHex,
+                                    brightnessNits = brightnessNits
                                 )
                             }
                         }
@@ -255,7 +260,8 @@ fun PhoneVisualPreview(
                                 material = material,
                                 notchStyle = notchStyle,
                                 display = display,
-                                colorHex = colorHex
+                                colorHex = colorHex,
+                                brightnessNits = brightnessNits
                             )
                         }
                     }
@@ -300,6 +306,8 @@ fun PhoneVisualPreview(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             SpecRow(icon = Icons.Outlined.Smartphone, label = "Ekran", value = "$display • $notchStyle")
+            SpecRow(icon = Icons.Outlined.Tv, label = "Çözünürlük", value = displayResolution)
+            SpecRow(icon = Icons.Outlined.AutoAwesome, label = "Parlaklık", value = displayBrightness)
             SpecRow(icon = Icons.Outlined.AspectRatio, label = "Boyut", value = "${"%.1f".format(screenSizeInch)}\" • ${"%.1f".format(thicknessMm)}mm kalınlık")
             SpecRow(icon = Icons.Outlined.CropSquare, label = "Çerçeve", value = "$frameStyle • $material")
             SpecRow(icon = Icons.Outlined.Palette, label = "Arka Kapak", value = "$backFinish • $colorName", valueColor = Color(colorHex))

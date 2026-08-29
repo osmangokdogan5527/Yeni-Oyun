@@ -1763,8 +1763,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (currentYear >= 2018 && specs.processor.contains("845")) techPenalty += 10
         if (currentYear >= 2020 && specs.processor.contains("865")) techPenalty += 10
 
-        if (currentYear >= 2013 && specs.display.contains("720p")) techPenalty += 10
-        if (currentYear >= 2016 && specs.display.contains("1080p")) techPenalty += 8
+        if (currentYear >= 2013 && specs.displayResolution.contains("WVGA", ignoreCase = true)) techPenalty += 10
+        if (currentYear >= 2016 && specs.displayResolution.contains("HD", ignoreCase = true) && !specs.displayResolution.contains("FHD", ignoreCase = true) && !specs.displayResolution.contains("QHD", ignoreCase = true)) techPenalty += 8
+        if (currentYear >= 2020 && (specs.displayBrightness.filter { it.isDigit() }.toIntOrNull() ?: 350) < 600) techPenalty += 5
+        if (currentYear >= 2023 && (specs.displayBrightness.filter { it.isDigit() }.toIntOrNull() ?: 350) < 800) techPenalty += 5
         if (currentYear >= 2019 && !specs.display.contains("Çerçevesiz") && !specs.display.contains("120Hz") && !specs.display.contains("Katlanabilir") && !specs.display.contains("144Hz") && !specs.display.contains("240Hz")) techPenalty += 12
 
         if (currentYear >= 2014 && specs.camera.contains("5 MP")) techPenalty += 15

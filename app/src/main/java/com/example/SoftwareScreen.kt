@@ -6,6 +6,9 @@
  */
 package com.example
 
+import com.example.ui.ProTextButton
+import com.example.ui.ProCard
+import com.example.ui.ProScrollableTabRow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
@@ -103,7 +106,7 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
         ) {
             // --- TAB SELECTOR (YATAY KAYDIRILABİLİR, DİKEY VE KESİK YAZILARI ÖNLEYEN DÜZEN) ---
             item {
-                ScrollableTabRow(
+                ProScrollableTabRow(
                     selectedTabIndex = selectedTab,
                     edgePadding = 0.dp,
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
@@ -154,7 +157,7 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
                 // 1. AR-GE KİLİT KARTI (Eğer kilitliyse)
                 if (!isOsResearchUnlocked) {
                     item {
-                        Card(
+                        ProCard(
                             colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1B4B)),
                             shape = RoundedCornerShape(20.dp),
                             modifier = Modifier
@@ -259,7 +262,7 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
                 // 2. HERO OS STATUS CARD (GELİŞTİRME SÜRECİ VEYA AKTİF DURUM)
                 if (customOs.activeDevelopment != null) {
                     item {
-                        Card(
+                        ProCard(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
@@ -380,7 +383,7 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
 
                 // 3. YAZILIM TEKNOLOJİ MODÜLLERİ (Grouped in one card)
                 item {
-                    Card(
+                    ProCard(
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         modifier = Modifier.fillMaxWidth()
@@ -429,7 +432,7 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
                 }
 
                 item {
-                    Card(
+                    ProCard(
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         modifier = Modifier.fillMaxWidth()
@@ -570,7 +573,7 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
 
                 // Show Competitor Operating Systems (Grouped)
                 item {
-                    Card(
+                    ProCard(
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         modifier = Modifier.fillMaxWidth()
@@ -718,7 +721,7 @@ fun SoftwareScreen(viewModel: GameViewModel, modifier: Modifier = Modifier) {
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showReleaseUpdateDialog = false }) {
+                ProTextButton(onClick = { showReleaseUpdateDialog = false }) {
                     Text("İptal")
                 }
             }

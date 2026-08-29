@@ -1,5 +1,8 @@
 package com.example
 
+import com.example.ui.ProOutlinedTextField
+import com.example.ui.ProIconButton
+import com.example.ui.ProCard
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -56,11 +59,9 @@ fun PhoneBuilderDesignTab(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Renk Seçenekleri & Palet (Çoklu Seçim)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-            Text("${selectedColors.size} Renk Seçildi", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            Text("Renkler", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            Text("${selectedColors.size} seçili", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
         }
-        Text("Çoklu renk sunmak pazar çekiciliğini ve satışları artırır (Her ek renk: +$3)", fontSize = 11.sp, color = Slate500)
-
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.fillMaxWidth()
@@ -103,7 +104,7 @@ fun PhoneBuilderDesignTab(
     }
 
     SelectionGroup(
-        title = "Arka Kapak Yüzey Dokusu",
+        title = "Arka Kapak",
         options = ALL_BACK_FINISHES,
         selectedOption = selectedBackFinish,
         unlockedTech = unlockedTech,
@@ -112,7 +113,7 @@ fun PhoneBuilderDesignTab(
     )
 
     SelectionGroup(
-        title = "Kamera Modülü Tasarımı (Ada)",
+        title = "Kamera Adası",
         options = ALL_CAMERA_BUMPS,
         selectedOption = selectedCameraBump,
         unlockedTech = unlockedTech,
@@ -121,7 +122,7 @@ fun PhoneBuilderDesignTab(
     )
 
     SelectionGroup(
-        title = "Kasa & Kenar Yapısı",
+        title = "Kasa Kenarları",
         options = ALL_FRAME_STYLES,
         selectedOption = selectedFrameStyle,
         unlockedTech = unlockedTech,
@@ -130,7 +131,7 @@ fun PhoneBuilderDesignTab(
     )
 
     SelectionGroup(
-        title = "Ön Kamera & Çentik Tasarımı",
+        title = "Ön Kamera / Çentik",
         options = ALL_NOTCH_STYLES,
         selectedOption = selectedNotchStyle,
         unlockedTech = unlockedTech,
@@ -178,7 +179,7 @@ fun PhoneBuilderHardwareTab(
     onLockedClick: (String) -> Unit
 ) {
     SelectionGroup(
-        title = "İşlemci (CPU & GPU)",
+        title = "İşlemci",
         options = currentProcessors,
         selectedOption = selectedProcessor,
         unlockedTech = unlockedTech,
@@ -196,7 +197,7 @@ fun PhoneBuilderHardwareTab(
     )
 
     SelectionGroup(
-        title = "RAM Teknolojisi & Hızı",
+        title = "RAM Tipi",
         options = currentRamTypes,
         selectedOption = selectedRamType,
         unlockedTech = unlockedTech,
@@ -205,7 +206,7 @@ fun PhoneBuilderHardwareTab(
     )
 
     SelectionGroup(
-        title = "Dahili Depolama Alanı",
+        title = "Depolama",
         options = currentStorages,
         selectedOption = selectedStorage,
         unlockedTech = unlockedTech,
@@ -214,7 +215,7 @@ fun PhoneBuilderHardwareTab(
     )
 
     SelectionGroup(
-        title = "MicroSD / Hafıza Kartı Yuvası",
+        title = "MicroSD",
         options = currentSdCards,
         selectedOption = selectedSdCard,
         unlockedTech = unlockedTech,
@@ -226,6 +227,8 @@ fun PhoneBuilderHardwareTab(
 @Composable
 fun PhoneBuilderScreenCameraTab(
     currentDisplays: List<ComponentOption>,
+    currentDisplayResolutions: List<ComponentOption>,
+    currentDisplayBrightness: List<ComponentOption>,
     currentGlasses: List<ComponentOption>,
     currentCameras: List<ComponentOption>,
     currentAudios: List<ComponentOption>,
@@ -235,6 +238,8 @@ fun PhoneBuilderScreenCameraTab(
     currentChargingPorts: List<ComponentOption>,
     currentWirelessConnectivity: List<ComponentOption>,
     selectedDisplay: String,
+    selectedDisplayResolution: String,
+    selectedDisplayBrightness: String,
     screenSizeInch: Float,
     thicknessMm: Float,
     selectedGlass: String,
@@ -247,6 +252,8 @@ fun PhoneBuilderScreenCameraTab(
     selectedWirelessConnectivity: String,
     unlockedTech: List<String>,
     onDisplayChange: (String) -> Unit,
+    onDisplayResolutionChange: (String) -> Unit,
+    onDisplayBrightnessChange: (String) -> Unit,
     onScreenSizeChange: (Float) -> Unit,
     onThicknessChange: (Float) -> Unit,
     onGlassChange: (String) -> Unit,
@@ -260,7 +267,7 @@ fun PhoneBuilderScreenCameraTab(
     onLockedClick: (String) -> Unit
 ) {
     SelectionGroup(
-        title = "Ekran Paneli & Çözünürlük",
+        title = "Ekran Paneli",
         options = currentDisplays,
         selectedOption = selectedDisplay,
         unlockedTech = unlockedTech,
@@ -268,8 +275,26 @@ fun PhoneBuilderScreenCameraTab(
         onLockedClick = onLockedClick
     )
 
+    SelectionGroup(
+        title = "Ekran Çözünürlüğü",
+        options = currentDisplayResolutions,
+        selectedOption = selectedDisplayResolution,
+        unlockedTech = unlockedTech,
+        onOptionSelected = onDisplayResolutionChange,
+        onLockedClick = onLockedClick
+    )
+
+    SelectionGroup(
+        title = "Maksimum Parlaklık (nit)",
+        options = currentDisplayBrightness,
+        selectedOption = selectedDisplayBrightness,
+        unlockedTech = unlockedTech,
+        onOptionSelected = onDisplayBrightnessChange,
+        onLockedClick = onLockedClick
+    )
+
     // --- EKRAN BOYUTU & GÖVDE KALINLIĞI ---
-    Card(
+    ProCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(16.dp),
@@ -326,7 +351,7 @@ fun PhoneBuilderScreenCameraTab(
     }
 
     SelectionGroup(
-        title = "Koruyucu Ön Cam",
+        title = "Ekran Camı",
         options = currentGlasses,
         selectedOption = selectedGlass,
         unlockedTech = unlockedTech,
@@ -335,7 +360,7 @@ fun PhoneBuilderScreenCameraTab(
     )
 
     SelectionGroup(
-        title = "Kamera Sensörü & Lensler",
+        title = "Kamera",
         options = currentCameras,
         selectedOption = selectedCamera,
         unlockedTech = unlockedTech,
@@ -344,7 +369,7 @@ fun PhoneBuilderScreenCameraTab(
     )
 
     SelectionGroup(
-        title = "Ses & Hoparlör Sistemi",
+        title = "Ses Sistemi",
         options = currentAudios,
         selectedOption = selectedAudio,
         unlockedTech = unlockedTech,
@@ -371,7 +396,7 @@ fun PhoneBuilderScreenCameraTab(
     )
 
     SelectionGroup(
-        title = "Mobil Şebeke & Hücresel Modem (3G / 4G / 5G / Uydu)",
+        title = "Mobil Şebeke",
         options = currentCellularNetworks,
         selectedOption = selectedCellularNetwork,
         unlockedTech = unlockedTech,
@@ -380,7 +405,7 @@ fun PhoneBuilderScreenCameraTab(
     )
 
     SelectionGroup(
-        title = "Şarj & Kablolu Veri Portu (USB / Tip-C / Thunderbolt)",
+        title = "Şarj / Veri Portu",
         options = currentChargingPorts,
         selectedOption = selectedChargingPort,
         unlockedTech = unlockedTech,
@@ -389,7 +414,7 @@ fun PhoneBuilderScreenCameraTab(
     )
 
     SelectionGroup(
-        title = "Kablosuz Ağ & Bluetooth Çipi (Wi-Fi 4/5/6/7 & BT)",
+        title = "Wi-Fi / Bluetooth",
         options = currentWirelessConnectivity,
         selectedOption = selectedWirelessConnectivity,
         unlockedTech = unlockedTech,
@@ -404,7 +429,7 @@ fun PhoneBuilderSoftwareTab(
     selectedOsChoice: Int,
     onOsChoiceChange: (Int) -> Unit
 ) {
-    Card(
+    ProCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
         shape = RoundedCornerShape(16.dp)
@@ -559,15 +584,13 @@ fun PhoneBuilderProductionTab(
     selectedLaunchCampaign: LaunchCampaign = LaunchCampaign.ORGANIC,
     onLaunchCampaignChange: (LaunchCampaign) -> Unit = {}
 ) {
-    Card(
+    ProCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("📱 Seri ve Model Ailesi Yönetimi", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
-            Text("Aynı seriyi devam ettirmek marka sadakatini ve tekrar eden müşteri satışlarını artırır.", fontSize = 11.sp, color = Slate600)
-
+            Text("Seri ve Model", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Surface(
                     shape = RoundedCornerShape(10.dp),
@@ -622,7 +645,7 @@ fun PhoneBuilderProductionTab(
                     }
                 }
             } else {
-                OutlinedTextField(
+                ProOutlinedTextField(
                     value = newSeriesName,
                     onValueChange = onNewSeriesNameChange,
                     label = { Text("Yeni Seri Adı") },
@@ -638,11 +661,11 @@ fun PhoneBuilderProductionTab(
             ) {
                 Text("Nesil Numarası (Gen):", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    IconButton(onClick = { if (generationNumber > 1) onGenerationNumberChange(generationNumber - 1) }) {
+                    ProIconButton(onClick = { if (generationNumber > 1) onGenerationNumberChange(generationNumber - 1) }) {
                         Icon(Icons.Default.Remove, contentDescription = "-")
                     }
                     Text("Gen $generationNumber ($romanGen)", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
-                    IconButton(onClick = { onGenerationNumberChange(generationNumber + 1) }) {
+                    ProIconButton(onClick = { onGenerationNumberChange(generationNumber + 1) }) {
                         Icon(Icons.Default.Add, contentDescription = "+")
                     }
                 }
@@ -650,7 +673,7 @@ fun PhoneBuilderProductionTab(
         }
     }
 
-    Card(
+    ProCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)),
         shape = RoundedCornerShape(16.dp),
@@ -663,7 +686,7 @@ fun PhoneBuilderProductionTab(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "🏆 Model Segmenti",
+                    text = "Model Segmenti",
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurface
@@ -683,12 +706,6 @@ fun PhoneBuilderProductionTab(
                     )
                 }
             }
-            Text(
-                text = "Aynı seri altında Lite (Ekonomik), Standart (Dengeli), Pro ve Ultra / Pro Max (Zirve) modelleri oluşturabilirsiniz.",
-                fontSize = 11.sp,
-                color = Slate600
-            )
-
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -792,14 +809,14 @@ fun PhoneBuilderProductionTab(
         }
     }
 
-    OutlinedTextField(
+    ProOutlinedTextField(
         value = phoneName,
         onValueChange = onPhoneNameChange,
         label = { Text("Model Ticari Adı") },
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
         trailingIcon = {
-            IconButton(onClick = {
+            ProIconButton(onClick = {
                 onPhoneNameChange(defaultModelName)
             }) {
                 Icon(Icons.Default.Refresh, contentDescription = "Otomatik İsim")
@@ -831,7 +848,7 @@ fun PhoneBuilderProductionTab(
         else -> Quadruple("🚨 Aşırı Pahalı (Stok Riski)", Color(0xFFEF4444), "-%55 Sert Talep Düşüşü", "Tüketici bu fiyata tepki gösterir! Satışlar çok yavaşlar ve depo stokları şişebilir.")
     }
 
-    Card(
+    ProCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(16.dp),

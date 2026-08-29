@@ -1,5 +1,8 @@
 package com.example
 
+import com.example.ui.ProOutlinedButton
+import com.example.ui.ProTextButton
+import com.example.ui.ProCard
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -66,7 +69,7 @@ fun DevicesScreen(
         ) {
             Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("YENİ MODEL TASARLA & ÜRET", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Text("YENİ MODEL TASARLA", fontWeight = FontWeight.Bold, fontSize = 14.sp)
         }
         
         if (state.activeModels.isEmpty() && state.manufacturedPhones.isEmpty()) {
@@ -155,7 +158,7 @@ fun DevicesScreen(
                     val progressFraction = (model.totalSold.toFloat() / model.totalStock.coerceAtLeast(1).toFloat()).coerceIn(0f, 1f)
                     val isSelling = !model.isCompleted
 
-                    Card(
+                    ProCard(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         shape = RoundedCornerShape(16.dp),
@@ -290,9 +293,15 @@ fun DevicesScreen(
 
                             // Popularity & Demand Banner
                             val demandLabel = when {
-                                model.reviewScore >= 75 -> "🔥 Uzun Ömürlü Model (48 Aya Kadar Satış)"
-                                model.reviewScore >= 60 -> "⭐ Güçlü Talep (48 Aya Kadar Satış)"
-                                else -> if (model.reviewScore >= 40) "📉 Standart Talep (24 Aya Kadar)" else "📉 Zayıf Talep (12 Aya Kadar)"
+                                model.reviewScore >= 75 -> "🔥 Çok güçlü talep"
+                                model.reviewScore >= 60 -> "⭐ Güçlü talep"
+                                model.reviewScore >= 40 -> "Standart talep"
+                                else -> "📉 Zayıf talep"
+                            }
+                            val demandLife = when {
+                                model.reviewScore >= 60 -> "48 ay"
+                                model.reviewScore >= 40 -> "24 ay"
+                                else -> "12 ay"
                             }
 
                             val demandBgColor = when {
@@ -324,7 +333,7 @@ fun DevicesScreen(
                                         color = demandTextColor
                                     )
                                     Text(
-                                        text = "Puan: ${model.reviewScore}/100",
+                                        text = "${model.reviewScore}/100 • $demandLife",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = demandTextColor
@@ -332,127 +341,33 @@ fun DevicesScreen(
                                 }
                             }
 
-                            // Trend Match Banner (if phone caught the market trend)
+                            // Compact active status strip: trend, marketing and discount in one place.
+                            val compactStatuses = mutableListOf<String>()
                             if (model.matchesTrend) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Surface(
-                                    color = Color(0xFF1B5E20),
-                                    shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                        ) {
-                                            Text("🔥", fontSize = 14.sp)
-                                            Text(
-                                                text = "Pazar Trendi Yakalandı!",
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color(0xFFA5D6A7)
-                                            )
-                                        }
-                                        val trendBonusPct = state.currentTrend.bonusPercent
-                                        Text(
-                                            text = "+%$trendBonusPct Satış Bonusu Devrede",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White
-                                        )
-                                    }
-                                }
+                                compactStatuses.add("🔥 Trend +%${state.currentTrend.bonusPercent}")
                             }
-
-                            // Active Marketing Campaign Banner
                             model.activeCampaign?.let { camp ->
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Surface(
-                                    color = MaterialTheme.colorScheme.tertiaryContainer,
-                                    shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                        ) {
-                                            Icon(
-                                                Icons.Default.Campaign,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(16.dp),
-                                                tint = MaterialTheme.colorScheme.onTertiaryContainer
-                                            )
-                                            Text(
-                                                text = "${camp.type.title} (${camp.remainingMonths} Ay Kaldı)",
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.onTertiaryContainer
-                                            )
-                                        }
-                                        Text(
-                                            text = "+%${camp.type.boostPercent} Satış",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Green500
-                                        )
-                                    }
-                                }
+                                compactStatuses.add("📣 ${camp.type.title} +%${camp.type.boostPercent} • ${camp.remainingMonths} ay")
                             }
-
-                            // Active Discount Campaign Banner
                             if (model.discountPercent > 0) {
-                                Spacer(modifier = Modifier.height(8.dp))
+                                compactStatuses.add("🏷️ %${model.discountPercent} indirim • $${model.effectivePrice}")
+                            }
+                            if (compactStatuses.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(6.dp))
                                 Surface(
-                                    color = Color(0xFFFEF2F2),
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
                                     shape = RoundedCornerShape(8.dp),
-                                    border = BorderStroke(1.dp, Color(0xFFFCA5A5)),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 10.dp, vertical = 7.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.weight(1f),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                        ) {
-                                            Icon(
-                                                Icons.Default.LocalOffer,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(16.dp),
-                                                tint = Color(0xFFDC2626)
-                                            )
-                                            Text(
-                                                text = "🔥 %${model.discountPercent} İndirim Kampanyası Aktif!",
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color(0xFFDC2626),
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(
-                                            text = "$${model.effectivePrice} (Eski: $${model.specs.price})",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFFB91C1C),
-                                            softWrap = false
-                                        )
-                                    }
+                                    Text(
+                                        text = compactStatuses.joinToString("  •  "),
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
                                 }
                             }
 
@@ -750,7 +665,7 @@ fun DevicesScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                OutlinedButton(
+                                ProOutlinedButton(
                                     onClick = onNavigateToBenchmark,
                                     modifier = Modifier
                                         .weight(1f)
@@ -771,7 +686,7 @@ fun DevicesScreen(
                                     }
                                 }
 
-                                OutlinedButton(
+                                ProOutlinedButton(
                                     onClick = { selectedModelForMarketing = model },
                                     enabled = !model.isRecalled,
                                     modifier = Modifier
@@ -792,7 +707,7 @@ fun DevicesScreen(
                                     }
                                 }
 
-                                OutlinedButton(
+                                ProOutlinedButton(
                                     onClick = { selectedModelForDiscount = model },
                                     enabled = !model.isRecalled && model.remainingStock > 0,
                                     modifier = Modifier
@@ -820,7 +735,7 @@ fun DevicesScreen(
                                     }
                                 }
 
-                                OutlinedButton(
+                                ProOutlinedButton(
                                     onClick = { selectedModelForRestock = model },
                                     enabled = !model.isRecalled,
                                     modifier = Modifier
@@ -846,7 +761,7 @@ fun DevicesScreen(
                                 Spacer(modifier = Modifier.height(6.dp))
                                 val unitCost = viewModel.calculateProductionCost(model.specs)
                                 val refundEstimate = (unitCost * 0.50f * model.remainingStock).toLong()
-                                OutlinedButton(
+                                ProOutlinedButton(
                                     onClick = { selectedModelForRecycle = model },
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -992,7 +907,7 @@ fun DiscountCampaignDialog(
                 }
 
                 // Impact Card
-                Card(
+                ProCard(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
@@ -1064,7 +979,7 @@ fun DiscountCampaignDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            ProTextButton(onClick = onDismiss) {
                 Text("Vazgeç", color = Slate600)
             }
         }
@@ -1094,7 +1009,7 @@ fun RecycleStockDialog(
                     color = Slate600
                 )
 
-                Card(
+                ProCard(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -1134,7 +1049,7 @@ fun RecycleStockDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            ProTextButton(onClick = onDismiss) {
                 Text("Vazgeç", color = Slate600)
             }
         }
@@ -1166,7 +1081,7 @@ fun MarketingDialog(
 
                 CampaignType.entries.forEach { campaign ->
                     val isSelected = selectedType == campaign
-                    Card(
+                    ProCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { selectedType = campaign },
@@ -1243,7 +1158,7 @@ fun MarketingDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            ProTextButton(onClick = onDismiss) {
                 Text("İptal", color = Slate600)
             }
         }
@@ -1464,7 +1379,7 @@ fun RestockDialog(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        OutlinedButton(
+                        ProOutlinedButton(
                             onClick = { selectedQty = (selectedQty - 1000).coerceAtLeast(1000) },
                             modifier = Modifier.weight(1f).height(30.dp),
                             contentPadding = PaddingValues(0.dp),
@@ -1472,7 +1387,7 @@ fun RestockDialog(
                         ) {
                             Text("-1k", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
-                        OutlinedButton(
+                        ProOutlinedButton(
                             onClick = { selectedQty = (selectedQty - 5000).coerceAtLeast(1000) },
                             modifier = Modifier.weight(1f).height(30.dp),
                             contentPadding = PaddingValues(0.dp),
@@ -1480,7 +1395,7 @@ fun RestockDialog(
                         ) {
                             Text("-5k", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
-                        OutlinedButton(
+                        ProOutlinedButton(
                             onClick = { selectedQty = (selectedQty + 5000).coerceAtMost(50000) },
                             modifier = Modifier.weight(1f).height(30.dp),
                             contentPadding = PaddingValues(0.dp),
@@ -1488,7 +1403,7 @@ fun RestockDialog(
                         ) {
                             Text("+5k", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
-                        OutlinedButton(
+                        ProOutlinedButton(
                             onClick = { selectedQty = (selectedQty + 10000).coerceAtMost(50000) },
                             modifier = Modifier.weight(1f).height(30.dp),
                             contentPadding = PaddingValues(0.dp),
@@ -1602,7 +1517,7 @@ fun RestockDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            ProTextButton(onClick = onDismiss) {
                 Text("İptal", color = Slate600)
             }
         }

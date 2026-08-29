@@ -1,5 +1,7 @@
 package com.example
 
+import com.example.ui.ProOutlinedButton
+import com.example.ui.ProCard
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -78,7 +80,7 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
         }
 
         // Compact, Highly Legible Summary Card
-        Card(
+        ProCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 2.dp),
@@ -159,7 +161,7 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                 val currentOffice = productionState.currentOfficeTier
                 val nextOffice = OFFICE_TIERS.firstOrNull { it.level == productionState.officeLevel + 1 }
 
-                Card(
+                ProCard(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                     shape = RoundedCornerShape(12.dp)
@@ -244,7 +246,7 @@ fun EmployeesScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                 val currentFactory = productionState.currentFactoryTier
                 val nextFactory = FACTORY_TIERS.firstOrNull { it.level == productionState.factoryLevel + 1 }
 
-                Card(
+                ProCard(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                     shape = RoundedCornerShape(12.dp)
@@ -395,7 +397,7 @@ fun EmployeeCategoryCard(
     onFire: (Int) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    Card(
+    ProCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(12.dp),
@@ -474,7 +476,7 @@ fun EmployeeCategoryCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    OutlinedButton(
+                    ProOutlinedButton(
                         onClick = { onFire(1) },
                         enabled = currentCount > 0,
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),

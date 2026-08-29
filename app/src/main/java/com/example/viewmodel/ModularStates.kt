@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class CompanyFinanceState(
-    val budget: Long = 1200000L,
+    val budget: Long = 2000000L,
     val monthlyIncome: Long = 0L,
     val totalMonthlyExpenses: Long = 0L,
     val totalSalaries: Long = 0L,
@@ -122,7 +122,7 @@ data class CompanyProfileState(
     val acquisitionTargets: List<AcquisitionTarget> = emptyList(),
     val ownedSubBrands: List<OwnedSubBrand> = emptyList(),
     val ownedLegacySeries: List<PhoneSeriesLegacy> = emptyList(),
-    val budget: Long = 1200000L,
+    val budget: Long = 2000000L,
     val playerValuation: Long = 25000000L,
     val equitySoldPercent: Int = 0,
     val playerMarketSharePercent: Float = 0f,

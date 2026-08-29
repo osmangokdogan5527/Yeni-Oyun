@@ -1,5 +1,8 @@
 package com.example
 
+import com.example.ui.ProOutlinedTextField
+import com.example.ui.ProTextButton
+import com.example.ui.ProCard
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,7 +25,7 @@ import com.example.viewmodel.*
 
 @Composable
 fun GlobalOsRaceHeaderCard(customOs: CustomOsState) {
-    Card(
+    ProCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier.fillMaxWidth()
@@ -52,7 +55,7 @@ fun GlobalOsRaceHeaderCard(customOs: CustomOsState) {
 
 @Composable
 fun PlayerOsComparisonCard(customOs: CustomOsState, state: GameState) {
-    Card(
+    ProCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier
@@ -297,7 +300,7 @@ fun CreateOsDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 item {
-                    OutlinedTextField(
+                    ProOutlinedTextField(
                         value = osName,
                         onValueChange = { osName = it },
                         label = { Text("İşletim Sistemi Adı") },
@@ -413,7 +416,7 @@ fun CreateOsDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            ProTextButton(onClick = onDismiss) {
                 Text("İptal")
             }
         }
@@ -490,7 +493,7 @@ fun DeveloperFundDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            ProTextButton(onClick = onDismiss) {
                 Text("Kapat")
             }
         }

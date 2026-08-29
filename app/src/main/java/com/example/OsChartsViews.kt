@@ -1,5 +1,6 @@
 package com.example
 
+import com.example.ui.ProCard
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,7 +34,7 @@ fun OsPopularityTrendCard(customOs: CustomOsState) {
     val history = customOs.popularityHistory
     val themeColor = Color(customOs.themeColorHex)
 
-    Card(
+    ProCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier.fillMaxWidth()
@@ -157,7 +158,7 @@ fun OsCapabilityRadarCard(customOs: CustomOsState, maxLevel: Int = 5) {
         customOs.appStoreLevel
     )
 
-    Card(
+    ProCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier.fillMaxWidth()

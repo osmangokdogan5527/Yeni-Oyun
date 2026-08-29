@@ -11,36 +11,28 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-/**
- * UYGULAMA GENELİ RENK KİMLİĞİ
- *
- * Önceden uygulamanın resmi teması (Material "Baseline Purple") ile ekranların çoğunda
- * elle yazılmış Slate/Camgöbeği renkleri (telefon tasarım stüdyosu, yazılım grafikleri,
- * başarım/tedarik zinciri kartları vb.) birbirinden tamamen kopuktu — uygulama aynı anda
- * hem açık mor bir Material You uygulaması hem de koyu bir "geliştirici konsolu" gibi
- * görünüyordu. Bu şema, uygulamada zaten en çok kullanılan Slate + Camgöbeği paletini
- * resmi tema haline getirir; böylece MaterialTheme.colorScheme üzerinden gelen bileşenler
- * (butonlar, seçili sekme, üst çubuk vurguları) ile elle boyanmış özel kartlar artık aynı
- * aileden renkler kullanır.
- */
 private val LightColorScheme = lightColorScheme(
     primary = BrandCyan,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFE0F2FE),
-    onPrimaryContainer = Color(0xFF0C4A6E),
-    secondary = Slate600,
+    primaryContainer = Color(0xFFDFF3FF),
+    onPrimaryContainer = Color(0xFF075985),
+    secondary = Slate700,
     onSecondary = Color.White,
-    secondaryContainer = Slate100,
+    secondaryContainer = Color(0xFFE9EEF5),
     onSecondaryContainer = Slate800,
-    background = Color(0xFFFFFFFF),
+    tertiary = Color(0xFF0F766E),
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFCCFBF1),
+    onTertiaryContainer = Color(0xFF134E4A),
+    background = Color(0xFFF6F8FC),
     onBackground = Slate900,
-    surface = Color(0xFFF1F5F9),
+    surface = Color.White,
     onSurface = Slate900,
-    surfaceVariant = Slate100,
+    surfaceVariant = Color(0xFFEEF2F7),
     onSurfaceVariant = Slate600,
     outline = Slate300,
     outlineVariant = Slate200,
-    error = Color(0xFFDC2626),
+    error = Danger500,
     onError = Color.White,
     errorContainer = Color(0xFFFEE2E2),
     onErrorContainer = Color(0xFF7F1D1D)
@@ -48,18 +40,20 @@ private val LightColorScheme = lightColorScheme(
 
 private val DarkColorScheme = darkColorScheme(
     primary = BrandCyanDark,
-    onPrimary = Slate900,
+    onPrimary = Color(0xFF082F49),
     primaryContainer = Color(0xFF0C4A6E),
     onPrimaryContainer = Color(0xFFE0F2FE),
     secondary = Slate300,
     onSecondary = Slate900,
     secondaryContainer = Slate700,
     onSecondaryContainer = Slate100,
-    background = Color(0xFFFFFFFF),
-    onBackground = Slate900,
-    surface = Color(0xFFF1F5F9),
-    onSurface = Slate900,
-    surfaceVariant = Slate700,
+    tertiary = Color(0xFF5EEAD4),
+    onTertiary = Color(0xFF042F2E),
+    background = Color(0xFF0B1220),
+    onBackground = Slate100,
+    surface = Color(0xFF111827),
+    onSurface = Slate100,
+    surfaceVariant = Slate800,
     onSurfaceVariant = Slate300,
     outline = Slate600,
     outlineVariant = Slate700,
@@ -71,16 +65,8 @@ private val DarkColorScheme = darkColorScheme(
 
 @Composable
 fun MyApplicationTheme(
-    // NOT: Karanlık mod kasıtlı olarak kapalı. Uygulamanın pek çok yerinde metin rengi
-    // MaterialTheme.colorScheme üzerinden değil, doğrudan sabit (hardcoded) Slate900/800 gibi
-    // koyu renklerle yazılmış — bunlar "açık arka plan üzerinde koyu yazı" varsayımıyla
-    // tasarlandı. Sistem karanlık modundayken arka plan koyuya dönüp bu sabit koyu yazılar
-    // görünmez hale geliyordu (koyu üstüne koyu). Bu yüzden şimdilik sadece açık tema
-    // zorlanıyor; gerçek karanlık mod ancak o hardcoded renkler tek tek denetlenip
-    // MaterialTheme.colorScheme.onSurface/onBackground gibi tema-duyarlı referanslara
-    // çevrildikten sonra güvenle açılabilir.
     darkTheme: Boolean = false,
-    dynamicColor: Boolean = false, // Marka kimliğinin tutarlı kalması için dinamik (duvar kağıdı) renk kapalı
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
@@ -90,13 +76,16 @@ fun MyApplicationTheme(
         SideEffect {
             val window = (view.context as? Activity)?.window ?: return@SideEffect
             window.statusBarColor = colorScheme.background.toArgb()
+            window.navigationBarColor = colorScheme.background.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !darkTheme
         }
     }
 
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = AppShapes,
         content = content
     )
 }

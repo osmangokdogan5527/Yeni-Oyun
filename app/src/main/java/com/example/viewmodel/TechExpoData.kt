@@ -29,7 +29,7 @@ enum class AwardCategory(
         "⚡",
         "Katlanabilir ekran, şeffaf gövde veya yapay zeka gibi sektörde çığır açan donanım yeniliği.",
         6,
-        1200000L
+        2000000L
     ),
     BEST_DESIGN(
         "🎨 En İyi Endüstriyel Tasarım",

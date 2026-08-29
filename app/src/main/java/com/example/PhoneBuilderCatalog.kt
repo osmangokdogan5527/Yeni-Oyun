@@ -164,6 +164,28 @@ val ALL_DISPLAYS = listOf(
     ComponentOption("Holografik Ekran", 200, availableFrom = 2024, requiredTech = "Holografik 3D Panel Entegrasyonu")
 )
 
+val ALL_DISPLAY_RESOLUTIONS = listOf(
+    ComponentOption("480 x 800 (WVGA)", 0, "Temel akıllı telefon çözünürlüğü", availableFrom = 2010),
+    ComponentOption("720 x 1280 (HD)", 3, "HD mobil çözünürlük", availableFrom = 2011, requiredTech = "HD 720p Mobil Çözünürlük"),
+    ComponentOption("1080 x 1920 (FHD)", 6, "Full HD yüksek piksel yoğunluğu", availableFrom = 2013, requiredTech = "Full HD 1080p Mobil Çözünürlük"),
+    ComponentOption("1440 x 2560 (QHD)", 10, "2K QHD amiral gemisi çözünürlüğü", availableFrom = 2015, requiredTech = "2K QHD Mobil Çözünürlük"),
+    ComponentOption("1440 x 3200 (QHD+)", 14, "Uzun ekran QHD+ çözünürlüğü", availableFrom = 2019, requiredTech = "QHD+ Uzun Ekran Çözünürlüğü"),
+    ComponentOption("2160 x 3840 (4K UHD)", 22, "4K Ultra HD mobil panel sürüşü", availableFrom = 2021, requiredTech = "4K UHD Mobil Çözünürlük"),
+    ComponentOption("2160 x 4320 (4K+)", 30, "Ultra yüksek piksel yoğunluklu 4K+ ekran", availableFrom = 2024, requiredTech = "4K+ Ultra Piksel Yoğunluğu")
+)
+
+val ALL_DISPLAY_BRIGHTNESS = listOf(
+    ComponentOption("350 nit", 0, "Temel dış mekân parlaklığı", availableFrom = 2010),
+    ComponentOption("450 nit", 2, "Geliştirilmiş günlük görünürlük", availableFrom = 2011, requiredTech = "450 Nit Ekran Parlaklığı"),
+    ComponentOption("600 nit", 4, "Güneş altında daha okunaklı panel", availableFrom = 2013, requiredTech = "600 Nit Yüksek Parlaklık"),
+    ComponentOption("800 nit", 6, "Yüksek parlaklık modu", availableFrom = 2015, requiredTech = "800 Nit Güneş Altı Görünürlük"),
+    ComponentOption("1000 nit", 9, "HDR sınıfı yüksek parlaklık", availableFrom = 2017, requiredTech = "1000 Nit HDR Parlaklık"),
+    ComponentOption("1300 nit", 12, "HBM yüksek parlaklık modu", availableFrom = 2019, requiredTech = "1300 Nit HBM Parlaklık"),
+    ComponentOption("1600 nit", 16, "HDR zirve parlaklık", availableFrom = 2021, requiredTech = "1600 Nit HDR Zirve Parlaklık"),
+    ComponentOption("2000 nit", 22, "Ultra HBM dış mekân görünürlüğü", availableFrom = 2023, requiredTech = "2000 Nit Ultra HBM"),
+    ComponentOption("3000 nit", 30, "Güneş ışığı boost amiral gemisi parlaklığı", availableFrom = 2025, requiredTech = "3000 Nit Güneş Işığı Boost")
+)
+
 val ALL_GLASSES = listOf(
     ComponentOption("Gorilla Glass 1", 5, availableFrom = 2010),
     ComponentOption("Gorilla Glass 2", 10, availableFrom = 2011, requiredTech = "Gorilla Glass 2 Entegrasyonu"),

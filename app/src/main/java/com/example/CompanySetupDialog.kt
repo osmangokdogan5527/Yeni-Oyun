@@ -1,5 +1,7 @@
 package com.example
 
+import com.example.ui.ProOutlinedTextField
+import com.example.ui.ProTextButton
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -96,7 +98,7 @@ fun CompanySetupDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                OutlinedTextField(
+                ProOutlinedTextField(
                     value = name,
                     onValueChange = { if (it.length <= 24) name = it },
                     label = { Text("Şirket Adı") },
@@ -106,7 +108,7 @@ fun CompanySetupDialog(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                OutlinedTextField(
+                ProOutlinedTextField(
                     value = slogan,
                     onValueChange = { if (it.length <= 48) slogan = it },
                     label = { Text("Slogan") },
@@ -180,7 +182,7 @@ fun CompanySetupDialog(
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     if (!isFirstLaunch) {
-                        TextButton(onClick = { onDismiss?.invoke() }) { Text("Vazgeç") }
+                        ProTextButton(onClick = { onDismiss?.invoke() }) { Text("Vazgeç") }
                         Spacer(modifier = Modifier.width(8.dp))
                     }
                     Button3D(

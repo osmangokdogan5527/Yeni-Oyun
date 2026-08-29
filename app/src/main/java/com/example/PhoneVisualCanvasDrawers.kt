@@ -584,7 +584,8 @@ internal fun DrawScope.drawFrontDisplay(
     material: String,
     notchStyle: String,
     display: String,
-    colorHex: Long
+    colorHex: Long,
+    brightnessNits: Int = 350
 ) {
     val phoneCorner = when (frameStyle) {
         "Düz Metal Kenar" -> 28.dp.toPx()
@@ -665,6 +666,8 @@ internal fun DrawScope.drawFrontDisplay(
         cornerRadius = CornerRadius(innerCorner, innerCorner)
     )
 
+    val brightnessFactor = ((brightnessNits - 350).toFloat() / 2650f).coerceIn(0f, 1f)
+
     // Duvar kağıdı ve parlama katmanları sadece gerçek ekran alanında çizilsin.
     // Bu ikinci kırpma özellikle köşelerdeki renkli/kare taşmaları engeller.
     val screenClip = Path().apply {
@@ -676,6 +679,12 @@ internal fun DrawScope.drawFrontDisplay(
         )
     }
     clipPath(screenClip) {
+        drawRoundRect(
+            color = Color.White.copy(alpha = 0.015f + (brightnessFactor * 0.075f)),
+            topLeft = Offset(bezelSize, bezelSize),
+            size = screenRect,
+            cornerRadius = CornerRadius(innerCorner, innerCorner)
+        )
         drawCircle(
             brush = Brush.radialGradient(
                 listOf(Color(0xFF38BDF8).copy(alpha = 0.65f), Color(0xFF818CF8).copy(alpha = 0.25f), Color.Transparent),

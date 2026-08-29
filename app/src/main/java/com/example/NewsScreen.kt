@@ -4,6 +4,7 @@
  */
 package com.example
 
+import com.example.ui.ProCard
 import androidx.compose.material3.MaterialTheme
 
 import androidx.compose.foundation.background
@@ -173,7 +174,7 @@ fun NewsItemCard(news: NewsArticle) {
         else -> Color(0xFF1E293B)
     }
 
-    Card(
+    ProCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(14.dp),

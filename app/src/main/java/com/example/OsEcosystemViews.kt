@@ -1,5 +1,6 @@
 package com.example
 
+import com.example.ui.ProCard
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -24,7 +25,7 @@ import com.example.viewmodel.StoreCommissionRate
 
 @Composable
 fun EcosystemRevenueOverviewCard(customOs: CustomOsState, state: GameState) {
-    Card(
+    ProCard(
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(2.dp),
@@ -164,7 +165,7 @@ fun RevenueBreakdownTile(
 fun CustomerLoyaltyCard(customOs: CustomOsState) {
     val loyalty = customOs.customerLoyaltyPercent
 
-    Card(
+    ProCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier.fillMaxWidth()
@@ -238,7 +239,7 @@ fun AppStoreManagementCard(
     onCommissionSelect: (StoreCommissionRate) -> Unit,
     onOpenFundDialog: () -> Unit
 ) {
-    Card(
+    ProCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier.fillMaxWidth()
@@ -327,7 +328,7 @@ fun GlobalDevConCard(
     state: GameState,
     onHost: () -> Unit
 ) {
-    Card(
+    ProCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
         modifier = Modifier.fillMaxWidth()
@@ -377,7 +378,7 @@ fun LicenseModelCard(
     onLicenseTypeChange: (OsLicenseType) -> Unit,
     onFeeChange: (Int) -> Unit
 ) {
-    Card(
+    ProCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier.fillMaxWidth()

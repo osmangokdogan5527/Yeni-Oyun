@@ -4,6 +4,9 @@
  */
 package com.example
 
+import com.example.ui.ProOutlinedButton
+import com.example.ui.ProCard
+import com.example.ui.ProScrollableTabRow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -41,13 +44,31 @@ val allTechNodes = listOf(
     // EKRAN & CAM
     TechNode("FHD IPS Panel Entegrasyonu", "FHD IPS Panel Entegrasyonu", "Yüksek çözünürlüklü keskin IPS ekran panelleri entegrasyonu.", 300000, 2011, "Ekran & Cam"),
     TechNode("2K QHD Panel Entegrasyonu", "2K QHD Panel Entegrasyonu", "Ultra netlik sunan 2K QHD ekran entegrasyonu.", 700000, 2013, "Ekran & Cam"),
-    TechNode("Kavisli AMOLED Panel Entegrasyonu", "Kavisli AMOLED Panel Entegrasyonu", "Derin siyahlar ve kavisli şık tasarım sunan AMOLED paneller.", 1200000, 2014, "Ekran & Cam"),
+    TechNode("Kavisli AMOLED Panel Entegrasyonu", "Kavisli AMOLED Panel Entegrasyonu", "Derin siyahlar ve kavisli şık tasarım sunan AMOLED paneller.", 2000000, 2014, "Ekran & Cam"),
     TechNode("Çerçevesiz 18:9 OLED Panel Entegrasyonu", "Çerçevesiz 18:9 OLED Panel Entegrasyonu", "İnce çerçeveli 18:9 oranında OLED paneller.", 2000000, 2017, "Ekran & Cam"),
     TechNode("120Hz LTPO OLED Panel Entegrasyonu", "120Hz LTPO OLED Panel Entegrasyonu", "Akıcı 120Hz adaptif yenileme hızlı ekran entegrasyonu.", 3500000, 2021, "Ekran & Cam"),
     TechNode("Katlanabilir OLED Panel Entegrasyonu", "Katlanabilir OLED Panel Entegrasyonu", "Gelecek nesil esnek katlanabilir OLED paneller.", 5000000, 2019, "Ekran & Cam"),
     TechNode("144Hz LTPO 3.0 Panel Entegrasyonu", "144Hz LTPO 3.0 Panel Entegrasyonu", "Ultra akıcı 144Hz oyuncu ve amiral gemisi paneller.", 7000000, 2023, "Ekran & Cam"),
     TechNode("240Hz Tandem OLED Panel Entegrasyonu", "240Hz Tandem OLED Panel Entegrasyonu", "Çift katmanlı yüksek parlaklıkta Tandem OLED paneller.", 10000000, 2025, "Ekran & Cam"),
     TechNode("Holografik 3D Panel Entegrasyonu", "Holografik 3D Panel Entegrasyonu", "Gözlüksüz 3D görüntü oluşturan deneysel ekran.", 15000000, 2024, "Ekran & Cam"),
+
+    // EKRAN ÇÖZÜNÜRLÜĞÜ
+    TechNode("HD 720p Mobil Çözünürlük", "HD 720p Mobil Çözünürlük", "720 x 1280 çözünürlükte daha keskin mobil görüntü sürücüsü.", 180000, 2011, "Ekran & Cam"),
+    TechNode("Full HD 1080p Mobil Çözünürlük", "Full HD 1080p Mobil Çözünürlük", "1080 x 1920 Full HD mobil çözünürlük ve daha yüksek piksel yoğunluğu.", 400000, 2013, "Ekran & Cam"),
+    TechNode("2K QHD Mobil Çözünürlük", "2K QHD Mobil Çözünürlük", "1440 x 2560 QHD çözünürlükte amiral gemisi ekran sürüşü.", 900000, 2015, "Ekran & Cam"),
+    TechNode("QHD+ Uzun Ekran Çözünürlüğü", "QHD+ Uzun Ekran Çözünürlüğü", "1440 x 3200 QHD+ uzun ekran çözünürlüğü ve gelişmiş piksel sürüşü.", 2000000, 2019, "Ekran & Cam"),
+    TechNode("4K UHD Mobil Çözünürlük", "4K UHD Mobil Çözünürlük", "2160 x 3840 4K UHD çözünürlükte ultra keskin mobil ekran.", 4000000, 2021, "Ekran & Cam"),
+    TechNode("4K+ Ultra Piksel Yoğunluğu", "4K+ Ultra Piksel Yoğunluğu", "2160 x 4320 4K+ çözünürlük ve ekstrem piksel yoğunluğu.", 7000000, 2024, "Ekran & Cam"),
+
+    // EKRAN PARLAKLIĞI (NIT)
+    TechNode("450 Nit Ekran Parlaklığı", "450 Nit Ekran Parlaklığı", "450 nit seviyesinde daha okunaklı panel sürüşü.", 150000, 2011, "Ekran & Cam"),
+    TechNode("600 Nit Yüksek Parlaklık", "600 Nit Yüksek Parlaklık", "600 nit seviyesinde güneş altında daha net görünürlük.", 350000, 2013, "Ekran & Cam"),
+    TechNode("800 Nit Güneş Altı Görünürlük", "800 Nit Güneş Altı Görünürlük", "800 nit yüksek parlaklık modu ile güçlü dış mekân görünürlüğü.", 700000, 2015, "Ekran & Cam"),
+    TechNode("1000 Nit HDR Parlaklık", "1000 Nit HDR Parlaklık", "1000 nit HDR sınıfı zirve parlaklık ve daha canlı görüntü.", 1200000, 2017, "Ekran & Cam"),
+    TechNode("1300 Nit HBM Parlaklık", "1300 Nit HBM Parlaklık", "1300 nit HBM modu ile zorlu ışıkta güçlü okunabilirlik.", 2000000, 2019, "Ekran & Cam"),
+    TechNode("1600 Nit HDR Zirve Parlaklık", "1600 Nit HDR Zirve Parlaklık", "1600 nit HDR zirve parlaklık ve gelişmiş ekran güç yönetimi.", 3200000, 2021, "Ekran & Cam"),
+    TechNode("2000 Nit Ultra HBM", "2000 Nit Ultra HBM", "2000 nit ultra yüksek parlaklık modu ve güneş altında üstün görünürlük.", 5000000, 2023, "Ekran & Cam"),
+    TechNode("3000 Nit Güneş Işığı Boost", "3000 Nit Güneş Işığı Boost", "3000 nit kısa süreli güneş ışığı boost modu ve premium panel kontrolü.", 7500000, 2025, "Ekran & Cam"),
 
     TechNode("Gorilla Glass 2 Entegrasyonu", "Gorilla Glass 2 Entegrasyonu", "İnce ve çizilmelere dayanıklı 2. nesil koruma camı.", 200000, 2011, "Ekran & Cam"),
     TechNode("Gorilla Glass 3 Entegrasyonu", "Gorilla Glass 3 Entegrasyonu", "Derin çiziklere karşı dirençli 3. nesil koruma camı.", 400000, 2013, "Ekran & Cam"),
@@ -89,7 +110,7 @@ val allTechNodes = listOf(
 
     TechNode("128GB MicroSDHC Desteği", "128GB MicroSDHC Desteği", "128GB'a kadar harici hafıza kartı yuvası desteği.", 200000, 2012, "Depolama & SD Kart"),
     TechNode("512GB MicroSDXC Desteği", "512GB MicroSDXC Desteği", "512GB'a kadar UHS-I hızlı microSDXC desteği.", 500000, 2015, "Depolama & SD Kart"),
-    TechNode("2TB Ultra MicroSD Desteği", "2TB Ultra MicroSD Desteği", "2TB'a kadar UHS-II yüksek hızlı microSDXC desteği.", 1200000, 2019, "Depolama & SD Kart"),
+    TechNode("2TB Ultra MicroSD Desteği", "2TB Ultra MicroSD Desteği", "2TB'a kadar UHS-II yüksek hızlı microSDXC desteği.", 2000000, 2019, "Depolama & SD Kart"),
     TechNode("NM & MicroSD Express Desteği", "NM & MicroSD Express Desteği", "985 MB/s PCIe Express ve NM nano hafıza kartı desteği.", 2500000, 2022, "Depolama & SD Kart"),
 
     // İŞLEMCİ & ÇİP
@@ -107,7 +128,7 @@ val allTechNodes = listOf(
     TechNode("MediaTek D9000 Çip Entegrasyonu", "MediaTek D9000 Çip Entegrasyonu", "Dimensity 9000 amiral gemisi mobil yonga.", 5000000, 2022, "İşlemci & Çip"),
     TechNode("Qualcomm 8 Gen 3 Çip Entegrasyonu", "Qualcomm 8 Gen 3 Çip Entegrasyonu", "Yapay zeka hızlandırıcılı Snapdragon 8 Gen 3.", 9000000, 2024, "İşlemci & Çip"),
     TechNode("MediaTek D9300 Çip Entegrasyonu", "MediaTek D9300 Çip Entegrasyonu", "Tüm büyük çekirdekli Dimensity 9300 çip.", 8000000, 2024, "İşlemci & Çip"),
-    TechNode("Özel Yonga Seti Entegrasyonu", "Özel Yonga Seti Entegrasyonu", "Şirketinizin kendi tasarladığı in-house mobil yonga.", 12000000, 2015, "İşlemci & Çip"),
+    TechNode("Özel Yonga Seti Entegrasyonu", "Özel Yonga Seti Entegrasyonu", "Şirketinizin kendi tasarladığı in-house mobil yonga.", 20000000, 2015, "İşlemci & Çip"),
     TechNode("Kuantum İşlemci Entegrasyonu", "Kuantum İşlemci Entegrasyonu", "Sonsuz işlem gücüne sahip kuantum mobil çip.", 25000000, 2026, "İşlemci & Çip"),
 
     // BATARYA & ŞARJ
@@ -133,7 +154,7 @@ val allTechNodes = listOf(
     // KAMERA & SES
     TechNode("13MP HD Kamera Entegrasyonu", "13MP HD Kamera Entegrasyonu", "13MP çözünürlüklü 1080p video kayıtlı kamera.", 250000, 2011, "Kamera & Ses"),
     TechNode("20MP OIS & 4K Kamera Entegrasyonu", "20MP OIS & 4K Kamera Entegrasyonu", "Optik imaj sabitlemeli 4K video çeken kamera.", 600000, 2013, "Kamera & Ses"),
-    TechNode("Çift Kamera Sistemi Entegrasyonu", "Çift Kamera Sistemi Entegrasyonu", "Portre modu sunan çift lensli kamera modülü.", 1200000, 2015, "Kamera & Ses"),
+    TechNode("Çift Kamera Sistemi Entegrasyonu", "Çift Kamera Sistemi Entegrasyonu", "Portre modu sunan çift lensli kamera modülü.", 2000000, 2015, "Kamera & Ses"),
     TechNode("Üçlü Kamera Sistemi Entegrasyonu", "Üçlü Kamera Sistemi Entegrasyonu", "Geniş, ultra geniş ve telefoto üçlü sensör.", 2200000, 2017, "Kamera & Ses"),
     TechNode("108MP Periskop Kamera Entegrasyonu", "108MP Periskop Kamera Entegrasyonu", "108MP 100x zoom periskop telefoto kamera.", 3800000, 2019, "Kamera & Ses"),
     TechNode("Görünmez Ekran Altı Kamera Entegrasyonu", "Görünmez Ekran Altı Kamera Entegrasyonu", "Ekranda delik bırakmayan ekran altı kamera.", 5000000, 2021, "Kamera & Ses"),
@@ -155,7 +176,7 @@ val allTechNodes = listOf(
     TechNode("USB 3.0 & Yüksek Hızlı Port", "USB 3.0 & Yüksek Hızlı Port", "5Gbps hızlı kablolu veri aktarımı ve şarj bağlantı noktası.", 500000, 2013, "Bağlantı & Kasa"),
     TechNode("USB-C Simetrik Port Mimarisi", "USB-C Simetrik Port Mimarisi", "Çift yönlü takılabilir modern USB-C şarj ve veri arayüzü.", 900000, 2015, "Bağlantı & Kasa"),
     TechNode("Wi-Fi 5 (ac) & Çift Bant Kablosuz", "Wi-Fi 5 (ac) & Çift Bant Kablosuz", "5GHz frekans bandında gigabit kablosuz yerel ağ bağlantısı.", 800000, 2014, "Bağlantı & Kasa"),
-    TechNode("4G LTE Gelişmiş (Cat 6) Modem", "4G LTE Gelişmiş (Cat 6) Modem", "300 Mbps taşıyıcı birleştirme destekli hücresel modem.", 1200000, 2016, "Bağlantı & Kasa"),
+    TechNode("4G LTE Gelişmiş (Cat 6) Modem", "4G LTE Gelişmiş (Cat 6) Modem", "300 Mbps taşıyıcı birleştirme destekli hücresel modem.", 2000000, 2016, "Bağlantı & Kasa"),
     TechNode("USB-C 3.1 & DisplayPort Çıkışı", "USB-C 3.1 & DisplayPort Çıkışı", "10Gbps USB-C 3.1 portu ve harici monitör video çıkışı.", 1600000, 2017, "Bağlantı & Kasa"),
     TechNode("5G Sub-6 Mobil Şebeke", "5G Sub-6 Mobil Şebeke", "Yeni nesil 5G geniş kapsama alanı hücresel modem entegrasyonu.", 2800000, 2019, "Bağlantı & Kasa"),
     TechNode("Wi-Fi 6 (ax) & Bluetooth 5.2", "Wi-Fi 6 (ax) & Bluetooth 5.2", "Düşük gecikmeli Wi-Fi 6 ve kararlı Bluetooth 5.2 kablosuz ağ.", 2200000, 2019, "Bağlantı & Kasa"),
@@ -168,7 +189,7 @@ val allTechNodes = listOf(
     TechNode("Alüminyum Kasa Entegrasyonu", "Alüminyum Kasa Entegrasyonu", "Hafif ve şık alüminyum gövde imalatı.", 400000, 2012, "Bağlantı & Kasa"),
     TechNode("Cam Arka Kapak Entegrasyonu", "Cam Arka Kapak Entegrasyonu", "Kablosuz şarja uygun premium cam arka kapak.", 800000, 2014, "Bağlantı & Kasa"),
     TechNode("Titanyum Alaşım Kasa Entegrasyonu", "Titanyum Alaşım Kasa Entegrasyonu", "Havacılık sınıfı hafif ve çizilmez titanyum.", 4500000, 2020, "Bağlantı & Kasa"),
-    TechNode("Oyuncu Tasarım Çizgileri", "Oyuncu Tasarım Çizgileri", "RGB ışıklandırmalı ve tetik butonlu oyuncu gövdesi.", 1200000, 2016, "Bağlantı & Kasa"),
+    TechNode("Oyuncu Tasarım Çizgileri", "Oyuncu Tasarım Çizgileri", "RGB ışıklandırmalı ve tetik butonlu oyuncu gövdesi.", 2000000, 2016, "Bağlantı & Kasa"),
     TechNode("Zırhlı Dayanıklı Gövde", "Zırhlı Dayanıklı Gövde", "IP68 su geçirmez ve kauçuk korumalı gövde.", 1500000, 2015, "Bağlantı & Kasa"),
     TechNode("Amiral Gemisi Ailesi Segmentasyonu", "Amiral Gemisi Ailesi Segmentasyonu", "Aynı anda Standart, Pro ve Ultra amiral gemisi serileri üretebilme kabiliyeti.", 2000000, 2013, "Bağlantı & Kasa"),
     TechNode("Kuantum Seri Üretim Mimarisi", "Kuantum Seri Üretim Mimarisi", "Ultra optimize parça entegrasyonu ve sıfır hata toleransı.", 6000000, 2022, "Bağlantı & Kasa"),
@@ -212,7 +233,7 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
-                    "Ar-Ge Araştırma Merkezi",
+                    "Ar-Ge Merkezi",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -224,7 +245,7 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
-                    text = "${state.unlockedTech.size} Tamamlandı • ${state.researchQueue.size} Sırada",
+                    text = "Bütçe: $${"%,d".format(state.budget).replace(',', '.')}",
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -237,7 +258,7 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
         state.activeResearch?.let { activeRes ->
             val progressFraction = ((activeRes.totalMonths - activeRes.remainingMonths).toFloat() / activeRes.totalMonths.coerceAtLeast(1).toFloat()).coerceIn(0f, 1f)
 
-            Card(
+            ProCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 2.dp),
@@ -323,7 +344,7 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
         }
 
         // Primary Tab Bar: Araştırılacaklar vs Sıradakiler vs Tamamlananlar
-        ScrollableTabRow(
+        ProScrollableTabRow(
             selectedTabIndex = selectedMainTab,
             containerColor = MaterialTheme.colorScheme.background,
             modifier = Modifier.height(40.dp),
@@ -378,7 +399,7 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
 
                 if (state.researchQueue.isEmpty()) {
                     item {
-                        Card(
+                        ProCard(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                             shape = RoundedCornerShape(12.dp)
@@ -401,7 +422,7 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                 } else {
                     items(state.researchQueue) { queueItem ->
                         val index = state.researchQueue.indexOf(queueItem) + 1
-                        Card(
+                        ProCard(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = Color.White),
                             shape = RoundedCornerShape(14.dp),
@@ -431,7 +452,7 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                                     Text("Maliyet: $${"%,d".format(queueItem.cost).replace(',', '.')} • Tahmini: ${queueItem.totalMonths} Dönem (~${"%.1f".format(queueItem.totalMonths / 2.0)} Ay)", fontSize = 11.sp, color = Slate600)
                                 }
 
-                                OutlinedButton(
+                                ProOutlinedButton(
                                     onClick = { viewModel.cancelQueuedResearch(queueItem.techId) },
                                     shape = RoundedCornerShape(8.dp),
                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
@@ -445,7 +466,7 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
             }
         } else {
             // Category Filter Chips
-            ScrollableTabRow(
+            ProScrollableTabRow(
                 selectedTabIndex = categories.indexOf(selectedCategory).coerceAtLeast(0),
                 edgePadding = 12.dp,
                 containerColor = MaterialTheme.colorScheme.background,
@@ -566,8 +587,8 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                                     tech.description, 
                                     fontSize = 10.5.sp, 
                                     color = Slate600, 
-                                    lineHeight = 14.sp,
-                                    maxLines = 2,
+                                    lineHeight = 13.sp,
+                                    maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Spacer(modifier = Modifier.height(3.dp))
@@ -580,19 +601,20 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                                 } else if (!isAvailable) {
                                     Text("Gereken Yıl: ${tech.yearAvailable}", fontWeight = FontWeight.Bold, color = Slate500, fontSize = 10.sp)
                                 } else {
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text("Maliyet: $${"%,d".format(dynamicCost).replace(',', '.')}", fontWeight = FontWeight.Bold, color = if (canAfford) MaterialTheme.colorScheme.primary else Color.Red, fontSize = 10.5.sp)
-                                        Text("• Süre: $estimatedDuration Dönem (~${"%.1f".format(estimatedDuration / 2.0)} Ay)", fontWeight = FontWeight.Medium, color = Slate600, fontSize = 10.sp)
-                                    }
+                                    Text(
+                                        text = "$${"%,d".format(dynamicCost).replace(',', '.')} • $estimatedDuration dönem (~${"%.1f".format(estimatedDuration / 2.0)} ay)",
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (canAfford) MaterialTheme.colorScheme.primary else Color.Red,
+                                        fontSize = 10.5.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
                                 }
                             }
                             
                             if (!isUnlocked) {
                                 if (isInQueue) {
-                                    OutlinedButton(
+                                    ProOutlinedButton(
                                         onClick = { viewModel.cancelQueuedResearch(tech.id) },
                                         shape = RoundedCornerShape(8.dp),
                                         modifier = Modifier.height(32.dp),

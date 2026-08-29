@@ -82,7 +82,28 @@ object BenchmarkCalculator {
             else -> 0
         }
 
-        return (base + glassBonus).coerceIn(0, 100)
+        val resolutionBonus = when {
+            specs.displayResolution.contains("4K+", ignoreCase = true) -> 10
+            specs.displayResolution.contains("4K", ignoreCase = true) -> 8
+            specs.displayResolution.contains("QHD+", ignoreCase = true) -> 6
+            specs.displayResolution.contains("QHD", ignoreCase = true) -> 5
+            specs.displayResolution.contains("FHD", ignoreCase = true) -> 3
+            specs.displayResolution.contains("HD", ignoreCase = true) -> 1
+            else -> 0
+        }
+        val brightnessNits = specs.displayBrightness.filter { it.isDigit() }.toIntOrNull() ?: 350
+        val brightnessBonus = when {
+            brightnessNits >= 3000 -> 8
+            brightnessNits >= 2000 -> 6
+            brightnessNits >= 1600 -> 5
+            brightnessNits >= 1300 -> 4
+            brightnessNits >= 1000 -> 3
+            brightnessNits >= 800 -> 2
+            brightnessNits >= 600 -> 1
+            else -> 0
+        }
+
+        return (base + glassBonus + resolutionBonus + brightnessBonus).coerceIn(0, 100)
     }
 
     private fun cameraScore(specs: PhoneSpecs): Int {

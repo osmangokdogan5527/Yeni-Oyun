@@ -60,7 +60,7 @@ fun ChipsetStudioView(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // --- TOP HERO BANNER & STATS ---
-        Card(
+        ProCard(
             colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier
@@ -116,7 +116,7 @@ fun ChipsetStudioView(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Card(
+                    ProCard(
                         modifier = Modifier.weight(1f),
                         colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
                         shape = RoundedCornerShape(12.dp)
@@ -126,7 +126,7 @@ fun ChipsetStudioView(
                             Text("${state.customChipsets.size} Model", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF38BDF8), maxLines = 1, softWrap = false)
                         }
                     }
-                    Card(
+                    ProCard(
                         modifier = Modifier.weight(1.2f),
                         colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
                         shape = RoundedCornerShape(12.dp)
@@ -143,7 +143,7 @@ fun ChipsetStudioView(
                             )
                         }
                     }
-                    Card(
+                    ProCard(
                         modifier = Modifier.weight(1.2f),
                         colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
                         shape = RoundedCornerShape(12.dp)
@@ -209,7 +209,7 @@ fun ChipsetStudioView(
 
         // --- EMPTY STATE OR CHIPSET LIST ---
         if (state.customChipsets.isEmpty()) {
-            Card(
+            ProCard(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -305,7 +305,7 @@ fun ChipsetCard(
         ChipsetTier.FLAGSHIP_PRO -> Color(0xFFA855F7)
     }
 
-    Card(
+    ProCard(
         colors = CardDefaults.cardColors(
             containerColor = if (chipset.isArchived) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surface
         ),
@@ -380,14 +380,14 @@ fun ChipsetCard(
 
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     if (chipset.isArchived) {
-                        IconButton(onClick = onUnarchive, modifier = Modifier.size(32.dp)) {
+                        ProIconButton(onClick = onUnarchive, modifier = Modifier.size(32.dp)) {
                             Icon(Icons.Default.Restore, contentDescription = "Arşivden Çıkar", modifier = Modifier.size(16.dp), tint = Color(0xFF10B981))
                         }
                     } else {
-                        IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+                        ProIconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
                             Icon(Icons.Default.Edit, contentDescription = "Düzenle", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
                         }
-                        IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                        ProIconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                             Icon(Icons.Default.Delete, contentDescription = "Sil / Arşivle", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.error)
                         }
                     }
@@ -430,7 +430,7 @@ fun ChipsetCard(
             }
 
             // OEM Sales Section
-            Card(
+            ProCard(
                 colors = CardDefaults.cardColors(
                     containerColor = if (chipset.isOemSaleActive) Color(0xFF064E3B).copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                 ),
@@ -483,7 +483,7 @@ fun ChipsetCard(
                                 )
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(
+                                ProIconButton(
                                     onClick = {
                                         if (currentSalePrice > chipset.unitCost + 2) {
                                             currentSalePrice -= 2
@@ -495,7 +495,7 @@ fun ChipsetCard(
                                     Icon(Icons.Default.Remove, contentDescription = null, modifier = Modifier.size(14.dp))
                                 }
                                 Text("$$currentSalePrice", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                IconButton(
+                                ProIconButton(
                                     onClick = {
                                         currentSalePrice += 2
                                         onToggleOem(true, currentSalePrice)

@@ -131,7 +131,7 @@ fun ChipsetDesignerDialog(
                             )
                         }
                     }
-                    IconButton(onClick = onDismiss) {
+                    ProIconButton(onClick = onDismiss) {
                         Icon(Icons.Default.Close, contentDescription = "Kapat")
                     }
                 }
@@ -147,12 +147,12 @@ fun ChipsetDesignerDialog(
                 ) {
                     // 1. Chip Name & Randomizer
                     item {
-                        OutlinedTextField(
+                        ProOutlinedTextField(
                             value = name,
                             onValueChange = { name = it },
                             label = { Text("İşlemci / Yonga İsmi") },
                             trailingIcon = {
-                                IconButton(onClick = { name = generateRandomChipName() }) {
+                                ProIconButton(onClick = { name = generateRandomChipName() }) {
                                     Icon(Icons.Default.Refresh, contentDescription = "Rastgele İsim")
                                 }
                             },
@@ -172,7 +172,7 @@ fun ChipsetDesignerDialog(
                             ) {
                                 ChipsetTier.values().forEach { tier ->
                                     val isSelected = selectedTier == tier
-                                    Card(
+                                    ProCard(
                                         modifier = Modifier
                                             .weight(1f)
                                             .clickable {
@@ -244,7 +244,7 @@ fun ChipsetDesignerDialog(
 
                     // 4. CPU Cores & Clock Speed (Özellikleri Artırıp Azaltma)
                     item {
-                        Card(
+                        ProCard(
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
                             shape = RoundedCornerShape(14.dp),
                             modifier = Modifier.fillMaxWidth()
@@ -272,7 +272,7 @@ fun ChipsetDesignerDialog(
                                         )
                                     }
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        IconButton(
+                                        ProIconButton(
                                             onClick = {
                                                 coreCount = when (coreCount) {
                                                     10 -> 8
@@ -286,7 +286,7 @@ fun ChipsetDesignerDialog(
                                             Icon(Icons.Default.Remove, contentDescription = "Azalt")
                                         }
                                         Text("$coreCount", fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                                        IconButton(
+                                        ProIconButton(
                                             onClick = {
                                                 coreCount = when (coreCount) {
                                                     4 -> 6
@@ -320,12 +320,12 @@ fun ChipsetDesignerDialog(
                                         )
                                     }
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        IconButton(
+                                        ProIconButton(
                                             onClick = { if (clockSpeedGhz > 1.4f) clockSpeedGhz = (clockSpeedGhz - 0.2f).coerceAtLeast(1.4f) }
                                         ) {
                                             Icon(Icons.Default.Remove, contentDescription = "Azalt")
                                         }
-                                        IconButton(
+                                        ProIconButton(
                                             onClick = { if (clockSpeedGhz < 3.8f) clockSpeedGhz = (clockSpeedGhz + 0.2f).coerceAtMost(3.8f) }
                                         ) {
                                             Icon(Icons.Default.Add, contentDescription = "Artır")
@@ -416,7 +416,7 @@ fun ChipsetDesignerDialog(
 
                     // 6. OEM Selling Option
                     item {
-                        Card(
+                        ProCard(
                             colors = CardDefaults.cardColors(containerColor = Color(0xFF064E3B).copy(alpha = 0.25f)),
                             shape = RoundedCornerShape(14.dp),
                             modifier = Modifier.fillMaxWidth()
@@ -451,13 +451,13 @@ fun ChipsetDesignerDialog(
                                             )
                                         }
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            IconButton(
+                                            ProIconButton(
                                                 onClick = { if (oemSalePrice > previewChip.unitCost + 2) oemSalePrice -= 2 }
                                             ) {
                                                 Icon(Icons.Default.Remove, contentDescription = null)
                                             }
                                             Text("$$oemSalePrice", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                            IconButton(
+                                            ProIconButton(
                                                 onClick = { oemSalePrice += 2 }
                                             ) {
                                                 Icon(Icons.Default.Add, contentDescription = null)
@@ -471,7 +471,7 @@ fun ChipsetDesignerDialog(
 
                     // 7. Live Preview Calculated Card
                     item {
-                        Card(
+                        ProCard(
                             colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
                             shape = RoundedCornerShape(14.dp),
                             modifier = Modifier.fillMaxWidth()
@@ -508,7 +508,7 @@ fun ChipsetDesignerDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    OutlinedButton(
+                    ProOutlinedButton(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f).height(48.dp),
                         shape = RoundedCornerShape(12.dp)

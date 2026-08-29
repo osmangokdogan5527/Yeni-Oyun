@@ -396,6 +396,8 @@ data class PhoneSpecs(
     val storage: String = "16 GB",
     val sdCardSupport: String = "MicroSD (32 GB)",
     val display: String,
+    val displayResolution: String = "480 x 800 (WVGA)",
+    val displayBrightness: String = "350 nit",
     val screenSizeInch: Float = 6.1f,
     val thicknessMm: Float = 8.0f,
     val camera: String,
@@ -809,7 +811,7 @@ val OFFICE_TIERS = listOf(
     OfficeTier(1, "Başlangıç Ofisi", 25, 25000L, 0L),
     OfficeTier(2, "İş Merkezi Ofisi", 50, 65000L, 500000L),
     OfficeTier(3, "Teknoloji Plazası", 100, 180000L, 2500000L),
-    OfficeTier(4, "Akıllı Gökdelen Kampüsü", 500, 600000L, 12000000L)
+    OfficeTier(4, "Akıllı Gökdelen Kampüsü", 500, 600000L, 20000000L)
 )
 
 @Serializable
@@ -1158,7 +1160,7 @@ val DEFAULT_COMPETITORS = listOf(
 @Serializable
 data class GameState(
     val reports: List<MarketReport> = emptyList(),
-    val budget: Long = 1200000,
+    val budget: Long = 2000000,
     val monthlyIncome: Long = 0,
     val rdSpending: Long = 0,
     val reputation: Int = 5,
@@ -1310,7 +1312,7 @@ data class GameState(
             1 -> 35_000_000L
             2 -> 120_000_000L
             3 -> 400_000_000L
-            4 -> 1_200_000_000L
+            4 -> 2_000_000_000L
             else -> 3_500_000_000L
         }
 

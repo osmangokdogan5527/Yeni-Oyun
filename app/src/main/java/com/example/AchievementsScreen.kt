@@ -1,5 +1,6 @@
 package com.example
 
+import com.example.ui.ProIconButton
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -70,7 +71,7 @@ fun AchievementsScreen(
                             color = Color(0xFF94A3B8)
                         )
                     }
-                    IconButton(onClick = onDismiss) {
+                    ProIconButton(onClick = onDismiss) {
                         Icon(Icons.Default.Close, contentDescription = "Kapat", tint = Color(0xFF94A3B8))
                     }
                 }

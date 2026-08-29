@@ -1,5 +1,7 @@
 package com.example
 
+import com.example.ui.ProOutlinedButton
+import com.example.ui.ProCard
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -33,7 +35,7 @@ fun OsHeroStatusCard(
     onReleaseHotfix: () -> Unit = {}
 ) {
     val themeColor = Color(customOs.themeColorHex)
-    Card(
+    ProCard(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(3.dp),
@@ -216,7 +218,7 @@ fun OsHeroStatusCard(
                                 )
                             }
 
-                            OutlinedButton(
+                            ProOutlinedButton(
                                 onClick = onOpenReleaseDialog,
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(10.dp)

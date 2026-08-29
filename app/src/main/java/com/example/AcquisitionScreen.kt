@@ -1,5 +1,9 @@
 package com.example
 
+import com.example.ui.ProOutlinedTextField
+import com.example.ui.ProTextButton
+import com.example.ui.ProCard
+import com.example.ui.ProScrollableTabRow
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -80,7 +84,7 @@ fun AcquisitionScreen(viewModel: GameViewModel) {
         ) {
             // 1. CORPORATE SUMMARY KPI CARD
             item {
-                Card(
+                ProCard(
                     shape = RoundedCornerShape(18.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     modifier = Modifier
@@ -186,7 +190,7 @@ fun AcquisitionScreen(viewModel: GameViewModel) {
 
             // 2. TAB SELECTOR
             item {
-                ScrollableTabRow(
+                ProScrollableTabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
                     modifier = Modifier.clip(RoundedCornerShape(12.dp)),
@@ -365,7 +369,7 @@ fun AcquisitionScreen(viewModel: GameViewModel) {
                     }
 
                     item {
-                        OutlinedTextField(
+                        ProOutlinedTextField(
                             value = bidAmountStr,
                             onValueChange = { bidAmountStr = it.filter { char -> char.isDigit() } },
                             label = { Text("Teklif Tutarınız ($)") },
@@ -428,7 +432,7 @@ fun AcquisitionScreen(viewModel: GameViewModel) {
                 }
             },
             dismissButton = {
-                TextButton(onClick = { selectedCompetitorTarget = null }) {
+                ProTextButton(onClick = { selectedCompetitorTarget = null }) {
                     Text("Vazgeç")
                 }
             }
@@ -445,7 +449,7 @@ fun AcquisitionScreen(viewModel: GameViewModel) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("Şirket Değerlemesi: $${formatShortCurrency(target.valuation)}", fontWeight = FontWeight.Bold)
 
-                    OutlinedTextField(
+                    ProOutlinedTextField(
                         value = bidAmountStr,
                         onValueChange = { bidAmountStr = it.filter { char -> char.isDigit() } },
                         label = { Text("Teklif (Bütçeniz: $${formatShortCurrency(financeState.budget)})") },
@@ -488,7 +492,7 @@ fun AcquisitionScreen(viewModel: GameViewModel) {
                 }
             },
             dismissButton = {
-                TextButton(onClick = { selectedStartupTarget = null }) {
+                ProTextButton(onClick = { selectedStartupTarget = null }) {
                     Text("İptal")
                 }
             }
@@ -537,7 +541,7 @@ fun AcquisitionScreen(viewModel: GameViewModel) {
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showFullExitDialog = false }) {
+                ProTextButton(onClick = { showFullExitDialog = false }) {
                     Text("Vazgeç")
                 }
             }
@@ -553,7 +557,7 @@ fun CompetitorAcquisitionCard(
 ) {
     val canAfford = playerBudget >= competitor.estimatedValuation
 
-    Card(
+    ProCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier.fillMaxWidth()
@@ -645,7 +649,7 @@ fun CompetitorAcquisitionCard(
 
 @Composable
 fun ValuationBreakdownCard(state: GameState) {
-    Card(
+    ProCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier.fillMaxWidth()
@@ -717,7 +721,7 @@ fun EquitySaleCard(
 ) {
     val remainingControl = 100 - state.equitySoldPercent
 
-    Card(
+    ProCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier.fillMaxWidth()
@@ -817,7 +821,7 @@ fun FullExitCard(
     state: GameState,
     onOpenExitDialog: () -> Unit
 ) {
-    Card(
+    ProCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
         modifier = Modifier.fillMaxWidth()
@@ -861,7 +865,7 @@ fun SubBrandCard(
     subBrand: OwnedSubBrand,
     onRebrandToMain: () -> Unit
 ) {
-    Card(
+    ProCard(
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier.fillMaxWidth()

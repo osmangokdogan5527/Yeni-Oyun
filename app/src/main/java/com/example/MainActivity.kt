@@ -8,6 +8,8 @@
  */
 package com.example
 
+import com.example.ui.ProIconButton
+import com.example.ui.ProScrollableTabRow
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -19,10 +21,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
@@ -89,13 +87,14 @@ fun GameTopBar(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 3.dp
+        tonalElevation = 1.dp,
+        shadowElevation = 2.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(horizontal = 10.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 9.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -107,8 +106,8 @@ fun GameTopBar(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(34.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(11.dp))
                         .background(brandColor)
                         .padding(6.dp),
                     contentAlignment = Alignment.Center
@@ -142,24 +141,31 @@ fun GameTopBar(
             // Orta: Bütçe (Finans Menüsüne Gider)
             val isNegative = state.budget < 0
             val budgetDisplay = if (state.budget >= 0) "$${"%,d".format(state.budget).replace(',', '.')}" else "-$${"%,d".format(kotlin.math.abs(state.budget)).replace(',', '.')}"
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .clickable { onOpenFinance() }
-                    .padding(horizontal = 4.dp, vertical = 2.dp)
+            Surface(
+                onClick = onOpenFinance,
+                shape = RoundedCornerShape(12.dp),
+                color = if (isNegative) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.65f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.72f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.75f)),
+                tonalElevation = 0.dp
             ) {
-                Text("Bütçe", fontSize = 9.sp, color = Slate500)
-                androidx.compose.animation.AnimatedContent(
-                    targetState = budgetDisplay,
-                    label = "BudgetAnimation"
-                ) { targetBudget ->
-                    Text(
-                        targetBudget,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
-                        color = if (isNegative) Color(0xFFDC2626) else Green500
-                    )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                ) {
+                    Text("Bütçe", fontSize = 9.sp, fontWeight = FontWeight.Medium, color = Slate500)
+                    androidx.compose.animation.AnimatedContent(
+                        targetState = budgetDisplay,
+                        label = "BudgetAnimation"
+                    ) { targetBudget ->
+                        Text(
+                            targetBudget,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = if (isNegative) MaterialTheme.colorScheme.error else Green500,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
                 }
             }
 
@@ -168,10 +174,10 @@ fun GameTopBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                IconButton(onClick = onOpenAchievements, modifier = Modifier.size(32.dp)) {
+                ProIconButton(onClick = onOpenAchievements, modifier = Modifier.size(32.dp)) {
                     Icon(Icons.Default.EmojiEvents, contentDescription = "Başarımlar", tint = Color(0xFFFACC15), modifier = Modifier.size(20.dp))
                 }
-                IconButton(onClick = onOpenSaveLoad, modifier = Modifier.size(32.dp)) {
+                ProIconButton(onClick = onOpenSaveLoad, modifier = Modifier.size(32.dp)) {
                     Icon(Icons.Default.Settings, contentDescription = "Ayarlar/Kayıt", tint = Slate500, modifier = Modifier.size(20.dp))
                 }
                 
@@ -180,7 +186,7 @@ fun GameTopBar(
                     modifier = Modifier.height(34.dp),
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    shape = RoundedCornerShape(17.dp)
+                    shape = RoundedCornerShape(11.dp)
                 ) {
                     Text("İlerle ⏩", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
@@ -315,7 +321,7 @@ fun MainApp(viewModel: GameViewModel = viewModel()) {
             AppScreen.CompanyHub -> {
                 var selectedTab by remember { mutableIntStateOf(0) }
                 Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-                    ScrollableTabRow(
+                    ProScrollableTabRow(
                         selectedTabIndex = selectedTab,
                         edgePadding = 0.dp
                     ) {
@@ -352,7 +358,7 @@ fun MainApp(viewModel: GameViewModel = viewModel()) {
             AppScreen.TechHub -> {
                 var selectedTab by remember { mutableIntStateOf(0) }
                 Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-                    ScrollableTabRow(selectedTabIndex = selectedTab, edgePadding = 0.dp) {
+                    ProScrollableTabRow(selectedTabIndex = selectedTab, edgePadding = 0.dp) {
                         Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Ar-Ge", maxLines = 1, softWrap = false) })
                         Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Yazılım", maxLines = 1, softWrap = false) })
                         Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("İşlemci", maxLines = 1, softWrap = false) })
@@ -398,6 +404,7 @@ fun MainApp(viewModel: GameViewModel = viewModel()) {
                     companyLogoStyle = state.companyLogoStyle,
                     companyBrandColorHex = state.companyBrandColorHex,
                     checkTrendMatch = { viewModel.checkTrendMatch(it, state.currentTrend) },
+                    currentBudget = state.budget,
                     onBack = { currentScreen = AppScreen.CompanyHub },
                     factoryPeriodCapacity = state.currentFactoryTier.periodCapacity,
                     onManufacture = { specs ->
@@ -422,69 +429,62 @@ fun BottomNavigationBar(
         Triple(AppScreen.Market, Icons.AutoMirrored.Filled.TrendingUp, "Pazar")
     )
 
-    val listState = rememberLazyListState()
-
-    LaunchedEffect(currentScreen) {
-        val selectedIndex = navItems.indexOfFirst { it.first == currentScreen }
-        if (selectedIndex >= 0) {
-            listState.animateScrollToItem((selectedIndex - 1).coerceAtLeast(0))
-        }
-    }
-
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        shape = CircleShape,
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        shape = RoundedCornerShape(22.dp),
         color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 8.dp,
-        shadowElevation = 6.dp,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        tonalElevation = 2.dp,
+        shadowElevation = 8.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.78f))
     ) {
-        LazyRow(
-            state = listState,
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(5.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            itemsIndexed(navItems) { _, (screen, icon, title) ->
+            navItems.forEach { (screen, icon, title) ->
                 val isSelected = currentScreen == screen
                 val containerColor by animateColorAsState(
-                    targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-                    label = "pill_bg_$title"
+                    targetValue = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                    label = "nav_bg_$title"
                 )
                 val contentColor by animateColorAsState(
-                    targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    label = "pill_content_$title"
+                    targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    label = "nav_content_$title"
                 )
 
                 Surface(
                     onClick = { onNavigate(screen) },
-                    shape = CircleShape,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp),
+                    shape = RoundedCornerShape(16.dp),
                     color = containerColor,
                     contentColor = contentColor,
-                    tonalElevation = if (isSelected) 4.dp else 0.dp,
-                    shadowElevation = if (isSelected) 2.dp else 0.dp,
-                    modifier = Modifier.height(42.dp)
+                    border = if (isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)) else null,
+                    tonalElevation = 0.dp,
+                    shadowElevation = 0.dp
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .padding(horizontal = 14.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
                         Icon(
                             imageVector = icon,
                             contentDescription = title,
-                            modifier = Modifier.size(18.dp),
+                            modifier = Modifier.size(19.dp),
                             tint = contentColor
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.height(3.dp))
                         Text(
                             text = title,
-                            fontSize = 12.5.sp,
+                            fontSize = 10.5.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             maxLines = 1,
                             softWrap = false,

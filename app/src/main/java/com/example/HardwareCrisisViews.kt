@@ -1,5 +1,7 @@
 package com.example
 
+import com.example.ui.ProOutlinedButton
+import com.example.ui.ProCard
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -55,7 +57,7 @@ fun HardwareCrisisManagementDialog(
         onDismissRequest = onDismiss,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Card(
+        ProCard(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
                 .fillMaxHeight(0.88f)
@@ -279,7 +281,7 @@ fun HardwareCrisisManagementDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    OutlinedButton(
+                    ProOutlinedButton(
                         onClick = onDismiss,
                         modifier = Modifier
                             .weight(1f)

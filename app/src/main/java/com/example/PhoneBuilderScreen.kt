@@ -7,6 +7,10 @@
  */
 package com.example
 
+import com.example.ui.ProTextButton
+import com.example.ui.ProIconButton
+import com.example.ui.ProCard
+import com.example.ui.ProScrollableTabRow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
@@ -51,6 +56,7 @@ fun PhoneBuilderScreen(
     companyLogoStyle: String = "Minimal Elmas",
     companyBrandColorHex: Long = 0xFF2563EB,
     checkTrendMatch: ((PhoneSpecs) -> Boolean)? = null,
+    currentBudget: Long = 0L,
     onBack: () -> Unit,
     onManufacture: (PhoneSpecs) -> Unit,
     factoryPeriodCapacity: Int = 0
@@ -78,6 +84,8 @@ fun PhoneBuilderScreen(
     val currentStorages = ALL_STORAGES.filter { it.availableFrom <= year }
     val currentSdCards = ALL_SD_CARDS.filter { it.availableFrom <= year }
     val currentDisplays = ALL_DISPLAYS.filter { it.availableFrom <= year }
+    val currentDisplayResolutions = ALL_DISPLAY_RESOLUTIONS.filter { it.availableFrom <= year }
+    val currentDisplayBrightness = ALL_DISPLAY_BRIGHTNESS.filter { it.availableFrom <= year }
     val currentGlasses = ALL_GLASSES.filter { it.availableFrom <= year }
     val currentCameras = ALL_CAMERAS.filter { it.availableFrom <= year }
     val currentCellularNetworks = ALL_CELLULAR_NETWORKS.filter { it.availableFrom <= year }
@@ -142,6 +150,8 @@ fun PhoneBuilderScreen(
     var selectedStorage by remember { mutableStateOf(currentStorages.first { it.requiredTech == null || unlockedTech.contains(it.requiredTech) }.name) }
     var selectedSdCard by remember { mutableStateOf(currentSdCards.first { it.requiredTech == null || unlockedTech.contains(it.requiredTech) }.name) }
     var selectedDisplay by remember { mutableStateOf(currentDisplays.first { it.requiredTech == null || unlockedTech.contains(it.requiredTech) }.name) }
+    var selectedDisplayResolution by remember { mutableStateOf(currentDisplayResolutions.first { it.requiredTech == null || unlockedTech.contains(it.requiredTech) }.name) }
+    var selectedDisplayBrightness by remember { mutableStateOf(currentDisplayBrightness.first { it.requiredTech == null || unlockedTech.contains(it.requiredTech) }.name) }
     var screenSizeInch by remember { mutableFloatStateOf(6.1f) }
     var thicknessMm by remember { mutableFloatStateOf(8.0f) }
     var selectedGlass by remember { mutableStateOf(currentGlasses.first { it.requiredTech == null || unlockedTech.contains(it.requiredTech) }.name) }
@@ -176,6 +186,8 @@ fun PhoneBuilderScreen(
         (currentStorages.find { it.name == selectedStorage }?.cost ?: 0) +
         (currentSdCards.find { it.name == selectedSdCard }?.cost ?: 0) +
         (currentDisplays.find { it.name == selectedDisplay }?.cost ?: 0) +
+        (currentDisplayResolutions.find { it.name == selectedDisplayResolution }?.cost ?: 0) +
+        (currentDisplayBrightness.find { it.name == selectedDisplayBrightness }?.cost ?: 0) +
         (currentGlasses.find { it.name == selectedGlass }?.cost ?: 0) +
         (currentCameras.find { it.name == selectedCamera }?.cost ?: 0) +
         (currentCellularNetworks.find { it.name == selectedCellularNetwork }?.cost ?: 0) +
@@ -207,7 +219,11 @@ fun PhoneBuilderScreen(
         optionLevel(currentBatteryCapacities, selectedBatteryCapacity) * 0.62f +
         optionLevel(currentBatteryTypes, selectedBatteryType) * 0.38f
     ).coerceIn(0f, 1f)
-    val displayScore = optionLevel(currentDisplays, selectedDisplay)
+    val displayScore = (
+        optionLevel(currentDisplays, selectedDisplay) * 0.55f +
+        optionLevel(currentDisplayResolutions, selectedDisplayResolution) * 0.25f +
+        optionLevel(currentDisplayBrightness, selectedDisplayBrightness) * 0.20f
+    ).coerceIn(0f, 1f)
     val designScore = (
         optionLevel(ALL_MATERIALS, selectedMaterial) * 0.28f +
         optionLevel(ALL_BACK_FINISHES, selectedBackFinish) * 0.22f +
@@ -255,18 +271,18 @@ fun PhoneBuilderScreen(
                                 )
                             }
                         }
-                        Text("Birim Maliyet: $$unitCost • Toplam: $${"%,d".format(totalCost).replace(',', '.')}", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, maxLines = 1)
-                        val sectionNames = listOf("Tasarım", "İşlemci & RAM", "Ekran & Kamera", "OS Seçimi", "Seri & Üretim")
                         Text(
-                            "Cihazlar  ›  Yeni Model  ›  ${sectionNames.getOrElse(selectedTabSection) { "Tasarım" }}",
-                            fontSize = 10.sp,
-                            color = Slate400,
-                            maxLines = 1
+                            text = "Bütçeniz: $${"%,d".format(currentBudget).replace(',', '.')}",
+                            fontSize = 11.sp,
+                            color = Color(0xFF16A34A),
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    ProIconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Geri")
                     }
                 },
@@ -274,7 +290,7 @@ fun PhoneBuilderScreen(
                     if (previousModels.isNotEmpty()) {
                         var showCopyMenu by remember { mutableStateOf(false) }
                         Box {
-                            TextButton(onClick = { showCopyMenu = true }) {
+                            ProTextButton(onClick = { showCopyMenu = true }) {
                                 Text("📋 Kopyala", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                             }
                             androidx.compose.material3.DropdownMenu(
@@ -295,6 +311,8 @@ fun PhoneBuilderScreen(
                                             selectedStorage = previousSpecs.storage
                                             selectedSdCard = previousSpecs.sdCardSupport
                                             selectedDisplay = previousSpecs.display
+                                            selectedDisplayResolution = previousSpecs.displayResolution
+                                            selectedDisplayBrightness = previousSpecs.displayBrightness
                                             screenSizeInch = previousSpecs.screenSizeInch
                                             thicknessMm = previousSpecs.thicknessMm
                                             selectedGlass = previousSpecs.glass
@@ -385,6 +403,8 @@ fun PhoneBuilderScreen(
                                 storage = selectedStorage,
                                 sdCardSupport = selectedSdCard,
                                 display = selectedDisplay,
+                                displayResolution = selectedDisplayResolution,
+                                displayBrightness = selectedDisplayBrightness,
                                 screenSizeInch = screenSizeInch,
                                 thicknessMm = thicknessMm,
                                 glass = selectedGlass,
@@ -422,6 +442,8 @@ fun PhoneBuilderScreen(
                                     currentStorages.find { it.name == selectedStorage },
                                     currentSdCards.find { it.name == selectedSdCard },
                                     currentDisplays.find { it.name == selectedDisplay },
+                                    currentDisplayResolutions.find { it.name == selectedDisplayResolution },
+                                    currentDisplayBrightness.find { it.name == selectedDisplayBrightness },
                                     currentGlasses.find { it.name == selectedGlass },
                                     currentCameras.find { it.name == selectedCamera },
                                     currentCellularNetworks.find { it.name == selectedCellularNetwork },
@@ -480,6 +502,8 @@ fun PhoneBuilderScreen(
             storage = selectedStorage,
             sdCardSupport = selectedSdCard,
             display = selectedDisplay,
+            displayResolution = selectedDisplayResolution,
+            displayBrightness = selectedDisplayBrightness,
             screenSizeInch = screenSizeInch,
             thicknessMm = thicknessMm,
             glass = selectedGlass,
@@ -517,53 +541,39 @@ fun PhoneBuilderScreen(
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Live Trend Match Banner
+            // Compact live market trend status
             if (currentTrend != null) {
+                val trendBonusPct = currentTrend.bonusPercent
                 Surface(
-                    color = if (isLiveTrendMatched) Color(0xFF1B5E20) else Color(0xFF311B92),
+                    color = if (isLiveTrendMatched) Color(0xFFECFDF5) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.weight(1f),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = if (isLiveTrendMatched) "✨" else "🔥",
-                                fontSize = 18.sp
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            val trendBonusPct = currentTrend.bonusPercent
-                            Column {
-                                Text(
-                                    text = if (isLiveTrendMatched) "PAZAR TRENDİ YAKALANDI (+%$trendBonusPct SATIŞ)" else "PAZAR TRENDİ: ${currentTrend.title}",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = if (isLiveTrendMatched) Color(0xFFA5D6A7) else Color(0xFFFFD54F)
-                                )
-                                Text(
-                                    text = if (isLiveTrendMatched) "Cihazınız ${currentTrend.category.title} talebini karşılıyor!" else "İpucu: ${currentTrend.effectiveTip}",
-                                    fontSize = 10.sp,
-                                    color = Color.White
-                                )
-                            }
-                        }
-
+                        Text(
+                            text = if (isLiveTrendMatched) "✓ Trend uyumu" else "Trend: ${currentTrend.title}",
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isLiveTrendMatched) Color(0xFF15803D) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
                         Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = if (isLiveTrendMatched) Color(0xFF4CAF50) else Color(0xFFFF9800)
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isLiveTrendMatched) Color(0xFFDCFCE7) else MaterialTheme.colorScheme.primaryContainer
                         ) {
-                            val trendBonusPct = currentTrend.bonusPercent
                             Text(
-                                text = if (isLiveTrendMatched) "UYUMLU" else "%$trendBonusPct BONUS",
-                                fontSize = 10.sp,
+                                text = if (isLiveTrendMatched) "+%$trendBonusPct satış" else "Aktif",
+                                fontSize = 9.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                color = if (isLiveTrendMatched) Color(0xFF166534) else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }
@@ -583,6 +593,8 @@ fun PhoneBuilderScreen(
                     material = selectedMaterial,
                     camera = selectedCamera,
                     display = selectedDisplay,
+                    displayResolution = selectedDisplayResolution,
+                    displayBrightness = selectedDisplayBrightness,
                     screenSizeInch = screenSizeInch,
                     thicknessMm = thicknessMm,
                     chargingPort = selectedChargingPort,
@@ -617,7 +629,7 @@ fun PhoneBuilderScreen(
             )
 
             // --- 5 SEKME DÜZENİ: TÜM SEÇENEKLER DERLİ TOPLU VE MİNİMAL ---
-            ScrollableTabRow(
+            ProScrollableTabRow(
                 selectedTabIndex = selectedTabSection,
                 containerColor = MaterialTheme.colorScheme.surface,
                 edgePadding = 12.dp,
@@ -678,7 +690,7 @@ fun PhoneBuilderScreen(
                                 Text("Kilidi açmak için Ar-Ge ekranından '$reqTech' teknolojisini araştırın.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f))
                             }
                         }
-                        IconButton(onClick = { lockedNoticeTech = null }, modifier = Modifier.size(24.dp)) {
+                        ProIconButton(onClick = { lockedNoticeTech = null }, modifier = Modifier.size(24.dp)) {
                             Icon(Icons.Default.Close, contentDescription = "Kapat", tint = MaterialTheme.colorScheme.onErrorContainer)
                         }
                     }
@@ -740,6 +752,8 @@ fun PhoneBuilderScreen(
                 if (selectedTabSection == 2) {
                     PhoneBuilderScreenCameraTab(
                         currentDisplays = currentDisplays,
+                        currentDisplayResolutions = currentDisplayResolutions,
+                        currentDisplayBrightness = currentDisplayBrightness,
                         currentGlasses = currentGlasses,
                         currentCameras = currentCameras,
                         currentAudios = currentAudios,
@@ -749,6 +763,8 @@ fun PhoneBuilderScreen(
                         currentChargingPorts = currentChargingPorts,
                         currentWirelessConnectivity = currentWirelessConnectivity,
                         selectedDisplay = selectedDisplay,
+                        selectedDisplayResolution = selectedDisplayResolution,
+                        selectedDisplayBrightness = selectedDisplayBrightness,
                         screenSizeInch = screenSizeInch,
                         thicknessMm = thicknessMm,
                         selectedGlass = selectedGlass,
@@ -761,6 +777,8 @@ fun PhoneBuilderScreen(
                         selectedWirelessConnectivity = selectedWirelessConnectivity,
                         unlockedTech = unlockedTech,
                         onDisplayChange = { selectedDisplay = it },
+                        onDisplayResolutionChange = { selectedDisplayResolution = it },
+                        onDisplayBrightnessChange = { selectedDisplayBrightness = it },
                         onScreenSizeChange = { screenSizeInch = it },
                         onThicknessChange = { thicknessMm = it },
                         onGlassChange = { selectedGlass = it },
@@ -838,71 +856,112 @@ private fun BuilderLiveInsights(
     audiences: List<Pair<String, Float>>,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    val strongestAudience = audiences.maxByOrNull { it.second }
+    val metrics = listOf(
+        Triple("Performans", performance, Icons.Default.Speed),
+        Triple("Kamera", camera, Icons.Default.CameraAlt),
+        Triple("Pil", battery, Icons.Default.BatteryChargingFull),
+        Triple("Tasarım", design, Icons.Default.Palette),
+        Triple("F/P", value, Icons.Default.LocalOffer)
+    )
+
+    ProCard(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = androidx.compose.foundation.BorderStroke(1.dp, Slate200)
     ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("CANLI TASARIM ANALİZİ", fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
-                    Text(phoneName.ifBlank { "Yeni Model" }, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
-                }
-                Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(8.dp)) {
-                    Text("Seçtikçe güncellenir", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                }
-            }
-
-            val metrics = listOf(
-                Triple("Performans", performance, Icons.Default.Speed),
-                Triple("Kamera", camera, Icons.Default.CameraAlt),
-                Triple("Pil", battery, Icons.Default.BatteryChargingFull),
-                Triple("Tasarım", design, Icons.Default.Palette),
-                Triple("Fiyat / Performans", value, Icons.Default.LocalOffer)
-            )
-            metrics.forEach { (label, score, icon) ->
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(icon, contentDescription = null, modifier = Modifier.size(15.dp), tint = MaterialTheme.colorScheme.primary)
-                    Text(label, modifier = Modifier.width(102.dp), fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold, color = Slate600, maxLines = 1)
-                    LinearProgressIndicator(
-                        progress = { score.coerceIn(0f, 1f) },
-                        modifier = Modifier.weight(1f).height(7.dp).clip(RoundedCornerShape(8.dp)),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = Slate200
+                    Text(
+                        "TASARIM ÖZETİ",
+                        fontSize = 9.5.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.primary
                     )
-                    Text("%${(score.coerceIn(0f, 1f) * 100).roundToInt()}", modifier = Modifier.width(34.dp), fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = Slate500)
+                    Text(
+                        phoneName.ifBlank { "Yeni Model" },
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                strongestAudience?.let { (label, score) ->
+                    val interest = when {
+                        score >= 0.72f -> "Yüksek"
+                        score >= 0.48f -> "Orta"
+                        else -> "Düşük"
+                    }
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(9.dp)
+                    ) {
+                        Text(
+                            text = "$label • $interest",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            fontSize = 9.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
                 }
             }
 
-            HorizontalDivider(color = Slate200)
-            Text("Hedef Kitle", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                audiences.chunked(2).forEach { pair ->
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        pair.forEach { (label, score) ->
-                            val interest = when {
-                                score >= 0.72f -> "Çok ilgili"
-                                score >= 0.48f -> "Orta"
-                                else -> "Düşük"
-                            }
-                            Surface(
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(10.dp),
-                                color = if (score >= 0.72f) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+            metrics.chunked(3).forEach { rowMetrics ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    rowMetrics.forEach { (label, score, icon) ->
+                        Surface(
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 7.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
                             ) {
-                                Row(modifier = Modifier.padding(horizontal = 9.dp, vertical = 7.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                    Text(label, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                                    Text(interest, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = if (score >= 0.72f) MaterialTheme.colorScheme.primary else Slate500, maxLines = 1)
-                                }
+                                Icon(
+                                    icon,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(13.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    label,
+                                    fontSize = 9.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Slate600,
+                                    maxLines = 1,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Text(
+                                    "%${(score.coerceIn(0f, 1f) * 100).roundToInt()}",
+                                    fontSize = 9.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1
+                                )
                             }
                         }
-                        if (pair.size == 1) Spacer(Modifier.weight(1f))
+                    }
+                    repeat(3 - rowMetrics.size) {
+                        Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }

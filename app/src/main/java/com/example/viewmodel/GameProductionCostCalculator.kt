@@ -107,6 +107,31 @@ fun calculateProductionCost(
         else -> 10
     }
 
+    // Display Resolution
+    cost += when {
+        specs.displayResolution.contains("4K+", ignoreCase = true) -> 30
+        specs.displayResolution.contains("4K", ignoreCase = true) -> 22
+        specs.displayResolution.contains("QHD+", ignoreCase = true) -> 14
+        specs.displayResolution.contains("QHD", ignoreCase = true) -> 10
+        specs.displayResolution.contains("FHD", ignoreCase = true) -> 6
+        specs.displayResolution.contains("HD", ignoreCase = true) -> 3
+        else -> 0
+    }
+
+    // Display Brightness
+    val brightnessNits = specs.displayBrightness.filter { it.isDigit() }.toIntOrNull() ?: 350
+    cost += when {
+        brightnessNits >= 3000 -> 30
+        brightnessNits >= 2000 -> 22
+        brightnessNits >= 1600 -> 16
+        brightnessNits >= 1300 -> 12
+        brightnessNits >= 1000 -> 9
+        brightnessNits >= 800 -> 6
+        brightnessNits >= 600 -> 4
+        brightnessNits >= 450 -> 2
+        else -> 0
+    }
+
     // Glass
     cost += when {
         specs.glass.contains("Sapphire") || specs.glass.contains("Armor+") -> 80

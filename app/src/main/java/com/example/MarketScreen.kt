@@ -4,6 +4,8 @@
  */
 package com.example
 
+import com.example.ui.ProCard
+import com.example.ui.ProScrollableTabRow
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -123,10 +125,6 @@ fun MarketScreen(
         ) {
             // 1. ACTIVE CONSUMER TREND CARD
             item {
-                ActiveTrendCard(
-                    trend = state.currentTrend,
-                    onNavigateToBuilder = onNavigateToBuilder
-                )
             }
 
             // 2. MARKET OVERVIEW KPI
@@ -140,7 +138,7 @@ fun MarketScreen(
 
             // 3. TABS SELECTOR
             item {
-                ScrollableTabRow(
+                ProScrollableTabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                     modifier = Modifier.clip(RoundedCornerShape(12.dp)),
@@ -196,7 +194,7 @@ fun MarketScreen(
                     // Lansman Geçmişi
                     if (state.competitorReleases.isEmpty()) {
                         item {
-                            Card(
+                            ProCard(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
                                 shape = RoundedCornerShape(16.dp)
@@ -244,7 +242,7 @@ fun MarketScreen(
 
                     if (state.pastTechExpos.isEmpty()) {
                         item {
-                            Card(
+                            ProCard(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
                                 shape = RoundedCornerShape(16.dp)
@@ -305,7 +303,7 @@ fun ActiveTrendCard(
     trend: MarketTrend,
     onNavigateToBuilder: () -> Unit
 ) {
-    Card(
+    ProCard(
         modifier = Modifier
             .fillMaxWidth()
             .border(
@@ -456,7 +454,7 @@ fun MarketOverviewKpiCard(
     totalVolume: Int,
     leader: MarketParticipant?
 ) {
-    Card(
+    ProCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
@@ -557,7 +555,7 @@ fun MarketParticipantRowCard(
         label = "shareProgress"
     )
 
-    Card(
+    ProCard(
         modifier = Modifier
             .fillMaxWidth()
             .then(

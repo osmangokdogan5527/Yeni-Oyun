@@ -1,5 +1,7 @@
 package com.example
 
+import com.example.ui.ProIconButton
+import com.example.ui.ProCard
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -36,7 +38,7 @@ import com.example.viewmodel.TechExpoEvent
 
 @Composable
 fun CompetitorProfileCard(competitor: CompetitorCompany) {
-    Card(
+    ProCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
@@ -163,7 +165,7 @@ fun CompetitorReleaseRow(
     release: CompetitorReleaseHistory,
     onClick: () -> Unit = {}
 ) {
-    Card(
+    ProCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
@@ -278,7 +280,7 @@ fun VsDuelComparisonDialog(
                     Text("⚔️", fontSize = 20.sp)
                     Text("Pazar Düellosu: VS Kıyaslama", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
-                IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+                ProIconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
                     Icon(Icons.Default.Close, contentDescription = "Kapat")
                 }
             }
@@ -346,7 +348,7 @@ fun VsDuelComparisonDialog(
                     )
 
                     // Player Card
-                    Card(
+                    ProCard(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
@@ -434,7 +436,7 @@ fun VsDuelComparisonDialog(
                     }
 
                     // Competitor Card
-                    Card(
+                    ProCard(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
@@ -522,7 +524,7 @@ fun VsDuelComparisonDialog(
                 val playerDispRating = HardwareRatingHelper.getDisplayRating(playerDisp)
                 val compDispRating = HardwareRatingHelper.getDisplayRating(release.display)
 
-                Card(
+                ProCard(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -695,7 +697,7 @@ fun TechExpoMarketTabHeader(state: GameState) {
     val totalPlayerAwards = state.pastTechExpos.sumOf { it.playerWonCount }
     val monthsUntilNextExpo = 12 - state.month
 
-    Card(
+    ProCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
@@ -786,7 +788,7 @@ fun PastTechExpoCard(
     expo: TechExpoEvent,
     playerBrandColorHex: Long
 ) {
-    Card(
+    ProCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
