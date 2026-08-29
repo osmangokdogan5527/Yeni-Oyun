@@ -60,6 +60,13 @@ fun PhoneVisualPreview(
     // Kalınlığa göre gölge derinliği ve kenar vurgusu: ince telefonlar zarif/az gölgeli, kalın telefonlar "ağır" görünür
     val thicknessRatio = ((thicknessMm - 6.5f) / (9.5f - 6.5f)).coerceIn(0f, 1f)
     val depthElevation = 22.dp + (thicknessRatio * 20).dp
+    val phoneCornerDp = when (frameStyle) {
+        "Düz Metal Kenar" -> 28.dp
+        "Zırhlı Kesim" -> 16.dp
+        "Ultra İnce Çerçeve" -> 34.dp
+        else -> 30.dp
+    }
+    val phoneShape = RoundedCornerShape(phoneCornerDp)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -150,10 +157,11 @@ fun PhoneVisualPreview(
                                 .size(width = 168.dp * sizeScale, height = 340.dp * sizeScale)
                                 .shadow(
                                     elevation = depthElevation,
-                                    shape = RoundedCornerShape(38.dp),
+                                    shape = phoneShape,
                                     spotColor = Color(colorHex).copy(alpha = 0.55f),
                                     ambientColor = Color.Black.copy(alpha = 0.75f)
                                 )
+                                .clip(phoneShape)
                         ) {
                             Canvas(modifier = Modifier.fillMaxSize()) {
                                 drawBackChassis(
@@ -163,6 +171,7 @@ fun PhoneVisualPreview(
                                     backFinish = backFinish,
                                     cameraBumpStyle = cameraBumpStyle,
                                     camera = camera,
+                                    style = style,
                                     colorHex = colorHex,
                                     logoStyle = logoStyle
                                 )
@@ -177,10 +186,11 @@ fun PhoneVisualPreview(
                                 .size(width = 196.dp * sizeScale, height = 400.dp * sizeScale)
                                 .shadow(
                                     elevation = depthElevation + 12.dp,
-                                    shape = RoundedCornerShape(42.dp),
+                                    shape = phoneShape,
                                     spotColor = Color(0xFF38BDF8).copy(alpha = 0.55f),
                                     ambientColor = Color.Black.copy(alpha = 0.9f)
                                 )
+                                .clip(phoneShape)
                         ) {
                             Canvas(modifier = Modifier.fillMaxSize()) {
                                 drawFrontDisplay(
@@ -203,10 +213,11 @@ fun PhoneVisualPreview(
                             .size(width = 210.dp * sizeScale, height = 415.dp * sizeScale)
                             .shadow(
                                 elevation = depthElevation + 8.dp,
-                                shape = RoundedCornerShape(42.dp),
+                                shape = phoneShape,
                                 spotColor = Color(colorHex).copy(alpha = 0.7f),
                                 ambientColor = Color.Black.copy(alpha = 0.8f)
                             )
+                            .clip(phoneShape)
                     ) {
                         Canvas(modifier = Modifier.fillMaxSize()) {
                             drawBackChassis(
@@ -216,6 +227,7 @@ fun PhoneVisualPreview(
                                 backFinish = backFinish,
                                 cameraBumpStyle = cameraBumpStyle,
                                 camera = camera,
+                                style = style,
                                 colorHex = colorHex,
                                 logoStyle = logoStyle
                             )
@@ -230,10 +242,11 @@ fun PhoneVisualPreview(
                             .size(width = 210.dp * sizeScale, height = 415.dp * sizeScale)
                             .shadow(
                                 elevation = depthElevation + 8.dp,
-                                shape = RoundedCornerShape(42.dp),
+                                shape = phoneShape,
                                 spotColor = Color(colorHex).copy(alpha = 0.65f),
                                 ambientColor = Color.Black.copy(alpha = 0.8f)
                             )
+                            .clip(phoneShape)
                     ) {
                         Canvas(modifier = Modifier.fillMaxSize()) {
                             drawFrontDisplay(
@@ -266,7 +279,8 @@ fun PhoneVisualPreview(
                                 chargingPort = chargingPort,
                                 cellularNetwork = cellularNetwork,
                                 colorHex = colorHex,
-                                frameStyle = frameStyle
+                                frameStyle = frameStyle,
+                                thicknessMm = thicknessMm
                             )
                         }
                     }

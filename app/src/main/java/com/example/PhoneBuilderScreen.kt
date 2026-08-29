@@ -189,6 +189,49 @@ fun PhoneBuilderScreen(
 
     val unitCost = rawUnitCost
 
+    // Canlı tasarım göstergeleri yalnızca seçili donanımlardan türetilir; oyun ekonomisini değiştirmez.
+    fun optionLevel(options: List<ComponentOption>, selected: String): Float {
+        if (options.size <= 1) return 0.5f
+        val index = options.indexOfFirst { it.name == selected }.coerceAtLeast(0)
+        return (index.toFloat() / (options.size - 1).toFloat()).coerceIn(0f, 1f)
+    }
+
+    val performanceScore = (
+        optionLevel(currentProcessors, selectedProcessor) * 0.55f +
+        optionLevel(currentRamCapacities, selectedRamCapacity) * 0.20f +
+        optionLevel(currentRamTypes, selectedRamType) * 0.15f +
+        optionLevel(currentStorages, selectedStorage) * 0.10f
+    ).coerceIn(0f, 1f)
+    val cameraScore = optionLevel(currentCameras, selectedCamera)
+    val batteryScore = (
+        optionLevel(currentBatteryCapacities, selectedBatteryCapacity) * 0.62f +
+        optionLevel(currentBatteryTypes, selectedBatteryType) * 0.38f
+    ).coerceIn(0f, 1f)
+    val displayScore = optionLevel(currentDisplays, selectedDisplay)
+    val designScore = (
+        optionLevel(ALL_MATERIALS, selectedMaterial) * 0.28f +
+        optionLevel(ALL_BACK_FINISHES, selectedBackFinish) * 0.22f +
+        optionLevel(ALL_FRAME_STYLES, selectedFrameStyle) * 0.20f +
+        optionLevel(ALL_CAMERA_BUMPS, selectedCameraBump) * 0.15f +
+        optionLevel(ALL_NOTCH_STYLES, selectedNotchStyle) * 0.15f
+    ).coerceIn(0f, 1f)
+    val hardwareStrength = ((performanceScore + cameraScore + batteryScore + displayScore) / 4f).coerceIn(0f, 1f)
+    val markupRatio = if (unitCost > 0) price / unitCost.toFloat() else 10f
+    val pricingFit = when {
+        markupRatio <= 1.25f -> 0.95f
+        markupRatio <= 1.80f -> 0.90f
+        markupRatio <= 2.50f -> 0.78f
+        markupRatio <= 3.20f -> 0.62f
+        markupRatio <= 4.50f -> 0.45f
+        else -> 0.28f
+    }
+    val valueScore = (pricingFit * 0.72f + hardwareStrength * 0.28f).coerceIn(0f, 1f)
+
+    val gamerInterest = (performanceScore * 0.72f + displayScore * 0.18f + if (selectedStyle == "Oyuncu") 0.18f else 0f).coerceIn(0f, 1f)
+    val cameraInterest = (cameraScore * 0.82f + displayScore * 0.18f).coerceIn(0f, 1f)
+    val budgetInterest = (valueScore * 0.82f + if (selectedTier == ModelTier.LITE) 0.18f else if (selectedTier == ModelTier.STANDARD) 0.08f else 0f).coerceIn(0f, 1f)
+    val premiumInterest = (designScore * 0.40f + performanceScore * 0.25f + cameraScore * 0.20f + displayScore * 0.15f + if (selectedTier == ModelTier.PRO || selectedTier == ModelTier.ULTRA) 0.12f else 0f).coerceIn(0f, 1f)
+
     Scaffold(
         topBar = {
             val totalCost = (unitCost.toLong() * quantity.toLong()) + qaBudget.toLong() + selectedLaunchCampaign.cost
@@ -294,7 +337,22 @@ fun PhoneBuilderScreen(
                 shadowElevation = 8.dp,
                 color = MaterialTheme.colorScheme.surface
             ) {
-                Button3D(
+                val liveMargin = price - unitCost
+                val liveMarginPercent = if (price > 0f) ((liveMargin / price) * 100f).roundToInt() else 0
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        BuilderBottomMetric("Maliyet", "$$unitCost")
+                        BuilderBottomMetric("Fiyat", "$${price.toInt()}")
+                        BuilderBottomMetric("Marj", "%$liveMarginPercent")
+                    }
+                    HorizontalDivider(color = Slate200)
+                    Button3D(
                     onClick = {
                         val currentOsType = when (selectedOsChoice) {
                             1 -> if (customOs != null && customOs.type != com.example.viewmodel.OsType.STOCK_ANDROID) customOs.type.title else "Özel Şirket Arayüzü"
@@ -386,6 +444,7 @@ fun PhoneBuilderScreen(
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Text("ÜRETİME BAŞLA ($${"%,d".format((unitCost.toLong() * quantity.toLong()) + qaBudget.toLong()).replace(',', '.')})", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    }
                 }
             }
         },
@@ -540,6 +599,22 @@ fun PhoneBuilderScreen(
                     phoneName = phoneName
                 )
             }
+
+            BuilderLiveInsights(
+                phoneName = phoneName,
+                performance = performanceScore,
+                camera = cameraScore,
+                battery = batteryScore,
+                design = designScore,
+                value = valueScore,
+                audiences = listOf(
+                    "🎮 Oyuncular" to gamerInterest,
+                    "📸 Kamera" to cameraInterest,
+                    "💰 Bütçe" to budgetInterest,
+                    "💼 Premium" to premiumInterest
+                ),
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+            )
 
             // --- 5 SEKME DÜZENİ: TÜM SEÇENEKLER DERLİ TOPLU VE MİNİMAL ---
             ScrollableTabRow(
@@ -743,3 +818,95 @@ fun PhoneBuilderScreen(
         }
     }
 }
+
+@Composable
+private fun BuilderBottomMetric(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, fontSize = 9.5.sp, color = Slate500, maxLines = 1)
+        Text(value, fontSize = 12.5.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
+    }
+}
+
+@Composable
+private fun BuilderLiveInsights(
+    phoneName: String,
+    performance: Float,
+    camera: Float,
+    battery: Float,
+    design: Float,
+    value: Float,
+    audiences: List<Pair<String, Float>>,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Slate200)
+    ) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("CANLI TASARIM ANALİZİ", fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
+                    Text(phoneName.ifBlank { "Yeni Model" }, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
+                }
+                Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(8.dp)) {
+                    Text("Seçtikçe güncellenir", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                }
+            }
+
+            val metrics = listOf(
+                Triple("Performans", performance, Icons.Default.Speed),
+                Triple("Kamera", camera, Icons.Default.CameraAlt),
+                Triple("Pil", battery, Icons.Default.BatteryChargingFull),
+                Triple("Tasarım", design, Icons.Default.Palette),
+                Triple("Fiyat / Performans", value, Icons.Default.LocalOffer)
+            )
+            metrics.forEach { (label, score, icon) ->
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(icon, contentDescription = null, modifier = Modifier.size(15.dp), tint = MaterialTheme.colorScheme.primary)
+                    Text(label, modifier = Modifier.width(102.dp), fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold, color = Slate600, maxLines = 1)
+                    LinearProgressIndicator(
+                        progress = { score.coerceIn(0f, 1f) },
+                        modifier = Modifier.weight(1f).height(7.dp).clip(RoundedCornerShape(8.dp)),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = Slate200
+                    )
+                    Text("%${(score.coerceIn(0f, 1f) * 100).roundToInt()}", modifier = Modifier.width(34.dp), fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = Slate500)
+                }
+            }
+
+            HorizontalDivider(color = Slate200)
+            Text("Hedef Kitle", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                audiences.chunked(2).forEach { pair ->
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        pair.forEach { (label, score) ->
+                            val interest = when {
+                                score >= 0.72f -> "Çok ilgili"
+                                score >= 0.48f -> "Orta"
+                                else -> "Düşük"
+                            }
+                            Surface(
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (score >= 0.72f) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                            ) {
+                                Row(modifier = Modifier.padding(horizontal = 9.dp, vertical = 7.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Text(label, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                                    Text(interest, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = if (score >= 0.72f) MaterialTheme.colorScheme.primary else Slate500, maxLines = 1)
+                                }
+                            }
+                        }
+                        if (pair.size == 1) Spacer(Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+

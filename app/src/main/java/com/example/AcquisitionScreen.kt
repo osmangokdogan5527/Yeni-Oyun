@@ -186,27 +186,29 @@ fun AcquisitionScreen(viewModel: GameViewModel) {
 
             // 2. TAB SELECTOR
             item {
-                TabRow(
+                ScrollableTabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                    modifier = Modifier.clip(RoundedCornerShape(12.dp))
+                    modifier = Modifier.clip(RoundedCornerShape(12.dp)),
+                    edgePadding = 0.dp,
+                    divider = {}
                 ) {
                     Tab(
                         selected = selectedTab == 0,
                         onClick = { selectedTab = 0 },
-                        text = { Text("Küresel Devler", fontSize = 12.sp, fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal) },
+                        text = { Text("Küresel Devler", fontSize = 12.sp, fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal, maxLines = 1, softWrap = false) },
                         icon = { Icon(Icons.Default.Public, contentDescription = null, modifier = Modifier.size(16.dp)) }
                     )
                     Tab(
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 },
-                        text = { Text("Şirketimi Sat", fontSize = 12.sp, fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) },
+                        text = { Text("Şirketimi Sat", fontSize = 12.sp, fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal, maxLines = 1, softWrap = false) },
                         icon = { Icon(Icons.Default.MonetizationOn, contentDescription = null, modifier = Modifier.size(16.dp)) }
                     )
                     Tab(
                         selected = selectedTab == 2,
                         onClick = { selectedTab = 2 },
-                        text = { Text("Startuplar (${companyProfileState.acquisitionTargets.size})", fontSize = 12.sp, fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal) },
+                        text = { Text("Startuplar (${companyProfileState.acquisitionTargets.size})", fontSize = 12.sp, fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal, maxLines = 1, softWrap = false) },
                         icon = { Icon(Icons.Default.Storefront, contentDescription = null, modifier = Modifier.size(16.dp)) }
                     )
                 }

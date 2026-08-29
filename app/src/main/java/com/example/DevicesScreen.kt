@@ -290,9 +290,9 @@ fun DevicesScreen(
 
                             // Popularity & Demand Banner
                             val demandLabel = when {
-                                model.reviewScore >= 75 -> "🔥 Yoğun Pazar Talebi (24 Ay Satış İzni)"
-                                model.reviewScore >= 60 -> "⭐ Yüksek Talep (24 Ay Satış İzni)"
-                                else -> "📉 Standart Talep (12 Ay Satış Süresi)"
+                                model.reviewScore >= 75 -> "🔥 Uzun Ömürlü Model (48 Aya Kadar Satış)"
+                                model.reviewScore >= 60 -> "⭐ Güçlü Talep (48 Aya Kadar Satış)"
+                                else -> if (model.reviewScore >= 40) "📉 Standart Talep (24 Aya Kadar)" else "📉 Zayıf Talep (12 Aya Kadar)"
                             }
 
                             val demandBgColor = when {
@@ -1023,9 +1023,9 @@ fun DiscountCampaignDialog(
                         HorizontalDivider(color = Slate200, modifier = Modifier.padding(vertical = 2.dp))
 
                         val demandBoostText = when (selectedDiscount) {
-                            15 -> "+%45 Satış Talebi Artışı 🔥"
-                            30 -> "+%90 Satış Hızı Patlaması 🚀"
-                            50 -> "+%150 Şok Tasfiye Talebi ⚡"
+                            15 -> "+~%18 Temel Talep • Eski Modellerde Ek Canlanma"
+                            30 -> "+~%36 Temel Talep • Güçlü Uzun-Kuyruk Etkisi"
+                            50 -> "+~%60 Temel Talep • Hızlı Stok Eritme"
                             else -> "Normal Pazar Talebi"
                         }
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

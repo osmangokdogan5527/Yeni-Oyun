@@ -22,6 +22,7 @@ internal fun DrawScope.drawBackChassis(
     backFinish: String,
     cameraBumpStyle: String,
     camera: String,
+    style: String = "Modern",
     colorHex: Long,
     logoStyle: String
 ) {
@@ -33,6 +34,18 @@ internal fun DrawScope.drawBackChassis(
     }
     val baseColor = Color(colorHex)
     val isLightColor = colorHex == 0xFFF1F5F9L || colorHex == 0xFFFFD700L || colorHex == 0xFFFFFFFFL
+    val chassisClip = Path().apply {
+        addRoundRect(
+            RoundRect(
+                rect = Rect(0f, 0f, size.width, size.height),
+                cornerRadius = CornerRadius(phoneCorner, phoneCorner)
+            )
+        )
+    }
+
+    // Tüm gövde katmanlarını telefon siluetine kırp. Böylece parlama, doku ve
+    // kamera katmanları köşelerden kare/çıkıntı şeklinde taşamaz.
+    clipPath(chassisClip) {
 
     // 1. ANODİZE DIŞ CNC ÇERÇEVE
     val frameBrush = when (material) {
@@ -314,7 +327,16 @@ internal fun DrawScope.drawBackChassis(
         }
     }
 
-    val isPeriscopeCam = camera.contains("Periskop") || camera.contains("200MP") || camera.contains("1 İnç")
+    val isPeriscopeCam = camera.contains("Periskop") || camera.contains("200MP") || camera.contains("1 İnç") || camera.contains("GenAI")
+    val cameraLensCount = when {
+        camera.contains("Çift", ignoreCase = true) -> 2
+        camera.contains("Üçlü", ignoreCase = true) -> 3
+        camera.contains("Periskop", ignoreCase = true) -> 3
+        camera.contains("200MP", ignoreCase = true) -> 3
+        camera.contains("GenAI", ignoreCase = true) -> 3
+        camera.contains("ISP", ignoreCase = true) -> 3
+        else -> 1
+    }
 
     when (cameraBumpStyle) {
         "Dairesel Halo" -> {
@@ -328,11 +350,19 @@ internal fun DrawScope.drawBackChassis(
 
             val lensDist = 15.dp.toPx()
             val lensR = 7.dp.toPx()
-            drawOpticalLens(Offset(haloCenter.x, haloCenter.y - lensDist), lensR)
-            drawOpticalLens(Offset(haloCenter.x + lensDist, haloCenter.y), lensR)
-            drawOpticalLens(Offset(haloCenter.x, haloCenter.y + lensDist), lensR, isPeriscope = isPeriscopeCam)
-            drawOpticalLens(Offset(haloCenter.x - lensDist, haloCenter.y), lensR)
-            drawFlashAndSensors(haloCenter, null)
+            when (cameraLensCount) {
+                1 -> drawOpticalLens(Offset(haloCenter.x, haloCenter.y - 4.dp.toPx()), lensR + 2.dp.toPx())
+                2 -> {
+                    drawOpticalLens(Offset(haloCenter.x - lensDist, haloCenter.y), lensR)
+                    drawOpticalLens(Offset(haloCenter.x + lensDist, haloCenter.y), lensR)
+                }
+                else -> {
+                    drawOpticalLens(Offset(haloCenter.x, haloCenter.y - lensDist), lensR)
+                    drawOpticalLens(Offset(haloCenter.x + lensDist, haloCenter.y + 8.dp.toPx()), lensR)
+                    drawOpticalLens(Offset(haloCenter.x - lensDist, haloCenter.y + 8.dp.toPx()), lensR, isPeriscope = isPeriscopeCam)
+                }
+            }
+            drawFlashAndSensors(Offset(haloCenter.x, haloCenter.y + 24.dp.toPx()), null)
         }
         "Yatay Vizör" -> {
             val visorTop = 40.dp.toPx()
@@ -366,9 +396,11 @@ internal fun DrawScope.drawBackChassis(
 
             val lensR = 7.dp.toPx()
             drawOpticalLens(Offset(32.dp.toPx(), visorTop + 21.dp.toPx()), lensR)
-            drawOpticalLens(Offset(60.dp.toPx(), visorTop + 21.dp.toPx()), lensR)
-            if (isPeriscopeCam) {
-                drawOpticalLens(Offset(88.dp.toPx(), visorTop + 21.dp.toPx()), lensR, isPeriscope = true)
+            if (cameraLensCount >= 2) {
+                drawOpticalLens(Offset(60.dp.toPx(), visorTop + 21.dp.toPx()), lensR)
+            }
+            if (cameraLensCount >= 3) {
+                drawOpticalLens(Offset(88.dp.toPx(), visorTop + 21.dp.toPx()), lensR, isPeriscope = isPeriscopeCam)
             }
             drawFlashAndSensors(Offset(size.width - 30.dp.toPx(), visorTop + 21.dp.toPx()), Offset(size.width - 46.dp.toPx(), visorTop + 21.dp.toPx()))
         }
@@ -400,8 +432,12 @@ internal fun DrawScope.drawBackChassis(
 
             val lensR = 7.5.dp.toPx()
             drawOpticalLens(Offset(bumpLeft + 18.dp.toPx(), bumpTop + 18.dp.toPx()), lensR)
-            drawOpticalLens(Offset(bumpLeft + 18.dp.toPx(), bumpTop + 44.dp.toPx()), lensR)
-            drawOpticalLens(Offset(bumpLeft + 44.dp.toPx(), bumpTop + 31.dp.toPx()), lensR, isPeriscope = isPeriscopeCam)
+            if (cameraLensCount >= 2) {
+                drawOpticalLens(Offset(bumpLeft + 18.dp.toPx(), bumpTop + 44.dp.toPx()), lensR)
+            }
+            if (cameraLensCount >= 3) {
+                drawOpticalLens(Offset(bumpLeft + 44.dp.toPx(), bumpTop + 31.dp.toPx()), lensR, isPeriscope = isPeriscopeCam)
+            }
             drawFlashAndSensors(Offset(bumpLeft + 44.dp.toPx(), bumpTop + 13.dp.toPx()), Offset(bumpLeft + 44.dp.toPx(), bumpTop + 49.dp.toPx()))
         }
         "Yüzen Çift Halka" -> {
@@ -410,13 +446,22 @@ internal fun DrawScope.drawBackChassis(
             val ringR = 14.dp.toPx()
 
             drawOpticalLens(Offset(lensX, topY), ringR)
-            drawOpticalLens(Offset(lensX, topY + 34.dp.toPx()), ringR, isPeriscope = isPeriscopeCam)
-            drawFlashAndSensors(Offset(lensX + 22.dp.toPx(), topY + 17.dp.toPx()), Offset(lensX + 22.dp.toPx(), topY + 34.dp.toPx()))
+            if (cameraLensCount >= 2) {
+                drawOpticalLens(Offset(lensX, topY + 34.dp.toPx()), ringR, isPeriscope = cameraLensCount == 2 && isPeriscopeCam)
+            }
+            if (cameraLensCount >= 3) {
+                drawOpticalLens(Offset(lensX, topY + 68.dp.toPx()), ringR, isPeriscope = isPeriscopeCam)
+            }
+            drawFlashAndSensors(Offset(lensX + 24.dp.toPx(), topY + 17.dp.toPx()), Offset(lensX + 24.dp.toPx(), topY + 36.dp.toPx()))
         }
         else -> {
             // Dikey Ada (Triple Studio Pro)
             val islandW = 40.dp.toPx()
-            val islandH = 88.dp.toPx()
+            val islandH = when (cameraLensCount) {
+                1 -> 48.dp.toPx()
+                2 -> 68.dp.toPx()
+                else -> 88.dp.toPx()
+            }
             val islandLeft = 14.dp.toPx()
             val islandTop = 16.dp.toPx()
 
@@ -441,11 +486,42 @@ internal fun DrawScope.drawBackChassis(
             )
 
             val lensR = 7.dp.toPx()
-            drawOpticalLens(Offset(islandLeft + 20.dp.toPx(), islandTop + 18.dp.toPx()), lensR)
-            drawOpticalLens(Offset(islandLeft + 20.dp.toPx(), islandTop + 39.dp.toPx()), lensR)
-            drawOpticalLens(Offset(islandLeft + 20.dp.toPx(), islandTop + 60.dp.toPx()), lensR, isPeriscope = isPeriscopeCam)
-            drawFlashAndSensors(Offset(islandLeft + 20.dp.toPx(), islandTop + 76.dp.toPx()), null)
+            drawOpticalLens(Offset(islandLeft + 20.dp.toPx(), islandTop + 16.dp.toPx()), lensR)
+            if (cameraLensCount >= 2) {
+                drawOpticalLens(Offset(islandLeft + 20.dp.toPx(), islandTop + 37.dp.toPx()), lensR)
+            }
+            if (cameraLensCount >= 3) {
+                drawOpticalLens(Offset(islandLeft + 20.dp.toPx(), islandTop + 58.dp.toPx()), lensR, isPeriscope = isPeriscopeCam)
+            }
+            drawFlashAndSensors(Offset(islandLeft + 20.dp.toPx(), islandTop + islandH - 10.dp.toPx()), null)
         }
+    }
+
+    // Tasarım dili görselde gerçekten farklılaşsın.
+    when (style) {
+        "Oyuncu" -> {
+            val neon = if (isLightColor) Color(0xFF7C3AED) else Color(0xFF22D3EE)
+            drawLine(neon.copy(alpha = 0.85f), Offset(size.width * 0.18f, size.height * 0.82f), Offset(size.width * 0.48f, size.height * 0.73f), 2.dp.toPx())
+            drawLine(Color(0xFFF43F5E).copy(alpha = 0.75f), Offset(size.width * 0.52f, size.height * 0.73f), Offset(size.width * 0.82f, size.height * 0.82f), 2.dp.toPx())
+        }
+        "Dayanıklı" -> {
+            val guardColor = Color(0xFF0F172A).copy(alpha = 0.65f)
+            val guard = 16.dp.toPx()
+            drawLine(guardColor, Offset(5.dp.toPx(), guard), Offset(5.dp.toPx(), 5.dp.toPx()), 4.dp.toPx())
+            drawLine(guardColor, Offset(5.dp.toPx(), 5.dp.toPx()), Offset(guard, 5.dp.toPx()), 4.dp.toPx())
+            drawLine(guardColor, Offset(size.width - guard, 5.dp.toPx()), Offset(size.width - 5.dp.toPx(), 5.dp.toPx()), 4.dp.toPx())
+            drawLine(guardColor, Offset(size.width - 5.dp.toPx(), 5.dp.toPx()), Offset(size.width - 5.dp.toPx(), guard), 4.dp.toPx())
+        }
+        "Klasik" -> {
+            drawRoundRect(
+                color = if (isLightColor) Color.Black.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.16f),
+                topLeft = Offset(7.dp.toPx(), 7.dp.toPx()),
+                size = Size(size.width - 14.dp.toPx(), size.height - 14.dp.toPx()),
+                cornerRadius = CornerRadius((phoneCorner - 7.dp.toPx()).coerceAtLeast(4.dp.toPx())),
+                style = Stroke(1.dp.toPx())
+            )
+        }
+        else -> Unit
     }
 
     // 4. ŞİRKET LOGO EMBLEMİ
@@ -499,6 +575,7 @@ internal fun DrawScope.drawBackChassis(
         end = Offset(logoCenterX + 20.dp.toPx(), size.height - 24.dp.toPx()),
         strokeWidth = 1.5.dp.toPx()
     )
+    } // chassis clip
 }
 
 internal fun DrawScope.drawFrontDisplay(
@@ -515,6 +592,10 @@ internal fun DrawScope.drawFrontDisplay(
         "Ultra İnce Çerçeve" -> 34.dp.toPx()
         else -> 30.dp.toPx()
     }
+    val chassisClip = Path().apply {
+        addRoundRect(RoundRect(Rect(0f, 0f, size.width, size.height), CornerRadius(phoneCorner, phoneCorner)))
+    }
+    clipPath(chassisClip) {
     
     // Ekran paneli teknolojisine göre temel çerçeve kalınlığı (Inç/Ekran boyutu hissiyatı)
     val baseBezel = when (frameStyle) {
@@ -584,23 +665,50 @@ internal fun DrawScope.drawFrontDisplay(
         cornerRadius = CornerRadius(innerCorner, innerCorner)
     )
 
-    // Dinamik Ekran Yansımaları ve Işık Halkaları (Premium Görünüm)
-    drawCircle(
-        brush = Brush.radialGradient(
-            listOf(Color(0xFF38BDF8).copy(alpha = 0.65f), Color(0xFF818CF8).copy(alpha = 0.25f), Color.Transparent),
-            center = Offset(size.width * 0.3f, size.height * 0.35f), radius = 80.dp.toPx()
-        ),
-        radius = 80.dp.toPx(),
-        center = Offset(size.width * 0.3f, size.height * 0.35f)
-    )
-    drawCircle(
-        brush = Brush.radialGradient(
-            listOf(Color(0xFFF43F5E).copy(alpha = 0.5f), Color(0xFF9333EA).copy(alpha = 0.2f), Color.Transparent),
-            center = Offset(size.width * 0.75f, size.height * 0.65f), radius = 75.dp.toPx()
-        ),
-        radius = 75.dp.toPx(),
-        center = Offset(size.width * 0.75f, size.height * 0.65f)
-    )
+    // Duvar kağıdı ve parlama katmanları sadece gerçek ekran alanında çizilsin.
+    // Bu ikinci kırpma özellikle köşelerdeki renkli/kare taşmaları engeller.
+    val screenClip = Path().apply {
+        addRoundRect(
+            RoundRect(
+                Rect(bezelSize, bezelSize, bezelSize + screenRect.width, bezelSize + screenRect.height),
+                CornerRadius(innerCorner, innerCorner)
+            )
+        )
+    }
+    clipPath(screenClip) {
+        drawCircle(
+            brush = Brush.radialGradient(
+                listOf(Color(0xFF38BDF8).copy(alpha = 0.65f), Color(0xFF818CF8).copy(alpha = 0.25f), Color.Transparent),
+                center = Offset(size.width * 0.3f, size.height * 0.35f), radius = 80.dp.toPx()
+            ),
+            radius = 80.dp.toPx(),
+            center = Offset(size.width * 0.3f, size.height * 0.35f)
+        )
+        drawCircle(
+            brush = Brush.radialGradient(
+                listOf(Color(0xFFF43F5E).copy(alpha = 0.5f), Color(0xFF9333EA).copy(alpha = 0.2f), Color.Transparent),
+                center = Offset(size.width * 0.75f, size.height * 0.65f), radius = 75.dp.toPx()
+            ),
+            radius = 75.dp.toPx(),
+            center = Offset(size.width * 0.75f, size.height * 0.65f)
+        )
+
+        when {
+            display.contains("Katlanabilir", ignoreCase = true) -> {
+                drawLine(Color.White.copy(alpha = 0.16f), Offset(size.width / 2, bezelSize), Offset(size.width / 2, size.height - bezelSize - bottomChin), 1.2.dp.toPx())
+                drawLine(Color.Black.copy(alpha = 0.18f), Offset(size.width / 2 + 1.5.dp.toPx(), bezelSize), Offset(size.width / 2 + 1.5.dp.toPx(), size.height - bezelSize - bottomChin), 1.dp.toPx())
+            }
+            display.contains("Edge AMOLED", ignoreCase = true) -> {
+                drawLine(Color(0xFF38BDF8).copy(alpha = 0.55f), Offset(bezelSize + 1.dp.toPx(), 30.dp.toPx()), Offset(bezelSize + 1.dp.toPx(), size.height - 30.dp.toPx()), 2.dp.toPx())
+                drawLine(Color(0xFF818CF8).copy(alpha = 0.45f), Offset(size.width - bezelSize - 1.dp.toPx(), 30.dp.toPx()), Offset(size.width - bezelSize - 1.dp.toPx(), size.height - 30.dp.toPx()), 2.dp.toPx())
+            }
+            display.contains("Holografik", ignoreCase = true) -> {
+                drawCircle(Color(0xFF22D3EE).copy(alpha = 0.22f), radius = size.width * 0.34f, center = Offset(size.width / 2, size.height * 0.45f), style = Stroke(2.dp.toPx()))
+                drawCircle(Color(0xFFF472B6).copy(alpha = 0.18f), radius = size.width * 0.24f, center = Offset(size.width / 2, size.height * 0.45f), style = Stroke(1.5.dp.toPx()))
+            }
+            else -> Unit
+        }
+    }
 
     // Status Bar (Saat, Pil, Sinyal)
     drawRoundRect(
@@ -732,10 +840,12 @@ internal fun DrawScope.drawFrontDisplay(
         lineTo(bezelSize, bezelSize + 40.dp.toPx())
         close()
     }
-    drawPath(
-        glassHighlight,
-        brush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.22f), Color.Transparent))
-    )
+    clipPath(screenClip) {
+        drawPath(
+            glassHighlight,
+            brush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.22f), Color.Transparent))
+        )
+    }
     
     // Kenar Yansımaları (Edge glare)
     drawRoundRect(
@@ -747,6 +857,7 @@ internal fun DrawScope.drawFrontDisplay(
         cornerRadius = CornerRadius(innerCorner, innerCorner),
         style = Stroke(width = 1.2.dp.toPx())
     )
+    } // front chassis clip
 }
 
 internal fun DrawScope.drawSideAndPortChassis(
@@ -755,7 +866,8 @@ internal fun DrawScope.drawSideAndPortChassis(
     chargingPort: String,
     cellularNetwork: String,
     colorHex: Long,
-    frameStyle: String
+    frameStyle: String,
+    thicknessMm: Float = 8.0f
 ) {
     val metalBrush = when (material) {
         "Titanyum" -> Brush.linearGradient(
@@ -767,7 +879,8 @@ internal fun DrawScope.drawSideAndPortChassis(
 
     // 1. ÜST PANEL: YAN PROFİL (DÜĞMELER & ANTEN ÇİZGİLERİ)
     val sideProfileY = 35.dp.toPx()
-    val sideHeight = 24.dp.toPx()
+    val thicknessRatio = ((thicknessMm - 6.5f) / 3.0f).coerceIn(0f, 1f)
+    val sideHeight = (18.dp + (10.dp * thicknessRatio)).toPx()
     val sideWidth = size.width - 24.dp.toPx()
     val sideLeft = 12.dp.toPx()
 

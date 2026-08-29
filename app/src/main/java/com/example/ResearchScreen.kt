@@ -323,10 +323,11 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
         }
 
         // Primary Tab Bar: Araştırılacaklar vs Sıradakiler vs Tamamlananlar
-        TabRow(
+        ScrollableTabRow(
             selectedTabIndex = selectedMainTab,
             containerColor = MaterialTheme.colorScheme.background,
             modifier = Modifier.height(40.dp),
+            edgePadding = 0.dp,
             divider = {}
         ) {
             Tab(
@@ -334,21 +335,21 @@ fun ResearchScreen(modifier: Modifier = Modifier, viewModel: GameViewModel) {
                 onClick = { selectedMainTab = 0 },
                 text = {
                     val count = allTechNodes.count { !state.unlockedTech.contains(it.id) && state.year >= it.yearAvailable }
-                    Text("Araştırılacaklar ($count)", fontWeight = if (selectedMainTab == 0) FontWeight.Bold else FontWeight.Normal, fontSize = 11.5.sp)
+                    Text("Araştırılacaklar ($count)", fontWeight = if (selectedMainTab == 0) FontWeight.Bold else FontWeight.Normal, fontSize = 11.5.sp, maxLines = 1, softWrap = false)
                 }
             )
             Tab(
                 selected = selectedMainTab == 1,
                 onClick = { selectedMainTab = 1 },
                 text = {
-                    Text("📋 Sırada (${state.researchQueue.size})", fontWeight = if (selectedMainTab == 1) FontWeight.Bold else FontWeight.Normal, fontSize = 11.5.sp)
+                    Text("📋 Sırada (${state.researchQueue.size})", fontWeight = if (selectedMainTab == 1) FontWeight.Bold else FontWeight.Normal, fontSize = 11.5.sp, maxLines = 1, softWrap = false)
                 }
             )
             Tab(
                 selected = selectedMainTab == 2,
                 onClick = { selectedMainTab = 2 },
                 text = {
-                    Text("Tamamlanan (${state.unlockedTech.size})", fontWeight = if (selectedMainTab == 2) FontWeight.Bold else FontWeight.Normal, fontSize = 11.5.sp)
+                    Text("Tamamlanan (${state.unlockedTech.size})", fontWeight = if (selectedMainTab == 2) FontWeight.Bold else FontWeight.Normal, fontSize = 11.5.sp, maxLines = 1, softWrap = false)
                 }
             )
         }

@@ -140,33 +140,35 @@ fun MarketScreen(
 
             // 3. TABS SELECTOR
             item {
-                TabRow(
+                ScrollableTabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.clip(RoundedCornerShape(12.dp))
+                    modifier = Modifier.clip(RoundedCornerShape(12.dp)),
+                    edgePadding = 0.dp,
+                    divider = {}
                 ) {
                     Tab(
                         selected = selectedTab == 0,
                         onClick = { selectedTab = 0 },
-                        text = { Text("Pazar Payı", fontSize = 11.sp, fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal) },
+                        text = { Text("Pazar Payı", fontSize = 11.sp, maxLines = 1, softWrap = false, fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal) },
                         icon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, modifier = Modifier.size(16.dp)) }
                     )
                     Tab(
                         selected = selectedTab == 1,
                         onClick = { selectedTab = 1 },
-                        text = { Text("Rakipler", fontSize = 11.sp, fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) },
+                        text = { Text("Rakipler", fontSize = 11.sp, maxLines = 1, softWrap = false, fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) },
                         icon = { Icon(Icons.Default.Business, contentDescription = null, modifier = Modifier.size(16.dp)) }
                     )
                     Tab(
                         selected = selectedTab == 2,
                         onClick = { selectedTab = 2 },
-                        text = { Text("Lansman (${state.competitorReleases.size})", fontSize = 11.sp, fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal) },
+                        text = { Text("Lansman (${state.competitorReleases.size})", fontSize = 11.sp, maxLines = 1, softWrap = false, fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal) },
                         icon = { Icon(Icons.Default.Notifications, contentDescription = null, modifier = Modifier.size(16.dp)) }
                     )
                     Tab(
                         selected = selectedTab == 3,
                         onClick = { selectedTab = 3 },
-                        text = { Text("Ödüller 🏆", fontSize = 11.sp, fontWeight = if (selectedTab == 3) FontWeight.Bold else FontWeight.Normal) },
+                        text = { Text("Ödüller 🏆", fontSize = 11.sp, maxLines = 1, softWrap = false, fontWeight = if (selectedTab == 3) FontWeight.Bold else FontWeight.Normal) },
                         icon = { Icon(Icons.Default.EmojiEvents, contentDescription = null, modifier = Modifier.size(16.dp)) }
                     )
                 }

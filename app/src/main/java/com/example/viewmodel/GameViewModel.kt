@@ -361,8 +361,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 val newPeriods = model.periodsOnMarket + 1
                 val newMonths = newPeriods / 2
                 
-                // Base bi-weekly batch (half of monthly)
-                val basePeriodBatch = model.totalStock / (model.maxMonthsOnMarket * 2).toFloat()
+                // Ana satış temposunu 48 aya yayma: ilk 12-24 ay normal lansman dönemi,
+                // 25-48. aylar yalnızca elde kalan stok için uzun-kuyruk dönemidir.
+                val primarySalesMonths = model.maxMonthsOnMarket.coerceAtMost(24)
+                val basePeriodBatch = model.totalStock / (primarySalesMonths * 2).toFloat()
                 
                 // Quality, reputation and active marketing campaign demand multiplier
                 val qualityFactor = (model.reviewScore / 55.0f).coerceIn(0.4f, 2.0f)
@@ -411,8 +413,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     markupRatio <= 1.25f -> 1.15f
                     else -> 1.0f
                 }
-                // Ekstra İndirim Kampanyası Talep Çarpanı (%15 indirim -> +%35 talep, %30 -> +%80 talep, %50 -> +%150 talep)
-                val discountBoost = if (model.discountPercent > 0) 1.0f + (model.discountPercent * 0.03f) else 1.0f
+                // İndirim talebi artırır fakat tek başına satışları patlatmaz.
+                // %15 -> ~1.18x, %30 -> ~1.36x, %50 -> ~1.60x
+                val discountBoost = if (model.discountPercent > 0) 1.0f + (model.discountPercent * 0.012f) else 1.0f
                 val priceElasticityFactor = basePriceElasticity * discountBoost
 
                 // 3. SERİ DEVAMI & NESİL SADAKATİ
@@ -480,25 +483,50 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 val osSynergyFactor = baseOsSynergy
 
-                // Lifecycle Sales Curve Factor (over periods) — yumuşatılmış eğri: pik ay 4'te
-                // eskisi gibi 2.40x'e sıçramıyor, en fazla 1.55x'e çıkıp kademeli iniyor. Bu, iyi bir
-                // telefon + trend + reklam + iyi fiyat kombinasyonunun anlık "para makinesi"ne
-                // dönüşmesini engelliyor; büyüme hâlâ var ama patlama yapmıyor.
+                // ÜRÜN YAŞAM DÖNGÜSÜ: Güçlü modeller 4 yıla kadar satılabilir.
+                // İlk yıl ana satış dönemi, 2. yıl belirgin düşüş, 3-4. yıl ise "uzun kuyruk" satışıdır.
+                // Eski model tamamen ölmez; uygun fiyatla giriş/bütçe modeli olarak yaşamaya devam eder.
                 val lifecycleSalesCurve = when (newMonths) {
                     0, 1 -> 0.50f
                     2 -> 0.80f
-                    3 -> 1.35f
-                    4 -> 1.55f
-                    5 -> 1.40f
-                    6 -> 1.10f
-                    7 -> 0.75f
-                    8 -> 0.40f
-                    9 -> 0.25f
-                    10 -> 0.15f
-                    11 -> 0.10f
-                    12 -> 0.05f
-                    else -> 0.04f
+                    3 -> 1.25f
+                    4 -> 1.45f
+                    5, 6 -> 1.20f
+                    in 7..9 -> 0.90f
+                    in 10..12 -> 0.72f
+                    in 13..18 -> 0.55f
+                    in 19..24 -> 0.40f
+                    in 25..30 -> 0.28f
+                    in 31..36 -> 0.21f
+                    in 37..42 -> 0.15f
+                    in 43..48 -> 0.10f
+                    else -> 0.05f
                 }
+
+                // Aynı serinin yeni nesli çıktıysa eski model talebi düşer; fakat tamamen yok olmaz.
+                // İndirim, eski neslin "uygun fiyatlı alternatif" olarak talebinin bir kısmını geri kazanır.
+                val hasNewerGenerationInSeries = currentState.activeModels.any { other ->
+                    other.id != model.id &&
+                        !other.isCompleted &&
+                        other.specs.seriesName.isNotBlank() &&
+                        other.specs.seriesName == model.specs.seriesName &&
+                        other.specs.generation > model.specs.generation
+                }
+                val newerGenerationFactor = if (hasNewerGenerationInSeries) {
+                    when {
+                        model.discountPercent >= 40 -> 0.88f
+                        model.discountPercent >= 30 -> 0.82f
+                        model.discountPercent >= 20 -> 0.76f
+                        model.discountPercent >= 10 -> 0.70f
+                        else -> 0.62f
+                    }
+                } else 1.0f
+
+                // 2. yıldan sonra indirim, uzun-kuyruk talebini kontrollü şekilde canlandırır.
+                // Bu bonus fiyat elastikiyetinden ayrıdır ve sadece yaşlı modellerde devreye girer.
+                val longTailDiscountRecovery = if (newMonths >= 13 && model.discountPercent > 0) {
+                    (1.0f + model.discountPercent * 0.008f).coerceAtMost(1.40f)
+                } else 1.0f
 
                 // --- HYPE & MÜŞTERİ MEMNUNİYETİ DENGESİ (HYPE & SATISFACTION MECHANIC) ---
                 // 1. Hype Evrimi: Doğal soğuma + pazarlama desteği + kulaktan kulağa (Word-of-Mouth)
@@ -552,7 +580,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
                 val wordOfMouthMultiplier = if (updatedSatisfaction >= 85) 1.15f else if (updatedSatisfaction <= 35) 0.65f else 1.0f
 
-                val demandFactor = qualityFactor * repFactor * marketMaturityFactor * priceElasticityFactor * seriesLoyaltyFactor * tierDemandFactor * campaignFactor * trendFactor * colorFactor * designFactor * osSynergyFactor * lifecycleSalesCurve * hypeDemandMultiplier * satisfactionDemandMultiplier * wordOfMouthMultiplier
+                val demandFactor = qualityFactor * repFactor * marketMaturityFactor * priceElasticityFactor * seriesLoyaltyFactor * tierDemandFactor * campaignFactor * trendFactor * colorFactor * designFactor * osSynergyFactor * lifecycleSalesCurve * newerGenerationFactor * longTailDiscountRecovery * hypeDemandMultiplier * satisfactionDemandMultiplier * wordOfMouthMultiplier
 
                 // --- SADELEŞTİRİLMİŞ 3 GRUPLU ÖZET (sadece arayüzde gösterim için; matematik yukarıdaki gibi kalıyor) ---
                 // "Ürün Kalitesi": telefonun kendi niteliği — inceleme puanı, tasarım/malzeme, OS uyumu
@@ -613,13 +641,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 var isExtendedNewsSent = model.isExtendedNewsSent
-                if (newMonths == 12 && model.maxMonthsOnMarket == 24 && !model.isExtendedNewsSent) {
+                if (newMonths == 24 && model.maxMonthsOnMarket == 48 && !model.isExtendedNewsSent) {
                     isExtendedNewsSent = true
                     finishedModelsNews.add(
                         NewsArticle(
                             id = "news_ext_${model.id}",
-                            title = "YOĞUN TALEP: ${model.specs.name} 2. Yılına Girdi!",
-                            text = "${model.specs.name} modeli yüksek müşteri memnuniyeti (${model.reviewScore}/100) ve yoğun pazar talebi sayesinde 24 aya kadar satışta kalmaya devam ediyor!",
+                            title = "UZUN ÖMÜRLÜ MODEL: ${model.specs.name} 3. Yılına Girdi!",
+                            text = "${model.specs.name} modeli güçlü müşteri memnuniyeti (${model.reviewScore}/100) sayesinde uzun-kuyruk satış dönemine geçti. Doğru fiyat ve indirimlerle 48 aya kadar pazarda kalabilir.",
                             category = "Pazar",
                             year = newYear,
                             month = newMonth
@@ -923,10 +951,34 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
+        // Patent lisansları dönemsel gelir üretir. Patent süresi her 2 haftalık dönemde azalır.
+        val patentLicenseRevenueThisPeriod = currentState.patents
+            .filter { it.strategy == PatentStrategy.LICENSED && it.remainingPeriods > 0 }
+            .sumOf { (it.monthlyLicenseIncome / 2).coerceAtLeast(0L) }
+
+        val existingPatentIds = currentState.patents.map { it.techId }.toSet()
+        val migratedLegacyPatents = currentState.unlockedTech
+            .filterNot { it in existingPatentIds }
+            .map { techId -> PatentAsset(
+                techId = techId,
+                techName = techId,
+                baseValue = 300000L,
+                strategy = PatentStrategy.PROTECTED,
+                remainingPeriods = 120
+            ) }
+
+        var updatedPatents = (currentState.patents + migratedLegacyPatents).map { patent ->
+            if (patent.strategy == PatentStrategy.PROTECTED || patent.strategy == PatentStrategy.LICENSED) {
+                val remaining = (patent.remainingPeriods - 1).coerceAtLeast(0)
+                if (remaining == 0) patent.copy(strategy = PatentStrategy.EXPIRED, remainingPeriods = 0, monthlyLicenseIncome = 0L)
+                else patent.copy(remainingPeriods = remaining)
+            } else patent
+        }
+
         // Holding bünyesindeki alt markalardan gelen dönemsel temettü/kâr payı
         val subBrandDividendsThisPeriod = currentState.ownedSubBrands.sumOf { (it.monthlyDividend / 2).coerceAtLeast(0L) }
 
-        val totalCombinedRevenue = totalMonthlyRevenue + appStoreRevenueThisPeriod + licenseRevenueThisPeriod + (updatedCustomOs.lastMonthCloudRevenue / 2) + periodChipsetIncome + subBrandDividendsThisPeriod
+        val totalCombinedRevenue = totalMonthlyRevenue + appStoreRevenueThisPeriod + licenseRevenueThisPeriod + (updatedCustomOs.lastMonthCloudRevenue / 2) + periodChipsetIncome + subBrandDividendsThisPeriod + patentLicenseRevenueThisPeriod
         val periodExpenses = (currentState.totalMonthlyExpenses / 2).coerceAtLeast(0)
         val netIncome = totalCombinedRevenue - periodExpenses
 
@@ -1127,6 +1179,19 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 // Research completed!
                 updatedUnlockedTech = updatedUnlockedTech + currentActiveResearch.techId
                 val completedTechName = currentActiveResearch.techName
+
+                // Her tamamlanan Ar-Ge otomatik olarak korunan bir patent varlığına dönüşür.
+                // Eski kayıtlarda patent listesi boş olabileceği için yalnızca yeni tamamlanan teknoloji eklenir.
+                if (updatedPatents.none { it.techId == currentActiveResearch.techId }) {
+                    val patentValue = (currentActiveResearch.cost * 65L / 100L).coerceAtLeast(150000L)
+                    updatedPatents = updatedPatents + PatentAsset(
+                        techId = currentActiveResearch.techId,
+                        techName = completedTechName,
+                        baseValue = patentValue,
+                        strategy = PatentStrategy.PROTECTED,
+                        remainingPeriods = 120
+                    )
+                }
                 
                 researchReports.add(
                     MarketReport(
@@ -1415,6 +1480,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 activeLoans = processedLoans,
                 creditScore = updatedCreditScore,
                 patentLiquidationCooldown = updatedPatentCooldown,
+                patents = updatedPatents,
+                totalPatentLicenseRevenue = it.totalPatentLicenseRevenue + patentLicenseRevenueThisPeriod,
+                lastPeriodPatentLicenseRevenue = patentLicenseRevenueThisPeriod,
                 activeHardwareCrises = it.activeHardwareCrises + newCrisesList,
                 techLevel = if (updatedUnlockedTech.size >= 15) "Yapay Zeka" else if (updatedUnlockedTech.size >= 5) "İleri Düzey" else "Giriş"
             )
@@ -1840,7 +1908,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val launchNews = NewsArticle(
             id = "news_launch_${newActiveModel.id}",
             title = "${currentState.companyName.uppercase()} LANSMANI: ${specs.name} Piyasada!",
-            text = "${currentState.companyName}, ${specs.name} modelini üretti! ${"%,d".format(specs.quantity)} adetlik stok hedeflendi ve 12-24 ay boyunca satılacak.$productionNote $techComment$colorNote$osNote$trendBonusNote$tierNote$genNote Eleştirmen puanı: $reviewScore/100.$legacyReputationText",
+            text = "${currentState.companyName}, ${specs.name} modelini üretti! ${"%,d".format(specs.quantity)} adetlik stok hedeflendi. Başarılı modeller fiyat indirimi ve uzun-kuyruk talebiyle 48 aya kadar piyasada kalabilir.$productionNote $techComment$colorNote$osNote$trendBonusNote$tierNote$genNote Eleştirmen puanı: $reviewScore/100.$legacyReputationText",
             category = "Şirket",
             year = currentState.year,
             month = currentState.month
@@ -2772,24 +2840,54 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         return true
     }
 
+    fun licenseProtectedPatents(): Boolean {
+        val current = _state.value
+        val eligible = current.patents.filter { it.strategy == PatentStrategy.PROTECTED && it.remainingPeriods > 0 }
+        if (eligible.isEmpty()) {
+            _state.update { it.copy(noticeMessage = "Lisanslanabilecek korunan patent bulunmuyor.") }
+            return false
+        }
+
+        val ids = eligible.map { it.techId }.toSet()
+        val updated = current.patents.map { patent ->
+            if (patent.techId in ids) {
+                val monthly = (patent.baseValue * 4L / 1000L).coerceIn(1500L, 250000L)
+                patent.copy(strategy = PatentStrategy.LICENSED, monthlyLicenseIncome = monthly)
+            } else patent
+        }
+        val monthlyTotal = updated.filter { it.strategy == PatentStrategy.LICENSED }.sumOf { it.monthlyLicenseIncome }
+
+        _state.update { it.copy(
+            patents = updated,
+            noticeMessage = "📜 ${eligible.size} patent lisanslandı. Tahmini aylık patent geliri: $${"%,d".format(monthlyTotal)}"
+        ) }
+        autoSaveGame()
+        return true
+    }
+
+    /**
+     * Korunan patentleri tek seferlik nakde çevirir. Satılan patent tekrar gelir üretmez.
+     * Eski UI bağlantısını ve kayıt uyumluluğunu korumak için fonksiyon adı değiştirilmedi.
+     */
     fun liquidatePatents(): Boolean {
         val current = _state.value
-        if (current.unlockedTech.isEmpty()) {
-            _state.update { it.copy(noticeMessage = "Devredilebilecek tamamlanmış Ar-Ge patenti bulunmuyor!") }
-            return false
-        }
-        if (current.patentLiquidationCooldown > 0) {
-            _state.update { it.copy(noticeMessage = "Patent devir anlaşması bekleme süresinde! (${current.patentLiquidationCooldown} dönem kaldı)") }
+        val eligible = current.patents.filter { it.strategy == PatentStrategy.PROTECTED && it.remainingPeriods > 0 }
+        if (eligible.isEmpty()) {
+            _state.update { it.copy(noticeMessage = "Satılabilecek korunan patent bulunmuyor. Araştırmaları tamamladıktan sonra patentler otomatik oluşur.") }
             return false
         }
 
-        val cashYield = 850000L + (current.unlockedTech.size * 50000L)
-        val repPenalty = 4
+        // Acil nakit güçlüdür ama lisanslamadan daha düşük uzun vadeli değer verir.
+        val cashYield = eligible.sumOf { (it.baseValue * 50L / 100L).coerceAtLeast(75000L) }
+        val ids = eligible.map { it.techId }.toSet()
+        val updated = current.patents.map { patent ->
+            if (patent.techId in ids) patent.copy(strategy = PatentStrategy.SOLD, monthlyLicenseIncome = 0L) else patent
+        }
 
         val news = NewsArticle(
-            id = "patent_deal_${current.year}_${current.month}_${Random.nextInt(100, 999)}",
-            title = "📜 PATENT LİSANS SATIŞI: Endüstri Konsorsiyumuna Devir",
-            text = "Ar-Ge patentlerinizin kullanım hakkı sektör üreticilerine lisanslanarak şirkete $${"%,d".format(cashYield)} acil nakit sağlandı. Şirket itibarı -$repPenalty puan geriledi.",
+            id = "patent_sale_${current.year}_${current.month}_${Random.nextInt(100, 999)}",
+            title = "📜 PATENT PORTFÖYÜ SATIŞI",
+            text = "${eligible.size} korunan patentin mülkiyet hakkı devredildi. Şirket $${"%,d".format(cashYield)} nakit aldı; bu patentler artık lisans geliri üretmeyecek.",
             category = "Şirket",
             year = current.year,
             month = current.month
@@ -2798,10 +2896,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _state.update { state ->
             state.copy(
                 budget = state.budget + cashYield,
-                reputation = (state.reputation - repPenalty).coerceIn(0, 100),
-                patentLiquidationCooldown = 12, // 6 ay bekleme
+                patents = updated,
                 newsList = listOf(news) + state.newsList,
-                noticeMessage = "Patent lisans devrinden $${"%,d".format(cashYield)} acil nakit sağlandı (-$repPenalty İtibar)."
+                noticeMessage = "${eligible.size} patent satıldı: +$${"%,d".format(cashYield)}. Bu karar geri alınamaz."
             )
         }
         autoSaveGame()

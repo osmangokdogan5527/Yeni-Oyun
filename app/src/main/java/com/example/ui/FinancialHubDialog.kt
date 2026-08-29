@@ -35,6 +35,7 @@ fun FinancialHubDialog(
     onDismiss: () -> Unit,
     onTakeLoan: (LoanType) -> Unit,
     onPayOffEarly: (String) -> Unit,
+    onLicensePatents: () -> Unit,
     onLiquidatePatents: () -> Unit,
     onSeekVentureCapital: () -> Unit,
     onLiquidateStock: (String) -> Unit
@@ -183,10 +184,11 @@ fun FinancialHubDialog(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // Tab Selector
-                SecondaryTabRow(
+                ScrollableTabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = Color.Transparent,
                     contentColor = MaterialTheme.colorScheme.primary,
+                    edgePadding = 0.dp,
                     divider = {}
                 ) {
                     Tab(
@@ -196,6 +198,8 @@ fun FinancialHubDialog(
                             Text(
                                 "Banka Kredileri (${state.activeLoans.size})",
                                 fontSize = 12.sp,
+                                maxLines = 1,
+                                softWrap = false,
                                 fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal
                             )
                         }
@@ -208,6 +212,8 @@ fun FinancialHubDialog(
                                 Text(
                                     "Acil Likidite & Kurtarma",
                                     fontSize = 12.sp,
+                                    maxLines = 1,
+                                    softWrap = false,
                                     fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal
                                 )
                                 if (isNegativeBudget) {
@@ -228,6 +234,8 @@ fun FinancialHubDialog(
                             Text(
                                 "Finansal Bilanço",
                                 fontSize = 12.sp,
+                                maxLines = 1,
+                                softWrap = false,
                                 fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal
                             )
                         }
@@ -245,6 +253,7 @@ fun FinancialHubDialog(
                     )
                     1 -> EmergencyRecoveryTabContent(
                         state = state,
+                        onLicensePatents = onLicensePatents,
                         onLiquidatePatents = onLiquidatePatents,
                         onSeekVentureCapital = onSeekVentureCapital,
                         onLiquidateStock = onLiquidateStock
@@ -539,6 +548,7 @@ fun BankLoansTabContent(
 @Composable
 fun EmergencyRecoveryTabContent(
     state: GameState,
+    onLicensePatents: () -> Unit,
     onLiquidatePatents: () -> Unit,
     onSeekVentureCapital: () -> Unit,
     onLiquidateStock: (String) -> Unit
@@ -654,8 +664,17 @@ fun EmergencyRecoveryTabContent(
             }
         }
 
-        // 2. Patent License Liquidation
+        // 2. Patent Portfolio — basit portföy yönetimi
         item {
+            val protected = state.patents.count { it.strategy == PatentStrategy.PROTECTED && it.remainingPeriods > 0 }
+            val licensed = state.patents.count { it.strategy == PatentStrategy.LICENSED && it.remainingPeriods > 0 }
+            val monthlyPatentIncome = state.patents
+                .filter { it.strategy == PatentStrategy.LICENSED && it.remainingPeriods > 0 }
+                .sumOf { it.monthlyLicenseIncome }
+            val protectedSaleValue = state.patents
+                .filter { it.strategy == PatentStrategy.PROTECTED && it.remainingPeriods > 0 }
+                .sumOf { (it.baseValue * 50L / 100L).coerceAtLeast(75000L) }
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
@@ -672,74 +691,56 @@ fun EmergencyRecoveryTabContent(
                             Text("📜", fontSize = 22.sp)
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
-                                Text(
-                                    text = "Ar-Ge Patent Lisansı Devri",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = "Patent kullanım hakkını üreticilere devret",
-                                    fontSize = 10.sp,
-                                    color = Slate500
-                                )
+                                Text("Patent Portföyü", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                Text("Korunan: $protected • Lisanslı: $licensed", fontSize = 10.sp, color = Slate500)
                             }
                         }
-
-                        if (state.patentLiquidationCooldown > 0) {
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = Color(0xFFFEF3C7)
-                            ) {
-                                Text(
-                                    text = "Bekleme: ${state.patentLiquidationCooldown} Dönem",
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFB45309),
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
+                        if (monthlyPatentIncome > 0) {
+                            Text(
+                                "+$${"%,d".format(monthlyPatentIncome)}/ay",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Green500
+                            )
                         }
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
-
-                    val patentCash = 850000L + (state.unlockedTech.size * 50000L)
                     Text(
-                        text = "Geliştirdiğiniz Ar-Ge teknolojilerinin kullanım lisansı sektör ortaklarına devredilir. Teknolojileriniz kaybolmaz ancak şirket itibarı 4 puan düşer.",
-                        fontSize = 11.sp,
-                        color = Slate600,
-                        lineHeight = 15.sp
+                        "Tamamlanan Ar-Ge otomatik olarak korunur. İstersen koruyup teknolojik avantajı sakla, portföyü lisanslayıp düzenli gelir kazan veya acil nakit için korunan patentleri tamamen sat.",
+                        fontSize = 11.sp, color = Slate600, lineHeight = 15.sp
                     )
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    if (state.lastPeriodPatentLicenseRevenue > 0) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            "Son dönem lisans geliri: +$${"%,d".format(state.lastPeriodPatentLicenseRevenue)}",
+                            fontSize = 10.sp, color = Green500, fontWeight = FontWeight.SemiBold
+                        )
+                    }
 
+                    Spacer(modifier = Modifier.height(10.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Column {
-                            Text(
-                                text = "Getiri: +$${"%,d".format(patentCash)}",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Green500
-                            )
-                            Text(
-                                text = "Maliyet: -4 İtibar Puanı",
-                                fontSize = 10.sp,
-                                color = Color(0xFFE11D48)
-                            )
+                        Button3D(
+                            onClick = onLicensePatents,
+                            enabled = protected > 0,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Lisansla", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
-
                         Button3D(
                             onClick = onLiquidatePatents,
-                            enabled = state.unlockedTech.isNotEmpty() && state.patentLiquidationCooldown <= 0,
+                            enabled = protected > 0,
+                            modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD97706)),
                             shape = RoundedCornerShape(10.dp)
                         ) {
-                            Text("Patent Devret", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text("Sat +$${"%,d".format(protectedSaleValue)}", fontSize = 9.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

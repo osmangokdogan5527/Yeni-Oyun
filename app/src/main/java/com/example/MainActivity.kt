@@ -206,6 +206,7 @@ fun MainApp(viewModel: GameViewModel = viewModel()) {
             onDismiss = { showFinancialHubDialog = false },
             onTakeLoan = { loanType -> viewModel.takeOutLoan(loanType) },
             onPayOffEarly = { loanId -> viewModel.payOffLoanEarly(loanId) },
+            onLicensePatents = { viewModel.licenseProtectedPatents() },
             onLiquidatePatents = { viewModel.liquidatePatents() },
             onSeekVentureCapital = { viewModel.seekVentureCapital() },
             onLiquidateStock = { modelId -> viewModel.emergencyLiquidateStock(modelId) }
@@ -351,11 +352,11 @@ fun MainApp(viewModel: GameViewModel = viewModel()) {
             AppScreen.TechHub -> {
                 var selectedTab by remember { mutableIntStateOf(0) }
                 Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-                    TabRow(selectedTabIndex = selectedTab) {
-                        Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Ar-Ge") })
-                        Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Yazılım") })
-                        Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("İşlemci") })
-                        Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = { Text("Test Lab") })
+                    ScrollableTabRow(selectedTabIndex = selectedTab, edgePadding = 0.dp) {
+                        Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Ar-Ge", maxLines = 1, softWrap = false) })
+                        Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Yazılım", maxLines = 1, softWrap = false) })
+                        Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("İşlemci", maxLines = 1, softWrap = false) })
+                        Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = { Text("Test Lab", maxLines = 1, softWrap = false) })
                     }
                     when (selectedTab) {
                         0 -> ResearchScreen(viewModel = viewModel)

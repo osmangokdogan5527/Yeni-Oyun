@@ -470,7 +470,11 @@ data class ActiveModel(
         get() = if (discountPercent > 0) (specs.price * (100 - discountPercent) / 100).coerceAtLeast(1) else specs.price
 
     val maxMonthsOnMarket: Int
-        get() = if (reviewScore >= 60) 24 else 12
+        get() = when {
+            reviewScore >= 60 -> 48 // Başarılı modeller indirim/uzun kuyruk ile 4 yıla kadar piyasada kalabilir
+            reviewScore >= 40 -> 24 // Ortalama modeller en fazla 2 yıl
+            else -> 12              // Başarısız modeller pazardan daha hızlı çekilir
+        }
 
     val maxPeriodsOnMarket: Int
         get() = maxMonthsOnMarket * 2
@@ -824,6 +828,19 @@ val FACTORY_TIERS = listOf(
     FactoryTier(1, "Küçük Ölçekli Fabrika", 40, 10f, 50000L, 1000000L, periodCapacity = 18000),
     FactoryTier(2, "Otomatik Seri Üretim Fabrikası", 100, 20f, 180000L, 5000000L, periodCapacity = 70000),
     FactoryTier(3, "Mega Akıllı Robotik Fabrika", 300, 35f, 500000L, 20000000L, periodCapacity = 260000)
+)
+
+@Serializable
+enum class PatentStrategy { PROTECTED, LICENSED, SOLD, EXPIRED }
+
+@Serializable
+data class PatentAsset(
+    val techId: String,
+    val techName: String,
+    val baseValue: Long,
+    val strategy: PatentStrategy = PatentStrategy.PROTECTED,
+    val monthlyLicenseIncome: Long = 0L,
+    val remainingPeriods: Int = 120
 )
 
 @Serializable
@@ -1198,7 +1215,10 @@ data class GameState(
     val activeLoans: List<BankLoan> = emptyList(),
     val creditScore: Int = 750, // 300 - 900 Kredi Notu (Düzenli geri ödemelerle yükselir, kredi faizlerini düşürür)
     val equitySoldPercent: Int = 0, // Yatırımcılara satılan toplam hisse payı (%25'e kadar)
-    val patentLiquidationCooldown: Int = 0, // Patent satışı bekleme süresi (Dönem cinsinden)
+    val patentLiquidationCooldown: Int = 0, // Eski kayıtlarla uyumluluk için korunur
+    val patents: List<PatentAsset> = emptyList(),
+    val totalPatentLicenseRevenue: Long = 0L,
+    val lastPeriodPatentLicenseRevenue: Long = 0L,
     val activeHardwareCrises: List<HardwareCrisis> = emptyList() // Aktif veya geçmiş donanım krizleri ve geri çağırmalar
 ) {
     val currentOfficeTier: OfficeTier
