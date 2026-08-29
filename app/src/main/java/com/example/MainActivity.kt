@@ -183,7 +183,7 @@ fun GameTopBar(
                 
                 Button3D(
                     onClick = onAdvanceTime,
-                    modifier = Modifier.height(38.dp),
+                    modifier = Modifier.height(46.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     shape = RoundedCornerShape(14.dp)
@@ -196,21 +196,13 @@ fun GameTopBar(
                         maxLines = 1,
                         softWrap = false
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = Color.White.copy(alpha = 0.18f)
-                    ) {
-                        Text(
-                            text = "➜",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            maxLines = 1,
-                            softWrap = false
-                        )
-                    }
+                    Spacer(modifier = Modifier.width(7.dp))
+                    Icon(
+                        imageVector = Icons.Default.ArrowForward,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(17.dp)
+                    )
                 }
             }
         }

@@ -25,33 +25,22 @@ fun ProOutlinedButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    shape: Shape = RoundedCornerShape(12.dp),
+    shape: Shape = RoundedCornerShape(13.dp),
     colors: ButtonColors = ButtonDefaults.outlinedButtonColors(
         contentColor = MaterialTheme.colorScheme.primary,
         disabledContentColor = Slate500.copy(alpha = 0.55f)
     ),
     border: BorderStroke? = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-    contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 7.dp),
+    contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
     content: @Composable RowScope.() -> Unit
 ) {
-    val containerColor = if (enabled) {
-        MaterialTheme.colorScheme.surface
-    } else {
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f)
-    }
-
-    Button3D(
+    OutlinedButton(
         onClick = onClick,
         modifier = modifier,
         enabled = enabled,
         shape = shape,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = containerColor,
-            contentColor = if (enabled) colors.contentColor else colors.disabledContentColor,
-            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f),
-            disabledContentColor = colors.disabledContentColor
-        ),
-        border = border ?: BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.9f)),
+        colors = colors,
+        border = border,
         contentPadding = contentPadding,
         content = content
     )
@@ -63,26 +52,20 @@ fun ProTextButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    shape: Shape = RoundedCornerShape(10.dp),
+    shape: Shape = RoundedCornerShape(11.dp),
     colors: ButtonColors = ButtonDefaults.textButtonColors(
         contentColor = MaterialTheme.colorScheme.primary,
         disabledContentColor = Slate500.copy(alpha = 0.50f)
     ),
-    contentPadding: PaddingValues = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+    contentPadding: PaddingValues = PaddingValues(horizontal = 11.dp, vertical = 7.dp),
     content: @Composable RowScope.() -> Unit
 ) {
-    Button3D(
+    TextButton(
         onClick = onClick,
         modifier = modifier,
         enabled = enabled,
         shape = shape,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.60f),
-            contentColor = if (enabled) colors.contentColor else colors.disabledContentColor,
-            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-            disabledContentColor = colors.disabledContentColor
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.75f)),
+        colors = colors,
         contentPadding = contentPadding,
         content = content
     )
@@ -99,17 +82,17 @@ fun ProIconButton(
     Surface(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier.sizeIn(minWidth = 34.dp, minHeight = 34.dp),
+        modifier = modifier.sizeIn(minWidth = 38.dp, minHeight = 38.dp),
         shape = RoundedCornerShape(12.dp),
         color = if (enabled) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.75f),
         contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.88f)),
-        tonalElevation = 0.5.dp,
-        shadowElevation = if (enabled) 6.dp else 1.dp
+        tonalElevation = 0.dp,
+        shadowElevation = if (enabled) 1.dp else 0.dp
     ) {
         androidx.compose.foundation.layout.Box(
             contentAlignment = androidx.compose.ui.Alignment.Center,
-            modifier = Modifier.sizeIn(minWidth = 34.dp, minHeight = 34.dp),
+            modifier = Modifier.sizeIn(minWidth = 38.dp, minHeight = 38.dp),
             content = { content() }
         )
     }

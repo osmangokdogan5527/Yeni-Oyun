@@ -157,14 +157,15 @@ fun CompanySetupDialog(
                 }
 
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.58f),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.75f))
+                    shape = RoundedCornerShape(14.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, brandColor.copy(alpha = 0.14f)),
+                    shadowElevation = 1.dp
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 9.dp),
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -185,7 +186,7 @@ fun CompanySetupDialog(
                         }
                         Surface(
                             shape = RoundedCornerShape(999.dp),
-                            color = brandColor.copy(alpha = 0.16f)
+                            color = brandColor.copy(alpha = 0.12f)
                         ) {
                             Text(
                                 text = "Seçili",
@@ -359,43 +360,51 @@ private fun LogoChoiceCard(
     brandColor: Color,
     onClick: () -> Unit
 ) {
-    val containerColor = if (isSelected) brandColor.copy(alpha = 0.14f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)
-    val borderColor = if (isSelected) brandColor else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f)
+    val outerBorderColor = if (isSelected) brandColor else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+    val outerColor = if (isSelected) brandColor.copy(alpha = 0.06f) else Color.White
+    val iconTileColor = if (isSelected) brandColor else Color.White
+    val iconTint = if (isSelected) Color.White else brandColor
+    val iconTileBorder = if (isSelected) brandColor.copy(alpha = 0.18f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.22f)
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(86.dp)
+            .height(92.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        color = containerColor,
-        border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor),
-        shadowElevation = if (isSelected) 6.dp else 1.dp,
+        shape = RoundedCornerShape(18.dp),
+        color = outerColor,
+        border = BorderStroke(if (isSelected) 2.dp else 1.dp, outerBorderColor),
+        shadowElevation = if (isSelected) 2.dp else 0.5.dp,
         tonalElevation = 0.dp
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 6.dp, vertical = 8.dp),
+                    .padding(horizontal = 7.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(if (isSelected) brandColor else Color.White.copy(alpha = 0.65f)),
-                    contentAlignment = Alignment.Center
+                Surface(
+                    modifier = Modifier.size(44.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    color = iconTileColor,
+                    border = BorderStroke(1.dp, iconTileBorder),
+                    shadowElevation = if (isSelected) 1.dp else 0.dp,
+                    tonalElevation = 0.dp
                 ) {
-                    Icon(
-                        painter = painterResource(id = option.drawableRes),
-                        contentDescription = option.styleName,
-                        tint = if (isSelected) Color.White else brandColor,
-                        modifier = Modifier.size(22.dp)
-                    )
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Icon(
+                            painter = painterResource(id = option.drawableRes),
+                            contentDescription = option.styleName,
+                            tint = iconTint,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.height(6.dp))
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Text(
                     text = option.styleName,
                     fontSize = 8.5.sp,
@@ -408,20 +417,21 @@ private fun LogoChoiceCard(
             }
 
             if (isSelected) {
-                Box(
+                Surface(
                     modifier = Modifier
                         .padding(6.dp)
-                        .align(Alignment.TopEnd)
-                        .size(18.dp)
-                        .clip(CircleShape)
-                        .background(brandColor),
-                    contentAlignment = Alignment.Center
+                        .align(Alignment.TopEnd),
+                    shape = CircleShape,
+                    color = brandColor,
+                    shadowElevation = 1.dp
                 ) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = null,
                         tint = Color.White,
-                        modifier = Modifier.size(12.dp)
+                        modifier = Modifier
+                            .padding(3.dp)
+                            .size(12.dp)
                     )
                 }
             }
